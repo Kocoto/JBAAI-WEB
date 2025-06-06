@@ -11,7 +11,7 @@ import AppNavbar from "./components/dashboard/AppNavbar";
 import Header from "./components/dashboard/Header";
 import MainGrid from "./components/dashboard/MainGrid";
 import SideMenu from "./components/dashboard/SideMenu";
-import AppTheme from "../shared-theme/AppTheme";
+import AppTheme from "./shared-theme/AppTheme";
 import {
   chartsCustomizations,
   dataGridCustomizations,
