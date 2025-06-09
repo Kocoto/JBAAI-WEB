@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "react";
 import { PieChart } from "@mui/x-charts/PieChart";
 import { useDrawingArea } from "@mui/x-charts/hooks";
 import { styled } from "@mui/material/styles";
@@ -16,7 +16,7 @@ import {
   UsaFlag,
   BrazilFlag,
   GlobeFlag,
-} from "../../internals/components/CustomIcons";
+} from "@/shared/components/ui/CustomIcons";
 
 const data = [
   { label: "India", value: 50000 },
