@@ -1,4 +1,3 @@
-import * as React from "react";
 import SvgIcon from "@mui/material/SvgIcon";
 
 export function SitemarkIcon() {
@@ -113,6 +112,64 @@ export function GoogleIcon() {
         <path
           d="M8 3.18545C9.17818 3.18545 10.2255 3.59273 11.0618 4.37818L13.3527 2.08727C11.9636 0.792727 10.16 0 8 0C4.87273 0 2.17455 1.79636 0.858182 4.41455L3.52 6.48C4.15273 4.58909 5.92 3.18545 8 3.18545Z"
           fill="#EA4335"
+        />
+      </svg>
+    </SvgIcon>
+  );
+}
+
+/**
+ * JBAAI Logo Icon Component
+ * Renders the JBAAI logo with "JBAAI" text and heart with ECG line
+ */
+export function JBAAIIcon() {
+  return (
+    <SvgIcon sx={{ height: 24, width: 120 }}>
+      <svg
+        width="120"
+        height="24"
+        viewBox="0 0 120 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* JBAAI Text */}
+        <text
+          x="8"
+          y="16"
+          fontFamily="Arial, sans-serif"
+          fontSize="14"
+          fontWeight="bold"
+          fill="#1e5a96"
+        >
+          JBA
+        </text>
+        
+        {/* AI Text in lighter blue */}
+        <text
+          x="38"
+          y="16"
+          fontFamily="Arial, sans-serif"
+          fontSize="14"
+          fontWeight="bold"
+          fill="#4a90e2"
+        >
+          AI
+        </text>
+        
+        {/* ECG Line */}
+        <path
+          d="M65 12 L70 12 L72 8 L74 16 L76 4 L78 20 L80 12 L85 12"
+          stroke="#e74c3c"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        
+        {/* Heart Icon */}
+        <path
+          d="M95 8.5C95 6.5 96.5 5 98.5 5C99.5 5 100.4 5.4 101 6C101.6 5.4 102.5 5 103.5 5C105.5 5 107 6.5 107 8.5C107 11.5 101 16 101 16S95 11.5 95 8.5Z"
+          fill="#e74c3c"
         />
       </svg>
     </SvgIcon>

@@ -16,7 +16,8 @@ import { styled } from "@mui/material/styles";
 import ForgotPassword from "../components/ForgotPassword";
 import AppTheme from "../../../shared/theme/AppTheme";
 import ColorModeSelect from "../../../shared/components/ui/ColorModeSelect";
-import { SitemarkIcon } from "../components/CustomIcons";
+import { JBAAIIcon } from "../components/CustomIcons";
+import { useAuth } from "../context/AuthProvider";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
@@ -122,7 +123,9 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
           sx={{ position: "fixed", top: "1rem", right: "1rem" }}
         />
         <Card variant="outlined">
-          <SitemarkIcon />
+          <Box sx={{ marginTop: 2, marginBottom: -2 }}>
+            <JBAAIIcon />
+          </Box>
           <Typography
             component="h1"
             variant="h4"
