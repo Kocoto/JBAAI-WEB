@@ -1,0 +1,71 @@
+JBAAI-WEB/
+├── .gitignore                  # Cấu hình Git ignore
+├── .trae/                      # Thư mục cấu hình Trae
+├── README.md                   # Tài liệu dự án
+├── eslint.config.js            # Cấu hình ESLint
+├── index.html                  # File HTML gốc
+├── package.json                # Cấu hình npm và dependencies
+├── package-lock.json           # Lock file của npm
+├── project-restructure-plan.md # Kế hoạch tái cấu trúc dự án
+├── public/                     # Tài nguyên tĩnh
+│   └── vite.svg                # Logo Vite
+├── src/                        # Mã nguồn chính
+│   ├── README.md               # Tài liệu mã nguồn
+│   ├── Title.tsx.preview       # File preview
+│   ├── app/                    # Thành phần ứng dụng chính
+│   │   ├── App.tsx             # Component App chính
+│   │   ├── providers/          # Các providers (hiện đang trống)
+│   │   └── routes/             # Cấu hình routes (hiện đang trống)
+│   ├── assets/                 # Tài nguyên ứng dụng
+│   │   ├── fonts/              # Fonts
+│   │   ├── icons/              # Icons
+│   │   ├── images/             # Hình ảnh
+│   │   └── react.svg           # Logo React
+│   ├── features/               # Các tính năng của ứng dụng
+│   │   ├── auth/               # Tính năng xác thực
+│   │   │   ├── components/     # Components xác thực
+│   │   │   │   ├── CustomIcons.tsx
+│   │   │   │   └── ForgotPassword.tsx
+│   │   │   ├── hooks/          # Custom hooks
+│   │   │   ├── pages/          # Trang xác thực
+│   │   │   │   └── LoginPage.tsx
+│   │   │   ├── services/       # Dịch vụ xác thực
+│   │   │   │   └── authService.ts
+│   │   │   └── types/          # Kiểu dữ liệu
+│   │   ├── dashboard/          # Tính năng dashboard
+│   │   │   ├── components/     # Components dashboard
+│   │   │   │   ├── MainGrid.tsx
+│   │   │   │   ├── charts/     # Biểu đồ
+│   │   │   │   ├── data-grid/  # Lưới dữ liệu
+│   │   │   │   └── overview/   # Tổng quan
+│   │   │   ├── data/           # Dữ liệu
+│   │   │   ├── hooks/          # Custom hooks
+│   │   │   ├── pages/          # Trang dashboard
+│   │   │   │   └── DashboardPage.tsx
+│   │   │   ├── services/       # Dịch vụ
+│   │   │   └── types/          # Kiểu dữ liệu
+│   │   └── users/              # Tính năng quản lý người dùng
+│   │       ├── components/     # Components
+│   │       ├── hooks/          # Custom hooks
+│   │       ├── pages/          # Trang
+│   │       ├── services/       # Dịch vụ
+│   │       └── types/          # Kiểu dữ liệu
+│   ├── main.tsx                # Điểm khởi đầu ứng dụng
+│   ├── shared/                 # Thành phần dùng chung
+│   │   ├── components/         # Components dùng chung
+│   │   │   ├── feedback/       # Components phản hồi
+│   │   │   ├── layout/         # Components bố cục
+│   │   │   └── ui/             # Components UI
+│   │   ├── hooks/              # Custom hooks dùng chung
+│   │   ├── services/           # Dịch vụ dùng chung
+│   │   ├── theme/              # Cấu hình theme
+│   │   ├── types/              # Kiểu dữ liệu dùng chung
+│   │   └── utils/              # Tiện ích dùng chung
+│   ├── styles/                 # Styles
+│   │   ├── globals.css         # CSS toàn cục
+│   │   └── index.css           # CSS chính
+│   └── vite-env.d.ts           # Khai báo môi trường Vite
+├── tsconfig.app.json           # Cấu hình TypeScript cho app
+├── tsconfig.json               # Cấu hình TypeScript chính
+├── tsconfig.node.json          # Cấu hình TypeScript cho Node
+└── vite.config.ts              # Cấu hình Vite
