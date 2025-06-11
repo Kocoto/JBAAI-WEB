@@ -2,20 +2,27 @@
 
 import apiClient from "../../../shared/services/api/apiClient";
 import { AuthResponse, LoginPayload, ProfileResponse } from "../types";
+import { getClientId } from "../../../shared/utils/clientIdUtils";
 
 /**
  * Hàm gọi API đăng nhập.
- * @param payload - Dữ liệu đăng nhập bao gồm email, password, clientId.
+ * @param payload - Dữ liệu đăng nhập bao gồm email, password.
  * @returns - Promise chứa dữ liệu trả về từ API, bao gồm user và tokens.
  */
-const login = async (payload: LoginPayload): Promise<AuthResponse> => {
-  // Sử dụng apiClient đã được cấu hình ở Bước 1.
-  // Kiểu dữ liệu <AuthResponse> giúp TypeScript biết được `response.data` sẽ có cấu trúc như thế nào.
+const login = async (
+  payload: Omit<LoginPayload, "clientId">
+): Promise<AuthResponse> => {
+  // Tự động thêm clientId từ thiết bị
+  const loginData: LoginPayload = {
+    ...payload,
+    clientId: getClientId(),
+  };
+
   const response = await apiClient.post<AuthResponse>(
     "/api/v1/auth/login",
-    payload
+    loginData
   );
-  return response.data; // Trả về phần data của response
+  return response.data;
 };
 
 /**
@@ -23,29 +30,42 @@ const login = async (payload: LoginPayload): Promise<AuthResponse> => {
  * @returns - Promise chứa thông tin đầy đủ của user.
  */
 const getProfile = async (): Promise<ProfileResponse> => {
-  // apiClient sẽ tự động đính kèm token vào header của request này.
   const response = await apiClient.post<ProfileResponse>("/api/v1/profile");
   return response.data;
 };
 
 /**
  * Hàm gọi API đăng xuất.
- * Backend sẽ dùng refreshToken để hủy bỏ phiên làm việc.
  * @param refreshToken - Refresh token hiện tại của người dùng.
  */
 const logout = async (refreshToken: string): Promise<void> => {
   await apiClient.post("/api/v1/auth/logout", {
     refreshToken,
-    clientId: "web-app-v1",
+    clientId: getClientId(),
   });
-  // Việc xóa token khỏi localStorage sẽ được thực hiện trong AuthProvider sau khi gọi hàm này.
 };
 
-// Chúng ta nhóm các hàm này vào một object để export ra ngoài.
-// Đây là một pattern phổ biến giúp việc import và sử dụng được gọn gàng hơn.
+/**
+ * Hàm gọi API để refresh access token.
+ * @param refreshToken - Refresh token hiện tại.
+ * @returns - Promise chứa tokens mới.
+ */
+const refreshAccessToken = async (
+  refreshToken: string
+): Promise<AuthResponse> => {
+  const response = await apiClient.post<AuthResponse>(
+    "/api/v1/auth/refresh-token",
+    {
+      refreshToken,
+      clientId: getClientId(),
+    }
+  );
+  return response.data;
+};
+
 export const authService = {
   login,
   getProfile,
   logout,
-  // Thêm các hàm khác như forgotPassword, resetPassword ở đây trong tương lai.
+  refreshAccessToken,
 };

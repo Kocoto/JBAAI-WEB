@@ -106,15 +106,18 @@ apiClient.interceptors.response.use(
       }
 
       try {
+        // Import getClientId ở đầu file
+        const { getClientId } = await import("../../utils/clientIdUtils");
+
         const response = await axios.post(
           `${apiClient.defaults.baseURL}/api/v1/auth/refresh-token`,
           {
             refreshToken: refreshToken,
-            clientId: "web-app-v1",
+            clientId: getClientId(),
           }
         );
 
-        // Giả sử API trả về cấu trúc: { token: { accessToken, refreshToken } }
+        // Giả sử API trả về cấu trúc: { data: { accessToken, refreshToken } }
         // Điều chỉnh nếu cấu trúc thực tế khác
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
           response.data.token;

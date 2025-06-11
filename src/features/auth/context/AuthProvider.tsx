@@ -8,21 +8,18 @@ import React, {
   ReactNode,
 } from "react";
 import { authService } from "../services/authService";
-import { User, LoginPayload } from "../types";
+import { User, LoginCredentials } from "../types";
 
 // 1. Định nghĩa kiểu cho Context
-// Đây là "hình dạng" của kho chứa dữ liệu của chúng ta.
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   isLoading: boolean;
-  login: (payload: LoginPayload) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 // 2. Tạo Context
-// Giá trị khởi tạo là undefined vì ban đầu chúng ta chưa có gì.
-// Dấu '!' để báo cho TypeScript rằng chúng ta sẽ cung cấp giá trị này sau.
 const AuthContext = createContext<AuthContextType>(undefined!);
 
 // 3. Tạo custom Hook để sử dụng Context dễ dàng hơn
@@ -36,14 +33,14 @@ export const useAuth = () => {
 
 // 4. Tạo component AuthProvider
 interface AuthProviderProps {
-  children: ReactNode; // 'children' là một kiểu đặc biệt trong React, đại diện cho mọi thứ được đặt bên trong component này.
+  children: ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // 5. Sử dụng State để lưu trữ dữ liệu
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Bắt đầu với trạng thái loading
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // 6. useEffect để kiểm tra phiên đăng nhập khi ứng dụng khởi động
   useEffect(() => {
@@ -65,18 +62,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
       } finally {
-        setIsLoading(false); // Kết thúc loading dù thành công hay thất bại
+        setIsLoading(false);
       }
     };
 
     checkLoggedIn();
-  }, []); // Mảng rỗng `[]` có nghĩa là useEffect này chỉ chạy 1 lần duy nhất khi component được render lần đầu.
+  }, []);
 
   // 7. Định nghĩa hàm login
-  const login = async (payload: LoginPayload) => {
+  const login = async (credentials: LoginCredentials) => {
     try {
-      // Gọi API login từ service
-      const authResponse = await authService.login(payload);
+      // Gọi API login từ service (clientId sẽ được tự động thêm)
+      const authResponse = await authService.login(credentials);
 
       // Lưu token vào localStorage
       localStorage.setItem("accessToken", authResponse.data.accessToken);

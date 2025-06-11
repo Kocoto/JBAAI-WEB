@@ -26,6 +26,15 @@ export interface LoginPayload {
 }
 
 /**
+ * Login credentials từ form (không bao gồm clientId)
+ */
+export interface LoginCredentials {
+  email: string;
+  password?: string;
+  otp?: string;
+}
+
+/**
  * Định nghĩa cấu trúc của cặp tokens.
  */
 export interface AuthTokens {

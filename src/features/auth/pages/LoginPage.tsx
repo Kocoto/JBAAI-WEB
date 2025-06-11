@@ -138,10 +138,10 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
 
     try {
       // Gọi API login thông qua AuthContext
+      // clientId sẽ được tự động thêm bởi authService
       await login({
         email,
         password,
-        clientId: "web-app-v1", // Lấy từ cấu hình API đã có
       });
 
       // Nếu remember me được chọn, có thể lưu email vào localStorage
