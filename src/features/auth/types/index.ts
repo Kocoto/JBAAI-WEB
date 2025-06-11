@@ -6,12 +6,22 @@
  */
 export interface User {
   _id: string;
-  email: string;
   username: string;
+  email: string;
   phone: string;
   role: "user" | "admin" | "seller" | "franchise";
-  // Thêm các thuộc tính khác của user nếu cần
-  // Ví dụ: name, avatar, createdAt,...
+  status: "active" | string;
+  verify: boolean;
+  language: string;
+  discount: boolean;
+  isSubscription: boolean;
+  emailNotificationsEnabled: boolean;
+  isPayment: boolean;
+  isHideScore: boolean;
+  type: string;
+  optionEmail: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -59,7 +69,35 @@ export interface AuthResponse {
  * Định nghĩa cấu trúc dữ liệu trả về từ API Get Profile.
  */
 export interface ProfileResponse {
-  data: User;
+  profile: {
+    _id: string;
+    userId: string;
+    height: number;
+    weight: number;
+    age: number;
+    gender: string;
+    smokingStatus: number;
+  };
+  user: {
+    _id: string;
+    username: string;
+    email: string;
+    phone: string;
+    role: "user" | "admin" | "seller" | "franchise";
+    status: "active" | string;
+    verify: boolean;
+    language: string;
+    discount: boolean;
+    isSubscription: boolean;
+    emailNotificationsEnabled: boolean;
+    isPayment: boolean;
+    isHideScore: boolean;
+    type: string;
+    optionEmail: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  upgradeRequest: null | unknown | unknown[];
 }
 
 /**

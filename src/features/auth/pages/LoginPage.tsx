@@ -67,7 +67,7 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 export default function LoginPage(props: { disableCustomTheme?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
 
   // State cho form
   const [email, setEmail] = React.useState("");
@@ -88,6 +88,7 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
   const [apiError, setApiError] = React.useState("");
 
   // Lấy redirect URL từ state (nếu có)
+  // Nếu không có, sẽ redirect về "/" và RoleRedirect sẽ xử lý
   const from = location.state?.from?.pathname || "/";
 
   const handleClickOpen = () => {
@@ -124,40 +125,28 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    // Reset API error
     setApiError("");
 
-    // Validate inputs
     if (!validateInputs()) {
       return;
     }
 
-    // Set loading state
     setIsLoading(true);
 
     try {
-      // Gọi API login thông qua AuthContext
-      // clientId sẽ được tự động thêm bởi authService
       await login({
         email,
         password,
       });
 
-      // Nếu remember me được chọn, có thể lưu email vào localStorage
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", email);
       } else {
         localStorage.removeItem("rememberedEmail");
       }
 
-      // Login thành công, chuyển hướng về trang trước đó hoặc trang chủ
       navigate(from, { replace: true });
     } catch (error: any) {
-      // Xử lý lỗi từ API
-      console.error("Login error:", error);
-
-      // Hiển thị thông báo lỗi phù hợp
       if (error.response?.status === 401) {
         setApiError("Invalid email or password. Please try again.");
       } else if (error.response?.data?.message) {
@@ -172,7 +161,6 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
     }
   };
 
-  // Load remembered email khi component mount
   React.useEffect(() => {
     const rememberedEmail = localStorage.getItem("rememberedEmail");
     if (rememberedEmail) {

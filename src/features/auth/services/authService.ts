@@ -30,8 +30,8 @@ const login = async (
  * @returns - Promise chứa thông tin đầy đủ của user.
  */
 const getProfile = async (): Promise<ProfileResponse> => {
-  const response = await apiClient.post<ProfileResponse>("/api/v1/profile");
-  return response.data;
+  const response = await apiClient.post("/api/v1/profile");
+  return response.data.data;
 };
 
 /**

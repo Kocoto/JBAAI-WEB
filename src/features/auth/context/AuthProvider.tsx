@@ -50,11 +50,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsLoading(false);
         return;
       }
-
       try {
         // Token tồn tại, gọi API để xác thực và lấy thông tin user
         const response = await authService.getProfile();
-        setUser(response.data);
+        setUser(response.user);
         setIsAuthenticated(true);
       } catch (error) {
         // Lỗi xảy ra (token không hợp lệ), coi như chưa đăng nhập
@@ -74,7 +73,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // Gọi API login từ service (clientId sẽ được tự động thêm)
       const authResponse = await authService.login(credentials);
-
       // Lưu token vào localStorage
       localStorage.setItem("accessToken", authResponse.data.accessToken);
       localStorage.setItem("refreshToken", authResponse.data.refreshToken);
@@ -83,7 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const profileResponse = await authService.getProfile();
 
       // Cập nhật state
-      setUser(profileResponse.data);
+      setUser(profileResponse.user);
       setIsAuthenticated(true);
     } catch (error) {
       console.error("Login failed:", error);

@@ -132,6 +132,19 @@ export function JBAAIIcon() {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* Background rounded rectangle */}
+        <rect
+          x="2"
+          y="2"
+          width="116"
+          height="20"
+          rx="10"
+          ry="10"
+          fill="#f8f9fa"
+          stroke="#1e5a96"
+          strokeWidth="2"
+        />
+
         {/* JBAAI Text */}
         <text
           x="8"
@@ -143,7 +156,7 @@ export function JBAAIIcon() {
         >
           JBA
         </text>
-        
+
         {/* AI Text in lighter blue */}
         <text
           x="38"
@@ -155,7 +168,7 @@ export function JBAAIIcon() {
         >
           AI
         </text>
-        
+
         {/* ECG Line */}
         <path
           d="M65 12 L70 12 L72 8 L74 16 L76 4 L78 20 L80 12 L85 12"
@@ -165,7 +178,7 @@ export function JBAAIIcon() {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        
+
         {/* Heart Icon */}
         <path
           d="M95 8.5C95 6.5 96.5 5 98.5 5C99.5 5 100.4 5.4 101 6C101.6 5.4 102.5 5 103.5 5C105.5 5 107 6.5 107 8.5C107 11.5 101 16 101 16S95 11.5 95 8.5Z"
