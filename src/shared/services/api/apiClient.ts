@@ -20,7 +20,7 @@ const clearTokens = () => {
 };
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000", // Sử dụng biến môi trường hoặc fallback
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
   headers: {
     "Content-Type": "application/json",
   },
@@ -73,18 +73,24 @@ apiClient.interceptors.response.use(
     // Nếu lỗi là 401 và không phải từ request refresh-token
     if (
       error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
       originalRequest.url !== "/api/v1/auth/refresh-token"
     ) {
       if (isRefreshing) {
         // Nếu đang có một tiến trình refresh-token khác chạy, thêm request này vào hàng đợi
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          if (originalRequest.headers) {
-            originalRequest.headers["Authorization"] = "Bearer " + token;
-          }
-          return apiClient(originalRequest);
-        });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers["Authorization"] = "Bearer " + token;
+            }
+            return apiClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
 
       originalRequest._retry = true;
@@ -92,9 +98,10 @@ apiClient.interceptors.response.use(
 
       const refreshToken = getRefreshToken();
       if (!refreshToken) {
-        // Nếu không có refresh token, không thể làm gì hơn, reject
+        // Nếu không có refresh token, xóa tokens và chuyển về trang login
         isRefreshing = false;
-        // Có thể thực hiện logout tại đây
+        clearTokens();
+        window.location.href = "/login";
         return Promise.reject(error);
       }
 
@@ -103,12 +110,12 @@ apiClient.interceptors.response.use(
           `${apiClient.defaults.baseURL}/api/v1/auth/refresh-token`,
           {
             refreshToken: refreshToken,
-            clientId: "web-app-v1", // Lấy từ Postman collection
+            clientId: "web-app-v1",
           }
         );
 
-        // Postman trả về { token: { accessToken, refreshToken } }
-        // Cần điều chỉnh nếu cấu trúc thực tế khác
+        // Giả sử API trả về cấu trúc: { token: { accessToken, refreshToken } }
+        // Điều chỉnh nếu cấu trúc thực tế khác
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
           response.data.token;
 
@@ -117,12 +124,16 @@ apiClient.interceptors.response.use(
         if (originalRequest.headers) {
           originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         }
-        processQueue(null, newAccessToken); // Thực thi lại các request trong hàng đợi
 
-        return apiClient(originalRequest); // Thử lại request ban đầu với token mới
+        // Thực thi lại các request trong hàng đợi
+        processQueue(null, newAccessToken);
+
+        // Thử lại request ban đầu với token mới
+        return apiClient(originalRequest);
       } catch (refreshError) {
+        // Refresh token thất bại
         processQueue(refreshError as AxiosError, null);
-        clearTokens(); // Xóa token nếu refresh thất bại
+        clearTokens();
         // Chuyển hướng về trang đăng nhập
         window.location.href = "/login";
         return Promise.reject(refreshError);

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -13,6 +14,8 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import MuiCard from "@mui/material/Card";
 import { styled } from "@mui/material/styles";
+import Alert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
 import ForgotPassword from "../components/ForgotPassword";
 import AppTheme from "../../../shared/theme/AppTheme";
 import ColorModeSelect from "../../../shared/components/ui/ColorModeSelect";
@@ -61,12 +64,31 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
   },
 }));
 
-export default function SignIn(props: { disableCustomTheme?: boolean }) {
+export default function LoginPage(props: { disableCustomTheme?: boolean }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+
+  // State cho form
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [rememberMe, setRememberMe] = React.useState(false);
+
+  // State cho validation
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
+
+  // State cho forgot password dialog
   const [open, setOpen] = React.useState(false);
+
+  // State cho loading và error từ API
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [apiError, setApiError] = React.useState("");
+
+  // Lấy redirect URL từ state (nếu có)
+  const from = location.state?.from?.pathname || "/";
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -76,25 +98,10 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     setOpen(false);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    if (emailError || passwordError) {
-      event.preventDefault();
-      return;
-    }
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get("email"),
-      password: data.get("password"),
-    });
-  };
-
   const validateInputs = () => {
-    const email = document.getElementById("email") as HTMLInputElement;
-    const password = document.getElementById("password") as HTMLInputElement;
-
     let isValid = true;
 
-    if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
       setEmailError(true);
       setEmailErrorMessage("Please enter a valid email address.");
       isValid = false;
@@ -103,7 +110,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       setEmailErrorMessage("");
     }
 
-    if (!password.value || password.value.length < 6) {
+    if (!password || password.length < 6) {
       setPasswordError(true);
       setPasswordErrorMessage("Password must be at least 6 characters long.");
       isValid = false;
@@ -114,6 +121,65 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
 
     return isValid;
   };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    // Reset API error
+    setApiError("");
+
+    // Validate inputs
+    if (!validateInputs()) {
+      return;
+    }
+
+    // Set loading state
+    setIsLoading(true);
+
+    try {
+      // Gọi API login thông qua AuthContext
+      await login({
+        email,
+        password,
+        clientId: "web-app-v1", // Lấy từ cấu hình API đã có
+      });
+
+      // Nếu remember me được chọn, có thể lưu email vào localStorage
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+      }
+
+      // Login thành công, chuyển hướng về trang trước đó hoặc trang chủ
+      navigate(from, { replace: true });
+    } catch (error: any) {
+      // Xử lý lỗi từ API
+      console.error("Login error:", error);
+
+      // Hiển thị thông báo lỗi phù hợp
+      if (error.response?.status === 401) {
+        setApiError("Invalid email or password. Please try again.");
+      } else if (error.response?.data?.message) {
+        setApiError(error.response.data.message);
+      } else if (error.message) {
+        setApiError(error.message);
+      } else {
+        setApiError("An unexpected error occurred. Please try again later.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load remembered email khi component mount
+  React.useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   return (
     <AppTheme {...props}>
@@ -133,6 +199,14 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
           >
             Sign in
           </Typography>
+
+          {/* Hiển thị lỗi từ API nếu có */}
+          {apiError && (
+            <Alert severity="error" onClose={() => setApiError("")}>
+              {apiError}
+            </Alert>
+          )}
+
           <Box
             component="form"
             onSubmit={handleSubmit}
@@ -159,6 +233,9 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
                 fullWidth
                 variant="outlined"
                 color={emailError ? "error" : "primary"}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </FormControl>
             <FormControl>
@@ -171,15 +248,25 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
                 type="password"
                 id="password"
                 autoComplete="current-password"
-                autoFocus
                 required
                 fullWidth
                 variant="outlined"
                 color={passwordError ? "error" : "primary"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
               />
             </FormControl>
             <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
+              control={
+                <Checkbox
+                  value="remember"
+                  color="primary"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isLoading}
+                />
+              }
               label="Remember me"
             />
             <ForgotPassword open={open} handleClose={handleClose} />
@@ -187,9 +274,26 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               type="submit"
               fullWidth
               variant="contained"
-              onClick={validateInputs}
+              disabled={isLoading}
+              sx={{ position: "relative" }}
             >
-              Sign in
+              {isLoading ? (
+                <>
+                  <CircularProgress
+                    size={24}
+                    sx={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      marginTop: "-12px",
+                      marginLeft: "-12px",
+                    }}
+                  />
+                  <span style={{ visibility: "hidden" }}>Sign in</span>
+                </>
+              ) : (
+                "Sign in"
+              )}
             </Button>
             <Link
               component="button"
@@ -206,11 +310,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Typography sx={{ textAlign: "center" }}>
               Don&apos;t have an account?{" "}
-              <Link
-                href="/material-ui/getting-started/templates/sign-in/"
-                variant="body2"
-                sx={{ alignSelf: "center" }}
-              >
+              <Link href="/signup" variant="body2" sx={{ alignSelf: "center" }}>
                 Sign up
               </Link>
             </Typography>
