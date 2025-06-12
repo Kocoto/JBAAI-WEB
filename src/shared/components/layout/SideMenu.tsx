@@ -10,6 +10,7 @@ import SelectContent from "@/shared/components/ui/SelectContent";
 import MenuContent from "@/shared/components/ui/MenuContent";
 import CardAlert from "@/shared/components/feedback/CardAlert";
 import OptionsMenu from "@/shared/components/ui/OptionsMenu";
+import { useAuth } from "@/features/auth/context/AuthProvider";
 
 const drawerWidth = 240;
 
@@ -25,6 +26,8 @@ const Drawer = styled(MuiDrawer)({
 });
 
 export default function SideMenu() {
+  const { user } = useAuth();
+  console.log(user);
   return (
     <Drawer
       variant="permanent"
@@ -42,6 +45,7 @@ export default function SideMenu() {
           p: 1.5,
         }}
       >
+        {/* Nên đặt icon công ty ở đây */}
         <SelectContent />
       </Box>
       <Divider />
@@ -54,7 +58,7 @@ export default function SideMenu() {
         }}
       >
         <MenuContent />
-        <CardAlert />
+        {/* <CardAlert /> */}
       </Box>
       <Stack
         direction="row"
@@ -68,7 +72,7 @@ export default function SideMenu() {
       >
         <Avatar
           sizes="small"
-          alt="Riley Carter"
+          alt={user?.username}
           src="/static/images/avatar/7.jpg"
           sx={{ width: 36, height: 36 }}
         />
@@ -77,10 +81,10 @@ export default function SideMenu() {
             variant="body2"
             sx={{ fontWeight: 500, lineHeight: "16px" }}
           >
-            Riley Carter
+            {user?.username || "Guest"}
           </Typography>
           <Typography variant="caption" sx={{ color: "text.secondary" }}>
-            riley@email.com
+            {user?.email || "guest@example.com"}
           </Typography>
         </Box>
         <OptionsMenu />

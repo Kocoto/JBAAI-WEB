@@ -10,7 +10,6 @@ export const UnauthorizedPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const handleGoBack = () => {
-    console.log(user?.role);
     // Redirect về dashboard phù hợp với role
     switch (user?.role) {
       case "admin":
