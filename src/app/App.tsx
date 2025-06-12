@@ -9,9 +9,9 @@ import { UnauthorizedPage } from "../shared/pages/UnauthorizedPage";
 import { RedirectIfLoggedIn } from "@/shared/components/router/RedirectIfLoggedIn";
 
 // Import các dashboard cho từng role
-import { AdminDashboard } from "../features/admin/pages/AdminDashboard";
-import { SellerDashboard } from "../features/seller/pages/SellerDashboard";
-import { FranchiseDashboard } from "../features/franchise/pages/FranchiseDashboard";
+import AdminDashboard from "../features/admin/pages/AdminDashboard";
+import SellerDashboard from "../features/seller/pages/SellerDashboard";
+import FranchiseDashboard from "../features/franchise/pages/FranchiseDashboard";
 import DashboardPage from "../features/dashboard/pages/DashboardPage";
 
 function App() {
