@@ -10,6 +10,8 @@ import { RedirectIfLoggedIn } from "@/shared/components/router/RedirectIfLoggedI
 
 // Import các dashboard cho từng role
 import AdminDashboard from "../features/admin/pages/AdminDashboard";
+import AdminCampaign from "../features/admin/pages/AdminCampaign";
+import AdminRequest from "../features/admin/pages/AdminRequest";
 import SellerDashboard from "../features/seller/pages/SellerDashboard";
 import FranchiseDashboard from "../features/franchise/pages/FranchiseDashboard";
 import DashboardPage from "../features/dashboard/pages/DashboardPage";
@@ -45,6 +47,26 @@ function App() {
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={["admin"]}>
               <AdminDashboard />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/campaigns"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminCampaign />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/requests"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminRequest />
             </RoleBasedRoute>
           </ProtectedRoute>
         }

@@ -1,30 +1,62 @@
-import * as React from 'react';
-import { styled } from '@mui/material/styles';
-import Typography from '@mui/material/Typography';
-import Breadcrumbs, { breadcrumbsClasses } from '@mui/material/Breadcrumbs';
-import NavigateNextRoundedIcon from '@mui/icons-material/NavigateNextRounded';
-
-const StyledBreadcrumbs = styled(Breadcrumbs)(({ theme }) => ({
-  margin: theme.spacing(1, 0),
-  [`& .${breadcrumbsClasses.separator}`]: {
-    color: (theme.vars || theme).palette.action.disabled,
-    margin: 1,
-  },
-  [`& .${breadcrumbsClasses.ol}`]: {
-    alignItems: 'center',
-  },
-}));
+import * as React from "react";
+import { styled } from "@mui/material/styles";
+import Typography from "@mui/material/Typography";
+import Breadcrumbs, { breadcrumbsClasses } from "@mui/material/Breadcrumbs";
+import NavigateNextRoundedIcon from "@mui/icons-material/NavigateNextRounded";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
+import { useDashboardNavigation } from "@/shared/hooks/useDashboardNavigation";
+import Link from "@mui/material/Link";
 
 export default function NavbarBreadcrumbs() {
+  const { breadcrumbs, navigateTo } = useDashboardNavigation();
+
   return (
-    <StyledBreadcrumbs
+    <Breadcrumbs
+      separator={<NavigateNextIcon fontSize="small" />}
       aria-label="breadcrumb"
-      separator={<NavigateNextRoundedIcon fontSize="small" />}
     >
-      <Typography variant="body1">Dashboard</Typography>
-      <Typography variant="body1" sx={{ color: 'text.primary', fontWeight: 600 }}>
-        Home
-      </Typography>
-    </StyledBreadcrumbs>
+      {breadcrumbs.map((item, index) => {
+        const isLast = index === breadcrumbs.length - 1;
+
+        if (isLast || !item.path) {
+          // Item cuối cùng - hiển thị như text
+          return (
+            <Typography
+              key={index}
+              color="text.primary"
+              sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+            >
+              {item.icon}
+              {item.label}
+            </Typography>
+          );
+        }
+
+        // Các item khác - hiển thị như link
+        return (
+          <Link
+            key={index}
+            color="inherit"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigateTo(item.path!);
+            }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              cursor: "pointer",
+              "&:hover": {
+                textDecoration: "underline",
+              },
+            }}
+          >
+            {item.icon}
+            {item.label}
+          </Link>
+        );
+      })}
+    </Breadcrumbs>
   );
 }

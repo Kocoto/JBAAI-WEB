@@ -12,6 +12,7 @@ import StoreIcon from "@mui/icons-material/Store";
 import BusinessIcon from "@mui/icons-material/Business";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import SettingsIcon from "@mui/icons-material/Settings";
+import RequestPageIcon from "@mui/icons-material/RequestPage";
 
 // Định nghĩa kiểu cho navigation item
 export interface NavigationItem {
@@ -63,6 +64,13 @@ export const useDashboardNavigation = () => {
             description: "Tổng quan hệ thống",
           },
           {
+            id: "requests",
+            label: "Quản lý Request",
+            path: "/admin/requests",
+            icon: <RequestPageIcon />,
+            description: "Quản lý các yêu cầu nâng cấp",
+          },
+          {
             id: "users",
             label: "Quản lý Users",
             path: "/admin/users",
@@ -103,7 +111,7 @@ export const useDashboardNavigation = () => {
             path: "/admin/campaigns",
             icon: <CampaignIcon />,
             description: "Quản lý chiến dịch marketing",
-            badge: 3, // Số lượng chiến dịch mới
+            // badge: 3, // Số lượng chiến dịch mới
           },
           {
             id: "reports",

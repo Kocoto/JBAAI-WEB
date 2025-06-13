@@ -12,6 +12,7 @@ import Stack from "@mui/material/Stack";
 import AppNavbar from "@/shared/components/layout/AppNavbar";
 import Header from "@/shared/components/layout/Header";
 import SideMenu from "@/shared/components/layout/SideMenu";
+// import { AdvancedSideMenu } from "@/shared/components/layout/AdvancedSideMenu";
 import AppTheme from "@/shared/theme/AppTheme";
 import {
   chartsCustomizations,
