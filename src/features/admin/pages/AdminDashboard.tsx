@@ -5,9 +5,7 @@ import MainGrid from "@/features/dashboard/components/MainGrid";
 export default function AdminDashboard() {
   return (
     <BaseDashboardLayout>
-      <Box>
-        <MainGrid />
-      </Box>
+      <MainGrid />
     </BaseDashboardLayout>
   );
 }

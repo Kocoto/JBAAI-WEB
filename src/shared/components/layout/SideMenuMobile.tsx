@@ -1,72 +1,97 @@
-import * as React from 'react';
-import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-import Drawer, { drawerClasses } from '@mui/material/Drawer';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
-import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
-import MenuButton from '../ui/MenuButton';
-import MenuContent from '../ui/MenuContent';
-import CardAlert from '../feedback/CardAlert';
+import * as React from "react";
+import { styled } from "@mui/material/styles";
+import Avatar from "@mui/material/Avatar";
+import Box from "@mui/material/Box";
+import Divider from "@mui/material/Divider";
+import MuiDrawer, { drawerClasses } from "@mui/material/Drawer";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import SelectContent from "@/shared/components/ui/SelectContent";
+import MenuContent from "@/shared/components/ui/MenuContent";
+import CardAlert from "@/shared/components/feedback/CardAlert";
+import OptionsMenu from "@/shared/components/ui/OptionsMenu";
+import { useAuth } from "@/features/auth/context/AuthProvider";
 
 interface SideMenuMobileProps {
   open: boolean | undefined;
   toggleDrawer: (newOpen: boolean) => () => void;
 }
 
-export default function SideMenuMobile({ open, toggleDrawer }: SideMenuMobileProps) {
+export default function SideMenuMobile({
+  open,
+  toggleDrawer,
+}: SideMenuMobileProps) {
+  const { user } = useAuth();
+
   return (
-    <Drawer
+    <MuiDrawer
       anchor="right"
       open={open}
       onClose={toggleDrawer(false)}
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
         [`& .${drawerClasses.paper}`]: {
-          backgroundImage: 'none',
-          backgroundColor: 'background.paper',
+          backgroundImage: "none",
+          backgroundColor: "background.paper",
         },
       }}
     >
       <Stack
         sx={{
-          maxWidth: '70dvw',
-          height: '100%',
+          maxWidth: "70dvw",
+          height: "100%",
         }}
       >
-        <Stack direction="row" sx={{ p: 2, pb: 0, gap: 1 }}>
-          <Stack
-            direction="row"
-            sx={{ gap: 1, alignItems: 'center', flexGrow: 1, p: 1 }}
-          >
-            <Avatar
-              sizes="small"
-              alt="Riley Carter"
-              src="/static/images/avatar/7.jpg"
-              sx={{ width: 24, height: 24 }}
-            />
-            <Typography component="p" variant="h6">
-              Riley Carter
-            </Typography>
-          </Stack>
-          <MenuButton showBadge>
-            <NotificationsRoundedIcon />
-          </MenuButton>
-        </Stack>
+        <Box
+          sx={{
+            display: "flex",
+            p: 1.5,
+          }}
+        >
+          <SelectContent />
+        </Box>
         <Divider />
-        <Stack sx={{ flexGrow: 1 }}>
+        <Box
+          sx={{
+            overflow: "auto",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <MenuContent />
-          <Divider />
-        </Stack>
-        <CardAlert />
-        <Stack sx={{ p: 2 }}>
-          <Button variant="outlined" fullWidth startIcon={<LogoutRoundedIcon />}>
-            Logout
-          </Button>
+          {/* <CardAlert /> */}
+        </Box>
+        <Stack
+          direction="row"
+          sx={{
+            p: 2,
+            gap: 1,
+            alignItems: "center",
+            borderTop: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Avatar
+            sizes="small"
+            alt={user?.username}
+            src="/static/images/avatar/7.jpg"
+            sx={{ width: 36, height: 36 }}
+          />
+          <Box sx={{ mr: "auto" }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 500, lineHeight: "16px" }}
+            >
+              {user?.username || "Guest"}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              {user?.email || "guest@example.com"}
+            </Typography>
+          </Box>
+          <OptionsMenu />
         </Stack>
       </Stack>
-    </Drawer>
+    </MuiDrawer>
   );
 }
