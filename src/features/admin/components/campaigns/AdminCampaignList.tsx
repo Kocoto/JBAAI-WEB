@@ -1,10 +1,46 @@
 import React from "react";
-import { Box, Grid } from "@mui/material";
+import {
+  alpha,
+  Box,
+  Fade,
+  Grid,
+  Stack,
+  Typography,
+  useTheme,
+} from "@mui/material";
+import CampaignIcon from "@mui/icons-material/Campaign";
 
 export default function AdminCampaignList() {
+  const theme = useTheme();
   return (
-    <Grid container spacing={2}>
-      <Grid size={{ xs: 12 }}></Grid>
-    </Grid>
+    <Box sx={{ width: "100%", maxWidth: { sm: "100%", md: "1700px" } }}>
+      <Fade in timeout={600}>
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <CampaignIcon
+                sx={{ color: theme.palette.primary.main, fontSize: 32 }}
+              />
+            </Box>
+            <Box>
+              <Typography variant="h4" fontWeight={700}>
+                Quản lý Yêu cầu Nâng cấp
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Xem xét và phê duyệt các yêu cầu nâng cấp tài khoản
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
+      </Fade>
+    </Box>
   );
 }

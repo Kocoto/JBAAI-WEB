@@ -400,7 +400,7 @@ export default function AdminRequestList() {
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Xuất báo cáo">
+              <Tooltip title="Xuất báo cáo" sx={{ display: "none" }}>
                 <IconButton>
                   <DownloadIcon />
                 </IconButton>
@@ -454,6 +454,7 @@ export default function AdminRequestList() {
                         }
                         color={config.color}
                         max={99}
+                        sx={{ paddingLeft: 1 }}
                       />
                     </Stack>
                   }

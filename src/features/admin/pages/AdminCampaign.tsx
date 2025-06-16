@@ -5,9 +5,7 @@ import AdminCampaignList from "@/features/admin/components/campaigns/AdminCampai
 export default function AdminCampaign() {
   return (
     <BaseDashboardLayout>
-      <Box>
-        <AdminCampaignList />
-      </Box>
+      <AdminCampaignList />
     </BaseDashboardLayout>
   );
 }
