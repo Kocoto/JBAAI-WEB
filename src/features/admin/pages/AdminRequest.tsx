@@ -5,9 +5,7 @@ import AdminRequestList from "@/features/admin/components/requests/AdminRequestL
 export default function AdminRequest() {
   return (
     <BaseDashboardLayout>
-      <Box>
-        <AdminRequestList />
-      </Box>
+      <AdminRequestList />
     </BaseDashboardLayout>
   );
 }

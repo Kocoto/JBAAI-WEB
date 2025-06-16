@@ -12,9 +12,17 @@ export interface Request {
   updatedAt: string;
   __v: number;
 }
+export interface Pagination {
+  currentPage: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  total: number;
+  totalPages: number;
+}
 
 export interface GetRequestResponse {
-  requests: Request[];
+  data: Request[];
+  Pagination?: Pagination;
 }
 
 export interface ApiError {

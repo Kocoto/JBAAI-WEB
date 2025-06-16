@@ -27,7 +27,6 @@ const Drawer = styled(MuiDrawer)({
 
 export default function SideMenu() {
   const { user } = useAuth();
-  console.log(user);
   return (
     <Drawer
       variant="permanent"

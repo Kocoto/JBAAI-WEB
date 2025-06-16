@@ -22,7 +22,7 @@ const getRequestsByStatus = async (
     const response = await apiClient.get(fullUrl);
 
     // Log the response data for debugging
-    console.log("Pending requests response:", response.data);
+    // console.log("Pending requests response:", response.data);
 
     // Return the response data
     return response.data;
