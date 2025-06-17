@@ -32,10 +32,10 @@ export default function AdminCampaignList() {
             </Box>
             <Box>
               <Typography variant="h4" fontWeight={700}>
-                Quản lý Yêu cầu Nâng cấp
+                Quản lý chiến dịch
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Xem xét và phê duyệt các yêu cầu nâng cấp tài khoản
+                Xem xét và quản lý các chiến dịch
               </Typography>
             </Box>
           </Stack>
