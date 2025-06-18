@@ -9,9 +9,25 @@ import {
   useTheme,
 } from "@mui/material";
 import BusinessIcon from "@mui/icons-material/Business";
+import { FranchiseService } from "../../services/franchiseService";
+import { useState, useEffect } from "react";
 
 export default function AdminFranchiseList() {
   const theme = useTheme();
+  const [franchiseList, setFranchiseList] = useState<any>();
+  useEffect(() => {
+    const fetchFranchiseList = async () => {
+      try {
+        const response = await FranchiseService.getFranchiseList();
+        setFranchiseList(response);
+      } catch (error) {
+        console.error("Error fetching franchise list:", error);
+      }
+    };
+
+    fetchFranchiseList();
+  }, []);
+  console.log(franchiseList);
   return (
     <Box sx={{ width: "100%", maxWidth: { sm: "100%", md: "1700px" } }}>
       <Fade in timeout={600}>
