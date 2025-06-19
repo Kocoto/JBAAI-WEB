@@ -20,6 +20,7 @@ export interface Pagination {
   totalPages: number;
 }
 
+
 export interface GetRequestResponse {
   data: Request[];
   Pagination?: Pagination;

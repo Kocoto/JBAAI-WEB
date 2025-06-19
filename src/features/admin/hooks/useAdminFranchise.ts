@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ApiError,
-  franchise,
+  Franchise,
   FranchiseListResponse,
 } from "../types/franchise.types";
+import { FranchiseService } from "../services/franchiseService";
 
 interface FranchiseListState {
-  data: franchise[];
+  data: Franchise[];
   loading: boolean;
   error: ApiError | null;
   page: number;
@@ -23,9 +24,49 @@ const initialListState: FranchiseListState = {
   total: 0,
 };
 export const useAdminFranchise = () => {
-  const [franchiseList, setFranchiseList] = useState<{
-    [key: string]: FranchiseListResponse;
-  }>({});
-  // State để track xem đã load lần đầu chưa
+  const [franchiseList, setFranchiseList] =
+    useState<FranchiseListState>(initialListState);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  const fetchFranchiseList = async (level?: number) => {
+    setFranchiseList((prev) => ({
+      ...prev,
+      loading: true,
+    }));
+    try {
+      const response = await FranchiseService.getFranchiseList(
+        franchiseList.page,
+        franchiseList.limit,
+        level
+      );
+      const total = response.Pagination?.total || response.data.length;
+      setFranchiseList((prev) => ({
+        ...prev,
+        data: response.data,
+        loading: false,
+        error: null,
+        total: total,
+      }));
+    } catch (error) {
+      const apiError = error as ApiError;
+      setFranchiseList((prev) => ({
+        ...prev,
+        loading: false,
+        error: apiError,
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (!isInitialized) {
+      fetchFranchiseList();
+      setIsInitialized(true);
+    }
+  }, [isInitialized, fetchFranchiseList]);
+
+  return {
+    franchiseList,
+
+    fetchFranchiseList,
+  };
 };

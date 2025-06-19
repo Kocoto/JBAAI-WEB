@@ -1,4 +1,4 @@
-export interface franchise {
+export interface Franchise {
   _id: string;
   userId: {
     _id: string;
@@ -25,10 +25,25 @@ export interface franchise {
   parentId: string | null;
   franchiseLevel: number;
   ancestorPath: any[];
-  userTrialQuotaLedger: any[];
+  userTrialQuotaLedger: UserTrialQuotaLedger[];
   totalActiveQuota: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UserTrialQuotaLedger {
+  _id: string;
+  sourceCampaignId?: string;
+  sourceParentLedgerEntryId?: string;
+  allocatedByUserId: string;
+  totalAllocated: number;
+  consumedByOwnInvites: number;
+  allocatedToChildren: number;
+  status: "active" | "exhausted" | "expired" | "paused";
+  createdAt: string;
+  updatedAt: string;
+  originalCampaignStartDate?: string;
+  originalCampaignEndDate?: string;
 }
 
 export interface Pagination {
@@ -45,7 +60,7 @@ export interface ApiError {
 }
 
 export interface FranchiseListResponse {
-  data: franchise[];
+  data: Franchise[];
   Pagination?: Pagination;
   error?: ApiError;
 }

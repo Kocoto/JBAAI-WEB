@@ -4,7 +4,6 @@ import { FranchiseListResponse } from "../types/franchise.types";
 const getFranchiseList = async (
   page: number = 1,
   limit: number = 10,
-  status?: string,
   level?: number
 ): Promise<FranchiseListResponse> => {
   try {
@@ -14,9 +13,9 @@ const getFranchiseList = async (
       limit: limit.toString(),
     });
 
-    if (status) {
-      params.append("status", status);
-    }
+    // if (status) {
+    //   params.append("status", status);
+    // }
 
     if (level !== undefined) {
       params.append("level", level.toString());
