@@ -1,34 +1,194 @@
+// src/features/admin/services/franchiseService.ts
+
 import apiClient from "../../../shared/services/api/apiClient";
-import { FranchiseListResponse } from "../types/franchise.types";
+import {
+  Franchise,
+  FranchiseListResponse,
+  FranchiseHierarchyResponse,
+  FranchiseStatisticsResponse,
+  FranchiseListFilters,
+} from "../types/franchise.types";
 
-const getFranchiseList = async (
-  page: number = 1,
-  limit: number = 10,
-  level?: number
-): Promise<FranchiseListResponse> => {
-  try {
-    const endpoint = `/api/v1/admin/franchises`;
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
+/**
+ * Franchise Service - Handles all franchise-related API calls
+ */
+class FranchiseServiceClass {
+  private readonly basePath = "/api/v1/admin/franchises";
 
-    // if (status) {
-    //   params.append("status", status);
-    // }
+  /**
+   * Get list of franchises with filters and pagination
+   * @param filters - Optional filters for the franchise list
+   * @returns Promise<FranchiseListResponse>
+   */
+  async getFranchiseList(
+    filters?: FranchiseListFilters
+  ): Promise<FranchiseListResponse> {
+    try {
+      const params = new URLSearchParams();
 
-    if (level !== undefined) {
-      params.append("level", level.toString());
+      // Add pagination parameters
+      if (filters?.page) {
+        params.append("page", filters.page.toString());
+      }
+      if (filters?.limit) {
+        params.append("limit", filters.limit.toString());
+      }
+
+      // Add filter parameters
+      if (filters?.status) {
+        params.append("status", filters.status);
+      }
+      if (filters?.level !== undefined) {
+        params.append("level", filters.level.toString());
+      }
+      if (filters?.search) {
+        params.append("search", filters.search);
+      }
+      if (filters?.parentId) {
+        params.append("parentId", filters.parentId);
+      }
+
+      const queryString = params.toString();
+      const endpoint = queryString
+        ? `${this.basePath}?${queryString}`
+        : this.basePath;
+
+      const response = await apiClient.get<FranchiseListResponse>(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching franchise list:", error);
+      throw error;
     }
-
-    const response = await apiClient.get(`${endpoint}?${params.toString()}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching franchise list:", error);
-    throw error;
   }
-};
 
-export const FranchiseService = {
-  getFranchiseList,
-};
+  /**
+   * Get franchise by ID
+   * @param franchiseId - The franchise ID
+   * @returns Promise<Franchise>
+   */
+  async getFranchiseById(franchiseId: string): Promise<Franchise> {
+    try {
+      const response = await apiClient.get<{ data: Franchise }>(
+        `${this.basePath}/${franchiseId}`
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching franchise by ID:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get franchise hierarchy for a specific user
+   * @param userId - The user ID of the franchise owner
+   * @returns Promise<FranchiseHierarchyResponse>
+   */
+  async getFranchiseHierarchy(
+    userId: string
+  ): Promise<FranchiseHierarchyResponse> {
+    try {
+      const response = await apiClient.get<FranchiseHierarchyResponse>(
+        `${this.basePath}/${userId}/hierarchy`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching franchise hierarchy:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get franchise statistics
+   * @returns Promise<FranchiseStatisticsResponse>
+   */
+  async getFranchiseStatistics(): Promise<FranchiseStatisticsResponse> {
+    try {
+      const response = await apiClient.get<FranchiseStatisticsResponse>(
+        `${this.basePath}/statistics`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching franchise statistics:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update franchise status
+   * @param franchiseId - The franchise ID
+   * @param status - New status
+   * @returns Promise<Franchise>
+   */
+  async updateFranchiseStatus(
+    franchiseId: string,
+    status: "active" | "inactive"
+  ): Promise<Franchise> {
+    try {
+      const response = await apiClient.patch<{ data: Franchise }>(
+        `${this.basePath}/${franchiseId}/status`,
+        { status }
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error("Error updating franchise status:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get franchises by parent ID
+   * @param parentId - The parent franchise ID
+   * @returns Promise<FranchiseListResponse>
+   */
+  async getFranchisesByParentId(
+    parentId: string
+  ): Promise<FranchiseListResponse> {
+    return this.getFranchiseList({ parentId });
+  }
+
+  /**
+   * Get franchises by level
+   * @param level - The franchise level
+   * @param filters - Additional filters
+   * @returns Promise<FranchiseListResponse>
+   */
+  async getFranchisesByLevel(
+    level: number,
+    filters?: Omit<FranchiseListFilters, "level">
+  ): Promise<FranchiseListResponse> {
+    return this.getFranchiseList({ ...filters, level });
+  }
+
+  /**
+   * Search franchises
+   * @param searchTerm - Search term for franchise name, email, or phone
+   * @param filters - Additional filters
+   * @returns Promise<FranchiseListResponse>
+   */
+  async searchFranchises(
+    searchTerm: string,
+    filters?: Omit<FranchiseListFilters, "search">
+  ): Promise<FranchiseListResponse> {
+    return this.getFranchiseList({ ...filters, search: searchTerm });
+  }
+
+  /**
+   * Get franchise quota details
+   * @param franchiseId - The franchise ID
+   * @returns Promise<any>
+   */
+  async getFranchiseQuotaDetails(franchiseId: string): Promise<any> {
+    try {
+      const response = await apiClient.get(
+        `${this.basePath}/${franchiseId}/quota-details`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching franchise quota details:", error);
+      throw error;
+    }
+  }
+}
+
+// Export singleton instance
+export const FranchiseService = new FranchiseServiceClass();

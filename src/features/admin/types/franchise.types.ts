@@ -1,36 +1,34 @@
-export interface Franchise {
+// src/features/admin/types/franchise.types.ts
+
+/**
+ * User information associated with franchise
+ */
+export interface FranchiseUser {
   _id: string;
-  userId: {
-    _id: string;
-    username: string;
-    password: string;
-    email: string;
-    phone: string;
-    role: string;
-    status: string;
-    verify: boolean;
-    language: string;
-    discount: boolean;
-    isSubscription: boolean;
-    emailNotificationsEnabled: boolean;
-    isPayment: boolean;
-    isHideScore: boolean;
-    type: string;
-    optionEmail: string;
-    createdAt: string;
-    updatedAt: string;
-    __v: number;
-    franchiseName: string;
-  };
-  parentId: string | null;
-  franchiseLevel: number;
-  ancestorPath: any[];
-  userTrialQuotaLedger: UserTrialQuotaLedger[];
-  totalActiveQuota: number;
+  username: string;
+  password: string;
+  email: string;
+  phone: string;
+  role: "user" | "admin" | "seller" | "franchise";
+  status: "active" | "inactive" | string;
+  verify: boolean;
+  language: string;
+  discount: boolean;
+  isSubscription: boolean;
+  emailNotificationsEnabled: boolean;
+  isPayment: boolean;
+  isHideScore: boolean;
+  type: string;
+  optionEmail: string;
   createdAt: string;
   updatedAt: string;
+  __v: number;
+  franchiseName: string;
 }
 
+/**
+ * User trial quota ledger entry
+ */
 export interface UserTrialQuotaLedger {
   _id: string;
   sourceCampaignId?: string;
@@ -46,6 +44,43 @@ export interface UserTrialQuotaLedger {
   originalCampaignEndDate?: string;
 }
 
+/**
+ * Main franchise entity
+ */
+export interface Franchise {
+  _id: string;
+  userId: FranchiseUser;
+  parentId: string | null;
+  franchiseLevel: number;
+  ancestorPath: string[];
+  userTrialQuotaLedger: UserTrialQuotaLedger[];
+  totalActiveQuota: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Franchise hierarchy node for tree structure
+ */
+export interface FranchiseHierarchyNode {
+  _id: string;
+  franchiseName: string;
+  email: string;
+  phone: string;
+  level: number;
+  totalActiveQuota: number;
+  children: FranchiseHierarchyNode[];
+  statistics?: {
+    totalChildren: number;
+    totalDescendants: number;
+    totalQuotaAllocated: number;
+    totalQuotaConsumed: number;
+  };
+}
+
+/**
+ * Pagination metadata
+ */
 export interface Pagination {
   currentPage: number;
   hasNextPage: boolean;
@@ -54,13 +89,70 @@ export interface Pagination {
   totalPages: number;
 }
 
+/**
+ * API error response
+ */
 export interface ApiError {
   message: string;
   statusCode: number;
+  error?: string;
 }
 
+/**
+ * Franchise list filters
+ */
+export interface FranchiseListFilters {
+  page?: number;
+  limit?: number;
+  status?: "active" | "inactive";
+  level?: number;
+  search?: string;
+  parentId?: string;
+}
+
+/**
+ * Response from GET /api/v1/admin/franchises
+ */
 export interface FranchiseListResponse {
   data: Franchise[];
   Pagination?: Pagination;
+  error?: ApiError;
+}
+
+/**
+ * Response from GET /api/v1/admin/franchises/:userId/hierarchy
+ */
+export interface FranchiseHierarchyResponse {
+  data: FranchiseHierarchyNode;
+  statistics: {
+    totalFranchises: number;
+    byLevel: Record<number, number>;
+    totalActiveQuota: number;
+  };
+  error?: ApiError;
+}
+
+/**
+ * Franchise statistics
+ */
+export interface FranchiseStatistics {
+  totalFranchises: number;
+  activeFranchises: number;
+  inactiveFranchises: number;
+  franchisesByLevel: Record<number, number>;
+  totalQuotaDistributed: number;
+  totalQuotaConsumed: number;
+  growthRate: {
+    daily: number;
+    weekly: number;
+    monthly: number;
+  };
+}
+
+/**
+ * Response from franchise statistics endpoint
+ */
+export interface FranchiseStatisticsResponse {
+  data: FranchiseStatistics;
   error?: ApiError;
 }
