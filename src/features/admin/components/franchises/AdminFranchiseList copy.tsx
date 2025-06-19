@@ -1,6 +1,3 @@
-// src/features/admin/components/franchises/AdminFranchiseList.tsx
-
-// Core React import
 import React, { useState, useMemo } from "react";
 import {
   alpha,
@@ -24,9 +21,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Grow,
-  Paper,
-  FormControl,
 } from "@mui/material";
 import BusinessIcon from "@mui/icons-material/Business";
 import SearchIcon from "@mui/icons-material/Search";
@@ -34,62 +28,108 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-import { useAdminFranchise } from "../../hooks/useAdminFranchise";
-import { Franchise } from "../../types/franchise.types";
-import StarIcon from "@mui/icons-material/Star";
-import GradeIcon from "@mui/icons-material/Grade";
-import StarsIcon from "@mui/icons-material/Stars";
-import StarBorderIcon from "@mui/icons-material/StarBorder";
+// Assuming these imports are correct for your project structure
+// import { useAdminFranchise } from "../../hooks/useAdminFranchise";
+// import { Franchise } from "../../types/franchise.types";
 
-const levelConfig = {
-  all: {
-    color: "default" as const,
-    icon: <StarIcon />, // Highest level icon
-    label: "Tất cả franchise",
-    bgColor: "#ffebee", // Light red background
-    textColor: "#d32f2f", // Red text
-  },
-  0: {
-    color: "error" as const,
-    icon: <StarIcon />, // Highest level icon
-    label: "Franchise Gốc",
-    bgColor: "#ffebee", // Light red background
-    textColor: "#d32f2f", // Red text
-  },
-  1: {
-    color: "warning" as const,
-    icon: <StarIcon />, // Highest level icon
-    label: "Franchise Cấp 1",
-    bgColor: "#fff3e0", // Light orange background
-    textColor: "#ed6c02", // Orange text
-  },
-  2: {
-    color: "info" as const,
-    icon: <StarIcon />, // Medium level icon
-    label: "Franchise Cấp 2",
-    bgColor: "#e3f2fd", // Light blue background
-    textColor: "#1976d2", // Blue text
-  },
-  3: {
-    color: "success" as const,
-    icon: <StarIcon />, // Basic level icon
-    label: "Franchise Cấp 3",
-    bgColor: "#e8f5e9", // Light green background
-    textColor: "#2e7d32", // Green text
-  },
+// Mock data and hooks for demonstration since the originals are not provided.
+// You should replace this with your actual hooks and types.
+interface User {
+  _id: string;
+  franchiseName?: string;
+  username: string;
+  email: string;
+  phone: string;
+}
+
+interface Franchise {
+  _id: string;
+  userId: User;
+  franchiseLevel: number;
+  totalActiveQuota: number;
+  createdAt: string;
+}
+
+const useAdminFranchise = () => {
+  const [franchiseList, setFranchiseList] = useState<{
+    data: Franchise[];
+    total: number;
+    loading: boolean;
+    error: any;
+  }>({ data: [], total: 0, loading: true, error: null });
+
+  const fetchFranchiseList = () => {
+    setFranchiseList((prev) => ({ ...prev, loading: true }));
+    setTimeout(() => {
+      // Mock API call
+      const mockData: Franchise[] = [
+        {
+          _id: "franchise001",
+          userId: {
+            _id: "user01",
+            franchiseName: "HCM Branch",
+            username: "Nguyen Van A",
+            email: "a@example.com",
+            phone: "0901234567",
+          },
+          franchiseLevel: 1,
+          totalActiveQuota: 10,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          _id: "franchise002",
+          userId: {
+            _id: "user02",
+            franchiseName: "Hanoi Capital",
+            username: "Tran Thi B",
+            email: "b@example.com",
+            phone: "0901234568",
+          },
+          franchiseLevel: 0,
+          totalActiveQuota: 5,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          _id: "franchise003",
+          userId: {
+            _id: "user03",
+            franchiseName: "Da Nang Hub",
+            username: "Le Van C",
+            email: "c@example.com",
+            phone: "0901234569",
+          },
+          franchiseLevel: 2,
+          totalActiveQuota: 0,
+          createdAt: new Date().toISOString(),
+        },
+      ];
+      setFranchiseList({
+        data: mockData,
+        total: mockData.length,
+        loading: false,
+        error: null,
+      });
+    }, 1500);
+  };
+
+  React.useEffect(() => {
+    fetchFranchiseList();
+  }, []);
+
+  return { franchiseList, fetchFranchiseList };
 };
 
 const FranchiseStatusChip = ({ level }: { level: number }) => {
   const getLevelConfig = (level: number) => {
     switch (level) {
       case 0:
-        return { label: "Cấp 0 ", color: "default" as const };
+        return { label: "Cấp 0", color: "default" as const };
       case 1:
-        return { label: "Cấp 1 ", color: "primary" as const };
+        return { label: "Cấp 1", color: "primary" as const };
       case 2:
-        return { label: "Cấp 2 ", color: "secondary" as const };
+        return { label: "Cấp 2", color: "secondary" as const };
       case 3:
-        return { label: "Cấp 3 ", color: "info" as const };
+        return { label: "Cấp 3", color: "error" as const };
       default:
         return { label: `Cấp ${level}`, color: "default" as const };
     }
@@ -106,6 +146,7 @@ const FranchiseStatusChip = ({ level }: { level: number }) => {
   );
 };
 
+// Dialog hiển thị hierarchy
 interface HierarchyDialogProps {
   open: boolean;
   onClose: () => void;
@@ -142,69 +183,58 @@ const HierarchyDialog: React.FC<HierarchyDialogProps> = ({
 
 export default function AdminFranchiseList() {
   const theme = useTheme();
-  const { franchiseList, fetchFranchiseList, isLoading, isError } =
-    useAdminFranchise();
+  const { franchiseList, fetchFranchiseList } = useAdminFranchise();
   const [searchText, setSearchText] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("all");
   const [selectedFranchise, setSelectedFranchise] = useState<string | null>(
     null
   );
-  const [selectedTab, setSelectedTab] = useState("all");
   const [hierarchyDialogOpen, setHierarchyDialogOpen] = useState(false);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
-    setSelectedTab(newValue);
-  };
-
-  const handleRefresh = async () => {
-    await fetchFranchiseList();
-  };
-
   const filteredRows = useMemo(() => {
-    let filtered = franchiseList.data;
+    // FIX: Ensure franchiseList.data is an array before filtering.
+    // If franchiseList.data is undefined or null, default to an empty array.
+    let filtered = franchiseList.data || []; // Search filter
 
-    // Search filter
     if (searchText) {
       filtered = filtered.filter(
         (franchise: Franchise) =>
-          franchise.userId.franchiseName
+          franchise.userId &&
+          (franchise.userId.franchiseName
             ?.toLowerCase()
             .includes(searchText.toLowerCase()) ||
-          franchise.userId.username
-            .toLowerCase()
-            .includes(searchText.toLowerCase()) ||
-          franchise.userId.email
-            .toLowerCase()
-            .includes(searchText.toLowerCase())
+            franchise.userId.username
+              .toLowerCase()
+              .includes(searchText.toLowerCase()) ||
+            franchise.userId.email
+              .toLowerCase()
+              .includes(searchText.toLowerCase()))
       );
-    }
+    } // Level filter
 
-    // Level filter
     if (selectedLevel !== "all") {
       filtered = filtered.filter(
         (franchise: Franchise) =>
           franchise.franchiseLevel === parseInt(selectedLevel)
       );
     }
-
     return filtered;
   }, [franchiseList.data, searchText, selectedLevel]);
 
-  // Transform data for DataGrid
-  let rows;
-  if (filteredRows && filteredRows.length > 0) {
-    rows = filteredRows.map((franchise: Franchise) => ({
+  const rows = useMemo(() => {
+    // Since filteredRows is now guaranteed to be an array, .map will work.
+    return filteredRows.map((franchise: Franchise) => ({
       id: franchise._id,
-      franchiseName: franchise.userId.franchiseName || "N/A",
-      ownerName: franchise.userId.username,
-      email: franchise.userId.email,
-      phone: franchise.userId.phone,
+      franchiseName: franchise.userId?.franchiseName || "N/A",
+      ownerName: franchise.userId?.username || "N/A",
+      email: franchise.userId?.email || "N/A",
+      phone: franchise.userId?.phone || "N/A",
       level: franchise.franchiseLevel,
       activeQuota: franchise.totalActiveQuota,
       createdAt: franchise.createdAt,
-      userId: franchise.userId._id,
+      userId: franchise.userId?._id,
     }));
-  }
+  }, [filteredRows]);
 
   const handleViewHierarchy = (franchiseId: string) => {
     setSelectedFranchise(franchiseId);
@@ -222,8 +252,10 @@ export default function AdminFranchiseList() {
           sx={{
             width: 40,
             height: 40,
-            bgcolor: theme.palette.primary.main,
-            fontSize: "0.875rem",
+            bgcolor: theme.palette.primary.light,
+            color: theme.palette.primary.dark,
+            fontSize: "1rem",
+            fontWeight: 600,
           }}
         >
           {params.row.ownerName?.charAt(0).toUpperCase()}
@@ -234,14 +266,18 @@ export default function AdminFranchiseList() {
       field: "franchiseName",
       headerName: "Tên Franchise",
       flex: 1,
-      minWidth: 180,
+      minWidth: 200,
       renderCell: (params: GridRenderCellParams) => (
         <Box>
           <Typography variant="body2" fontWeight={600}>
             {params.value}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            ID: {params.row.id.substring(0, 8)}...
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ userSelect: "all" }}
+          >
+            ID: {params.row.id}
           </Typography>
         </Box>
       ),
@@ -268,14 +304,16 @@ export default function AdminFranchiseList() {
     {
       field: "level",
       headerName: "Cấp bậc",
-      width: 180,
+      width: 120,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params: GridRenderCellParams) => (
         <FranchiseStatusChip level={params.value} />
       ),
     },
     {
       field: "activeQuota",
-      headerName: "Quota hoạt động",
+      headerName: "Quota",
       width: 130,
       align: "center",
       headerAlign: "center",
@@ -285,6 +323,7 @@ export default function AdminFranchiseList() {
           size="small"
           color={params.value > 0 ? "success" : "default"}
           variant="outlined"
+          sx={{ fontWeight: 600, width: 60 }}
         />
       ),
     },
@@ -303,6 +342,8 @@ export default function AdminFranchiseList() {
       headerName: "Hành động",
       width: 140,
       sortable: false,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params: GridRenderCellParams) => (
         <Stack direction="row" spacing={0.5}>
           <Tooltip title="Xem chi tiết">
@@ -324,6 +365,10 @@ export default function AdminFranchiseList() {
     },
   ];
 
+  const handleRefresh = () => {
+    fetchFranchiseList();
+  };
+
   if (franchiseList.error) {
     return (
       <Box sx={{ p: 3 }}>
@@ -333,17 +378,22 @@ export default function AdminFranchiseList() {
       </Box>
     );
   }
+
   return (
-    <Box sx={{ width: "100%", maxWidth: { sm: "100%", md: "1700px" } }}>
-      {" "}
-      {/* Header Section */}
+    <Box sx={{ width: "100%", p: 3 }}>
       <Fade in timeout={600}>
         <Box>
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+          {/* Header */}
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            alignItems="center"
+            spacing={2}
+            sx={{ mb: 3 }}
+          >
             <Box
               sx={{
                 p: 1.5,
-                borderRadius: 2,
+                borderRadius: 99,
                 bgcolor: alpha(theme.palette.primary.main, 0.1),
                 display: "flex",
                 alignItems: "center",
@@ -353,122 +403,106 @@ export default function AdminFranchiseList() {
                 sx={{ color: theme.palette.primary.main, fontSize: 32 }}
               />
             </Box>
-            <Box>
+            <Box sx={{ flexGrow: 1 }}>
               <Typography variant="h4" fontWeight={700}>
                 Quản lý Franchise
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Xem xét và quản trị thông tin Franchise
+                Xem và quản lý danh sách các franchise trong hệ thống
               </Typography>
             </Box>
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<RefreshIcon />}
+              onClick={handleRefresh}
+              disabled={franchiseList.loading}
+            >
+              {franchiseList.loading ? "Đang tải..." : "Làm mới"}
+            </Button>
           </Stack>
-        </Box>
-      </Fade>
-      {/* Filters and Actions */}
-      <Grow in timeout={800}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            mb: 3,
-            borderRadius: 2,
-            border: `1px solid ${theme.palette.divider}`,
-          }}
-        >
+          {/* Filters & Summary */}
           <Stack
             direction={{ xs: "column", md: "row" }}
             spacing={2}
+            sx={{ mb: 3 }}
             alignItems={{ md: "center" }}
           >
             <TextField
-              size="small"
               placeholder="Tìm kiếm theo tên, email..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
+              size="small"
+              sx={{ flexGrow: 1, minWidth: { sm: 300, md: 400 } }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
+                    <SearchIcon />
                   </InputAdornment>
                 ),
               }}
-              sx={{ minWidth: 300 }}
             />
-            <Box sx={{ flexGrow: 1 }} />
-            <Stack direction="row" spacing={1}>
-              <Tooltip title="Làm mới">
-                <IconButton onClick={handleRefresh} disabled={isLoading}>
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Stack>
-        </Paper>
-      </Grow>
-      {/* Main Content */}
-      <Grow in timeout={800}>
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 2,
-            overflow: "hidden",
-            border: `1px solid ${theme.palette.divider}`,
-          }}
-        >
-          <Box
-            sx={{
-              borderBottom: 1,
-              borderColor: "divider",
-              bgcolor: alpha(theme.palette.primary.main, 0.02),
-            }}
-          >
             <Tabs
-              value={selectedTab}
-              onChange={handleTabChange}
-              variant="fullWidth"
-              aria-label="request status tabs"
+              value={selectedLevel}
+              onChange={(e, newValue) => setSelectedLevel(newValue)}
               sx={{
-                "& .MuiTab-root": {
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  minHeight: 56,
-                },
+                borderRadius: 2,
+                bgcolor: "background.paper",
+                border: 1,
+                borderColor: "divider",
               }}
             >
-              {Object.entries(levelConfig)
-                .sort(([keyA], [keyB]) => {
-                  // Nếu keyA là 'all', nó nên đứng trước (return -1)
-                  if (keyA === "all") return -1;
-                  // Nếu keyB là 'all', nó nên đứng trước (keyA phải lùi lại, return 1)
-                  if (keyB === "all") return 1;
-                  // Nếu không có 'all', giữ nguyên thứ tự
-                  return 0;
-                })
-                .map(([status, config]) => (
-                  <Tab
-                    key={status}
-                    label={
-                      <Stack direction="row" spacing={1.5} alignItems="center">
-                        {config.icon}
-                        <span>{config.label}</span>
-                        {/* <Badge
-                        badgeContent={
-                          tabContent[status as RequestStatus].state.total
-                        }
-                        color={config.color}
-                        max={99}
-                        sx={{ paddingLeft: 1 }}
-                      /> */}
-                      </Stack>
-                    }
-                    value={status}
-                  />
-                ))}
+              <Tab label="Tất cả" value="all" />
+              <Tab label="Cấp 0" value="0" />
+              <Tab label="Cấp 1" value="1" />
+              <Tab label="Cấp 2" value="2" />
             </Tabs>
+          </Stack>
+          {/* Data Grid */}
+          <Box
+            sx={{
+              height: 650,
+              width: "100%",
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: "divider",
+              overflow: "hidden",
+              "& .MuiDataGrid-root": {
+                border: 0,
+              },
+            }}
+          >
+            <DataGrid
+              rows={rows}
+              columns={columns}
+              loading={franchiseList.loading}
+              checkboxSelection
+              disableRowSelectionOnClick
+              sx={{
+                "& .MuiDataGrid-columnHeaders": {
+                  backgroundColor: alpha(theme.palette.grey[500], 0.04),
+                  borderBottom: `1px solid ${theme.palette.divider}`,
+                },
+                "& .MuiDataGrid-cell": {
+                  borderBottom: `1px solid ${theme.palette.divider}`,
+                },
+                "& .MuiDataGrid-row": {
+                  "&:hover": {
+                    backgroundColor: alpha(theme.palette.action.hover, 0.5),
+                  },
+                },
+                "--DataGrid-overlayHeight": "300px",
+              }}
+            />
           </Box>
-        </Paper>
-      </Grow>
+        </Box>
+      </Fade>
+      {/* Hierarchy Dialog */}
+      <HierarchyDialog
+        open={hierarchyDialogOpen}
+        onClose={() => setHierarchyDialogOpen(false)}
+        franchiseId={selectedFranchise}
+      />
     </Box>
   );
 }

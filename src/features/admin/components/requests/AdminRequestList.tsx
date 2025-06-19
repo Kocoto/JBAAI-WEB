@@ -1,6 +1,9 @@
 // src/features/admin/components/requests/AdminRequestList.tsx
 
+// Core React import
 import React from "react";
+
+// Material UI Components
 import {
   Box,
   Typography,
@@ -26,12 +29,18 @@ import {
   alpha,
   Skeleton,
 } from "@mui/material";
+
+// Material UI Data Grid
 import { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
+
+// Custom Hooks & Components
 import {
   RequestStatus,
   useAdminRequest,
 } from "@/features/admin/hooks/useAdminRequest";
-import RequestDataGrid from "../../../../shared/components/data-grid/RequestDataGrid";
+import RequestDataGrid from "./RequestDataGrid";
+
+// Material UI Icons
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";

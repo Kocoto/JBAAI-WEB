@@ -68,5 +68,9 @@ export const useAdminFranchise = () => {
     franchiseList,
 
     fetchFranchiseList,
+
+    isLoading: franchiseList.loading,
+
+    isError: franchiseList.error !== null,
   };
 };
