@@ -124,15 +124,17 @@ export const useAdminFranchise = () => {
         const response = await FranchiseService.getFranchiseList(
           currentFilters
         );
-
+        console.log("aaaaaaaaa", response);
+        console.log("bbbbbbbbb", response.franchises);
+        console.log("ccccccccc", response.franchises.length);
         setFranchiseList({
-          data: response.data,
+          data: response.franchises,
           loading: false,
           error: null,
           pagination: {
             page: response.Pagination?.currentPage || currentFilters.page || 1,
             limit: currentFilters.limit || 10,
-            total: response.Pagination?.total || response.data.length,
+            total: response.Pagination?.total || response.franchises.length,
             totalPages: response.Pagination?.totalPages || 1,
             hasNextPage: response.Pagination?.hasNextPage || false,
             hasPrevPage: response.Pagination?.hasPrevPage || false,
@@ -255,6 +257,7 @@ export const useAdminFranchise = () => {
         level,
         page: 1, // Reset to first page on filter
       };
+
       setFilters(levelFilters);
       await fetchFranchiseList(levelFilters);
     },

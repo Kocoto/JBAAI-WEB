@@ -155,7 +155,6 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
             "& .MuiDataGrid-columnHeaderTitle": {
               fontWeight: 600,
               fontSize: "0.875rem",
-              // color: theme.palette.text.primary,
               textTransform: "uppercase",
               letterSpacing: "0.5px",
             },
@@ -165,7 +164,6 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
                 color: theme.palette.primary.main,
               },
             },
-
             "& .MuiDataGrid-cell": {
               borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
               fontSize: "0.875rem",
@@ -199,8 +197,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
                   backgroundColor: alpha(theme.palette.primary.main, 0.12),
                 },
               },
-              // Alternating row colors
-              "&:nth-of-type(even)": {
+              "&.even": {
                 backgroundColor: alpha(theme.palette.grey[100], 0.5),
                 ...theme.applyStyles("dark", {
                   backgroundColor: alpha(theme.palette.grey[900], 0.5),
@@ -211,7 +208,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
                 overflow: "visible",
                 lineHeight: "1.5",
               },
-            }, // Footer styling
+            },
             "& .MuiDataGrid-footerContainer": {
               borderTop: `2px solid ${theme.palette.divider}`,
               backgroundColor: alpha(theme.palette.primary.main, 0.02),
@@ -224,7 +221,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
                 fontWeight: 500,
                 color: theme.palette.text.secondary,
               },
-            }, // Scrollbar styling
+            },
             "& .MuiDataGrid-virtualScroller": {
               "&::-webkit-scrollbar": {
                 width: 8,
@@ -242,28 +239,24 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
                 },
               },
             },
-            // Loading overlay
             "& .MuiDataGrid-overlay": {
               backgroundColor: alpha(theme.palette.background.default, 0.9),
               backdropFilter: "blur(4px)",
             },
-            // Sort icon
             "& .MuiDataGrid-sortIcon": {
               color: theme.palette.primary.main,
-            }, // Menu icon
+            },
             "& .MuiDataGrid-menuIcon": {
               "& .MuiSvgIcon-root": {
                 color: theme.palette.text.secondary,
               },
             },
-            // Checkbox styling
             "& .MuiCheckbox-root": {
               color: theme.palette.text.secondary,
               "&.Mui-checked": {
                 color: theme.palette.primary.main,
               },
             },
-            // Density
             "&.MuiDataGrid-root--densityCompact": {
               "& .MuiDataGrid-cell": {
                 paddingTop: 4,

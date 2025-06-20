@@ -114,7 +114,7 @@ export interface FranchiseListFilters {
  * Response from GET /api/v1/admin/franchises
  */
 export interface FranchiseListResponse {
-  data: Franchise[];
+  franchises: Franchise[];
   Pagination?: Pagination;
   error?: ApiError;
 }
