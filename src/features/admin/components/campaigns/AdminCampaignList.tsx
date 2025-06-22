@@ -362,81 +362,118 @@ export default function AdminCampaignList() {
 
   return (
     <Box sx={{ width: "100%", maxWidth: { sm: "100%", md: "1700px" } }}>
-      {/* Header */}
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
+      {/* Header Section */}
+      <Fade in timeout={600}>
         <Box>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            Quản lý chiến dịch
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Quản lý và theo dõi các chiến dịch marketing
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <CampaignIcon
+                sx={{ color: theme.palette.primary.main, fontSize: 32 }}
+              />
+            </Box>
+            <Box>
+              <Typography variant="h4" fontWeight={700}>
+                Quản lý Chiến dịch
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Quản lý và theo dõi các chiến dịch marketing
+              </Typography>
+            </Box>
+          </Stack>
         </Box>
-        <Stack direction="row" spacing={2}>
-          <Tooltip sx={{ display: "none" }} title="Tải xuống báo cáo">
-            <IconButton
-              sx={{
-                display: "none",
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                "&:hover": {
-                  bgcolor: alpha(theme.palette.primary.main, 0.2),
-                },
-              }}
-            >
-              <DownloadIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Làm mới">
-            <IconButton
-              onClick={handleRefresh}
-              sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                "&:hover": {
-                  bgcolor: alpha(theme.palette.primary.main, 0.2),
-                },
-              }}
-            >
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            // onClick={() => setShowCreateDialog(true)}
-            onClick={() => navigate("/admin/campaigns/new")}
-            // disabled
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              boxShadow: 2,
-              "&.Mui-disabled": {
-                backgroundColor: theme.palette.grey[300],
-                color: theme.palette.grey[500],
-              },
-            }}
-          >
-            Tạo chiến dịch mới
-          </Button>
-        </Stack>
-      </Stack>
+      </Fade>
 
-      {/* Main Content */}
-      <Grow in timeout={500}>
+      {/* Filters and Actions */}
+      <Grow in timeout={800}>
         <Paper
           elevation={0}
           sx={{
-            borderRadius: 3,
+            p: 2,
+            mb: 3,
+            borderRadius: 2,
             border: `1px solid ${theme.palette.divider}`,
-            overflow: "hidden",
           }}
         >
-          {/* Tabs */}
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={2}
+            alignItems={{ md: "center" }}
+          >
+            <TextField
+              size="small"
+              placeholder="Tìm kiếm chiến dịch..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ minWidth: 300 }}
+            />
+
+            <FormControl size="small" sx={{ minWidth: 150, display: "none" }}>
+              <InputLabel>Bộ lọc</InputLabel>
+              <Select value="all" label="Bộ lọc">
+                <MenuItem value="all">Tất cả</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Làm mới">
+                <IconButton onClick={handleRefresh} disabled={isLoading}>
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Xuất báo cáo" sx={{ display: "none" }}>
+                <IconButton>
+                  <DownloadIcon />
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => navigate("/admin/campaigns/new")}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  boxShadow: 2,
+                  "&.Mui-disabled": {
+                    backgroundColor: theme.palette.grey[300],
+                    color: theme.palette.grey[500],
+                  },
+                }}
+              >
+                Tạo chiến dịch mới
+              </Button>
+            </Stack>
+          </Stack>
+        </Paper>
+      </Grow>
+
+      {/* Main Content */}
+      <Grow in timeout={1000}>
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 2,
+            overflow: "hidden",
+            border: `1px solid ${theme.palette.divider}`,
+          }}
+        >
           <Box
             sx={{
               borderBottom: 1,
@@ -447,100 +484,59 @@ export default function AdminCampaignList() {
             <Tabs
               value={selectedTab}
               onChange={handleTabChange}
-              variant="scrollable"
-              scrollButtons="auto"
+              variant="fullWidth"
+              aria-label="campaign status tabs"
               sx={{
                 "& .MuiTab-root": {
                   textTransform: "none",
                   fontWeight: 600,
-                  minHeight: 48,
+                  fontSize: "0.9rem",
+                  minHeight: 56,
                 },
               }}
             >
               <Tab
                 label={
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <CampaignIcon />
                     <span>Tất cả</span>
-                    <Badge badgeContent={tabCounts.all} color="primary" />
+                    <Badge
+                      badgeContent={tabCounts.all}
+                      color="primary"
+                      max={99}
+                      sx={{ paddingLeft: 1 }}
+                    />
                   </Stack>
                 }
                 value="all"
               />
-              <Tab
-                label={
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <span>Đang hoạt động</span>
-                    <Badge
-                      badgeContent={tabCounts[CAMPAIGN_STATUS.ACTIVE]}
-                      color="success"
-                    />
-                  </Stack>
-                }
-                value={CAMPAIGN_STATUS.ACTIVE}
-              />
-              <Tab
-                label={
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <span>Tạm dừng</span>
-                    <Badge
-                      badgeContent={tabCounts[CAMPAIGN_STATUS.INACTIVE]}
-                      color="warning"
-                    />
-                  </Stack>
-                }
-                value={CAMPAIGN_STATUS.INACTIVE}
-              />
-              <Tab
-                label={
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <span>Đã hết hạn</span>
-                    <Badge
-                      badgeContent={tabCounts[CAMPAIGN_STATUS.EXPIRED]}
-                      color="error"
-                    />
-                  </Stack>
-                }
-                value={CAMPAIGN_STATUS.EXPIRED}
-              />
+              {Object.entries(statusConfig).map(([status, config]) => (
+                <Tab
+                  key={status}
+                  label={
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      {config.icon}
+                      <span>{config.label}</span>
+                      <Badge
+                        badgeContent={
+                          tabCounts[status as keyof typeof tabCounts]
+                        }
+                        color={config.color}
+                        max={99}
+                        sx={{ paddingLeft: 1 }}
+                      />
+                    </Stack>
+                  }
+                  value={status}
+                />
+              ))}
             </Tabs>
           </Box>
 
-          {/* Filters and Search */}
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <TextField
-                placeholder="Tìm kiếm chiến dịch..."
-                variant="outlined"
-                size="small"
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                sx={{ flex: 1, maxWidth: 400 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Button
-                variant="outlined"
-                startIcon={<FilterListIcon />}
-                sx={{
-                  borderRadius: 2,
-                  textTransform: "none",
-                }}
-              >
-                Bộ lọc
-              </Button>
-            </Stack>
-          </Box>
-
-          {/* Data Grid */}
-          <Box sx={{ height: 600 }}>
+          <Box p={3}>
             {isLoading ? (
               // Loading skeleton
-              <Stack spacing={2} sx={{ p: 2 }}>
+              <Stack spacing={2}>
                 {[1, 2, 3, 4, 5].map((item) => (
                   <Skeleton
                     key={item}
@@ -576,13 +572,13 @@ export default function AdminCampaignList() {
                 </Box>
                 <Typography variant="h6" gutterBottom>
                   {searchTerm
-                    ? "Không tìm thấy chiến dịch phù hợp"
+                    ? "Không tìm thấy kết quả phù hợp"
                     : "Chưa có chiến dịch nào"}
                 </Typography>
                 <Typography variant="body2">
                   {searchTerm
                     ? "Thử tìm kiếm với từ khóa khác"
-                    : "Bắt đầu bằng cách tạo chiến dịch mới"}
+                    : "Các chiến dịch mới sẽ xuất hiện ở đây"}
                 </Typography>
               </Box>
             ) : (

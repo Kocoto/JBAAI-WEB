@@ -104,12 +104,9 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
         }}
       >
         <DataGrid
-          checkboxSelection
+          checkboxSelection={false}
           rows={rows}
           columns={enhancedColumns}
-          getRowClassName={(params) =>
-            params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
-          }
           initialState={{
             pagination: { paginationModel: { pageSize: 20 } },
           }}
