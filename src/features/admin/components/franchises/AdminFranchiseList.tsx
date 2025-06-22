@@ -46,6 +46,7 @@ import {
 } from "@mui/icons-material";
 import React from "react";
 import { viVN } from "@mui/x-data-grid/locales";
+import { useNavigate } from "react-router-dom";
 
 interface TabConfig {
   id: string;
@@ -57,6 +58,7 @@ interface TabConfig {
 
 export default function AdminFranchiseList() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const {
     franchiseList,
     franchiseStatistics,
@@ -355,7 +357,7 @@ export default function AdminFranchiseList() {
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
-            <MenuItem onClick={() => navigateToFranchiseDetail(params.row.id)}>
+            <MenuItem onClick={() => navigate("/admin/campaigns/new")}>
               <AddIcon fontSize="small" sx={{ mr: 1 }} />
               Thêm chiến dịch
             </MenuItem>

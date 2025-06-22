@@ -5,6 +5,7 @@ import NavbarBreadcrumbs from "@/shared/components/ui/NavbarBreadcrumbs";
 import MenuButton from "@/shared/components/ui/MenuButton";
 import ColorModeIconDropdown from "@/shared/components/ui/ColorModeIconDropdown";
 import Search from "@/shared/components/ui/Search";
+import { Box } from "@mui/material";
 
 export default function Header() {
   return (
@@ -23,7 +24,9 @@ export default function Header() {
       <NavbarBreadcrumbs />
       <Stack direction="row" sx={{ gap: 1 }}>
         <Search />
-        <CustomDatePicker />
+        <Box>
+          <CustomDatePicker disabled />
+        </Box>
         <MenuButton showBadge aria-label="Open notifications">
           <NotificationsRoundedIcon />
         </MenuButton>

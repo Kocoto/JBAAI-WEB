@@ -33,6 +33,7 @@ class CampaignServiceClass {
     payload: CreateCampaignPayload
   ): Promise<CreateCampaignResponse> {
     try {
+      console.log("createCampaign payload", payload);
       const response = await apiClient.post<CreateCampaignResponse>(
         this.basePath,
         payload

@@ -44,6 +44,7 @@ import {
   CAMPAIGN_STATUS,
   CampaignStatus,
 } from "@/features/admin/types/campaign.types";
+import { useNavigate } from "react-router-dom";
 
 // Material UI Icons
 import SearchIcon from "@mui/icons-material/Search";
@@ -127,6 +128,8 @@ const formatNumber = (num: number) => {
 
 export default function AdminCampaignList() {
   const theme = useTheme();
+  const navigate = useNavigate();
+
   const {
     campaignList,
     filters,
@@ -404,8 +407,9 @@ export default function AdminCampaignList() {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => setShowCreateDialog(true)}
-            disabled
+            // onClick={() => setShowCreateDialog(true)}
+            onClick={() => navigate("/admin/campaigns/new")}
+            // disabled
             sx={{
               borderRadius: 2,
               textTransform: "none",

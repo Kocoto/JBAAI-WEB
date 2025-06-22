@@ -16,6 +16,7 @@ import SellerDashboard from "../features/seller/pages/SellerDashboard";
 import FranchiseDashboard from "../features/franchise/pages/FranchiseDashboard";
 import DashboardPage from "../features/dashboard/pages/DashboardPage";
 import AdminFranchise from "@/features/admin/pages/AdminFranchise";
+import AdminCreateCampaign from "@/features/admin/pages/AdminCreateCampaign";
 
 function App() {
   return (
@@ -67,7 +68,7 @@ function App() {
         element={
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={["admin"]}>
-              <AdminCampaign />
+              <AdminCreateCampaign />
             </RoleBasedRoute>
           </ProtectedRoute>
         }

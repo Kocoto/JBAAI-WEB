@@ -155,7 +155,9 @@ export interface ApiError {
  * Response from GET /api/v1/admin/campaigns
  */
 export interface CampaignListResponse {
-  data: Campaign[];
+  data: {
+    campaigns: Campaign[];
+  };
   Pagination?: Pagination;
   error?: ApiError;
 }

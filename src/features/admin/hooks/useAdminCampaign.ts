@@ -120,15 +120,15 @@ export const useAdminCampaign = () => {
       try {
         const currentFilters = customFilters || filters;
         const response = await CampaignService.getCampaignList(currentFilters);
-
+        console.log("getCampaignList response", response);
         setCampaignList({
-          data: response.data,
+          data: response.data.campaigns,
           loading: false,
           error: null,
           pagination: {
             page: response.Pagination?.currentPage || currentFilters.page || 1,
             limit: currentFilters.limit || 10,
-            total: response.Pagination?.total || response.data.length,
+            total: response.Pagination?.total || response.data.campaigns.length,
             totalPages: response.Pagination?.totalPages || 1,
             hasNextPage: response.Pagination?.hasNextPage || false,
             hasPrevPage: response.Pagination?.hasPrevPage || false,
