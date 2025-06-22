@@ -32,6 +32,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Menu,
 } from "@mui/material";
 
 // Material UI Data Grid
@@ -64,6 +65,7 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 
 // Status configuration với màu sắc và icon
 const statusConfig = {
@@ -196,27 +198,27 @@ export default function AdminCampaignList() {
   // Định nghĩa columns cho DataGrid
   const columns: GridColDef[] = [
     {
-      field: "icon",
+      field: "avatar",
       headerName: "",
       width: 60,
       sortable: false,
-      renderCell: () => (
+      renderCell: (params: GridRenderCellParams) => (
         <Avatar
           sx={{
-            bgcolor: alpha(theme.palette.primary.main, 0.1),
-            color: theme.palette.primary.main,
             width: 40,
             height: 40,
+            bgcolor: theme.palette.primary.main,
+            fontSize: "0.875rem",
           }}
         >
-          <CampaignIcon />
+          {params.row.franchiseOwnerId?.franchiseName.charAt(0).toUpperCase()}
         </Avatar>
       ),
     },
     {
       field: "campaignName",
       headerName: "Tên chiến dịch",
-      flex: 1,
+      flex: 0.6,
       minWidth: 200,
       renderCell: (params: GridRenderCellParams) => (
         <Box>
@@ -224,7 +226,7 @@ export default function AdminCampaignList() {
             {params.value}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            ID: {params.row._id}
+            ID: {params.row.id.substring(0, 8)}...
           </Typography>
         </Box>
       ),
@@ -233,23 +235,21 @@ export default function AdminCampaignList() {
       field: "franchiseOwner",
       headerName: "Franchise",
       width: 200,
+      flex: 0.6,
       renderCell: (params: GridRenderCellParams) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <PersonIcon fontSize="small" color="action" />
-          <Box>
-            <Typography variant="body2">
-              {params.row.franchiseOwnerId?.userId?.franchiseName || "N/A"}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Level {params.row.franchiseOwnerId?.franchiseLevel || 0}
-            </Typography>
-          </Box>
+        <Box>
+          <Typography variant="body2">
+            {params.row.franchiseOwnerId?.franchiseName || "N/A"}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Level {params.row.franchiseOwnerId?.franchiseLevel || 0}
+          </Typography>
         </Box>
       ),
     },
     {
       field: "totalAllocated",
-      headerName: "Quota phân bổ",
+      headerName: "Tổng lượt sử dụng",
       width: 150,
       renderCell: (params: GridRenderCellParams) => (
         <Box sx={{ textAlign: "center" }}>
@@ -257,7 +257,29 @@ export default function AdminCampaignList() {
             {formatNumber(params.value)}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Còn lại: {formatNumber(params.row.remainingQuota || 0)}
+            Còn lại:{" "}
+            {formatNumber(
+              params.row.totalAllocated - params.row.consumedUses
+            ) || "N/A"}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: "renewalRequirementPercentage",
+      headerName: "Tỉ lệ yêu cầu (%)",
+      width: 180,
+      renderCell: (params: GridRenderCellParams) => (
+        <Box sx={{ textAlign: "center" }}>
+          <Typography variant="body2" fontWeight={600} color="primary">
+            {formatNumber(params.value)}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Đã đạt được:{" "}
+            {formatNumber(
+              (params.row.consumedUses / params.row.totalAllocated) * 100
+            )}
+            %
           </Typography>
         </Box>
       ),
@@ -267,24 +289,20 @@ export default function AdminCampaignList() {
       headerName: "Thời gian",
       width: 200,
       renderCell: (params: GridRenderCellParams) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <CalendarTodayIcon fontSize="small" color="action" />
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Từ: {formatDate(params.row.startDate)}
-            </Typography>
-            <br />
-            <Typography variant="caption" color="text.secondary">
-              Đến: {formatDate(params.row.endDate)}
-            </Typography>
-          </Box>
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+          <Typography variant="body2" fontWeight={600}>
+            Từ: {formatDate(params.row.startDate)}
+          </Typography>
+          <Typography variant="body2" fontWeight={600}>
+            Đến: {formatDate(params.row.endDate)}
+          </Typography>
         </Box>
       ),
     },
     {
       field: "status",
       headerName: "Trạng thái",
-      width: 150,
+      width: 180,
       renderCell: (params: GridRenderCellParams) => (
         <StatusChip status={params.value} />
       ),
@@ -292,47 +310,78 @@ export default function AdminCampaignList() {
     {
       field: "actions",
       headerName: "Thao tác",
-      width: 150,
+      width: 100,
       sortable: false,
-      renderCell: (params: GridRenderCellParams) => (
-        <Stack direction="row" spacing={1}>
-          <Tooltip title="Xem chi tiết">
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params: GridRenderCellParams) => {
+        const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(
+          null
+        );
+        const [selectedCampaignId, setSelectedCampaignId] = React.useState<
+          string | null
+        >(null);
+
+        const handleMenuClick = (
+          event: React.MouseEvent<HTMLElement>,
+          id: string
+        ) => {
+          setAnchorEl(event.currentTarget);
+          setSelectedCampaignId(id);
+          setSelectedCampaign(params.row);
+        };
+
+        const handleMenuClose = () => {
+          setAnchorEl(null);
+          setSelectedCampaignId(null);
+        };
+
+        return (
+          <>
             <IconButton
               size="small"
-              onClick={() => {
-                setSelectedCampaign(params.row);
-                // Handle view details
-              }}
+              onClick={(e) => handleMenuClick(e, params.row.id)}
             >
-              <VisibilityIcon fontSize="small" />
+              <MoreVertIcon />
             </IconButton>
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => {
-                setSelectedCampaign(params.row);
-                // Handle edit
-              }}
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl) && selectedCampaignId === params.row.id}
+              onClose={handleMenuClose}
+              transformOrigin={{ horizontal: "right", vertical: "top" }}
+              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
             >
-              <EditIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => {
-                setSelectedCampaign(params.row);
-                // Handle delete
-              }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      ),
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  // Handle view details
+                }}
+              >
+                <VisibilityIcon fontSize="small" sx={{ mr: 1 }} />
+                Xem chi tiết
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  // Handle edit
+                }}
+              >
+                <EditIcon fontSize="small" sx={{ mr: 1 }} />
+                Chỉnh sửa
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleMenuClose();
+                  // Handle delete
+                }}
+              >
+                <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                Xóa
+              </MenuItem>
+            </Menu>
+          </>
+        );
+      },
     },
   ];
 

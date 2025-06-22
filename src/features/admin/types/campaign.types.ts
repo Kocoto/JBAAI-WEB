@@ -1,5 +1,7 @@
 // src/features/admin/types/campaign.types.ts
 
+import { FranchiseUser } from "./franchise.types";
+
 /**
  * Campaign status enum
  */
@@ -19,17 +21,20 @@ export const CAMPAIGN_STATUS = {
 export interface Campaign {
   _id: string;
   campaignName: string;
-  franchiseOwnerId: string;
+  franchiseOwnerId: FranchiseUser[];
   totalAllocated: number;
+  consumedUses: number;
+  totalRenewed: number;
   startDate: string;
   endDate: string;
-  renewalRequirement: number;
+  renewalRequirementPercentage: number;
   status: CampaignStatus;
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
   deletedAt?: string;
   description?: string;
+  __v?: number;
 }
 
 /**

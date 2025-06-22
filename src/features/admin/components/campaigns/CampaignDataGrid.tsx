@@ -13,6 +13,8 @@ import { DataGrid, GridColDef, GridRowsProp } from "@mui/x-data-grid";
 import { useTheme } from "@mui/material/styles";
 import { SxProps } from "@mui/system";
 import CampaignIcon from "@mui/icons-material/Campaign";
+import { useAdminCampaign } from "../../hooks/useAdminCampaign";
+import { viVN } from "@mui/x-data-grid/locales";
 
 interface CampaignDataGridProps {
   columns: GridColDef[];
@@ -23,6 +25,7 @@ interface CampaignDataGridProps {
 
 export default function CampaignDataGrid(props: CampaignDataGridProps) {
   const theme = useTheme();
+  const { isLoading } = useAdminCampaign();
   const { columns, rows, loading, sx } = props;
   const height = 600;
   const autoHeight = false;
@@ -111,7 +114,13 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
             pagination: { paginationModel: { pageSize: 20 } },
           }}
           pageSizeOptions={[10, 20, 50]}
+          getRowClassName={(params) =>
+            params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
+          }
+          disableRowSelectionOnClick
           disableColumnResize
+          loading={isLoading}
+          localeText={viVN.components.MuiDataGrid.defaultProps.localeText}
           density="comfortable"
           slots={{
             loadingOverlay: CustomLoadingOverlay,
@@ -151,57 +160,137 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
                 "&:focus": {
                   outline: "none",
                 },
-                "&:hover": {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                "&:focus-within": {
+                  outline: `2px solid ${theme.palette.primary.main}`,
+                  outlineOffset: -2,
                 },
               },
-              "& .MuiDataGrid-columnHeaderTitle": {
-                fontWeight: 600,
-                fontSize: "0.875rem",
+              "& .MuiDataGrid-columnHeaderTitleContainer": {
+                justifyContent: "center",
               },
             },
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              // color: theme.palette.text.primary,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            },
+            "& .MuiDataGrid-columnSeparator": {
+              color: theme.palette.divider,
+              "&:hover": {
+                color: theme.palette.primary.main,
+              },
+            },
+
             "& .MuiDataGrid-cell": {
               borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+              fontSize: "0.875rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "12px 16px",
               "&:focus": {
                 outline: "none",
               },
+              "&:focus-within": {
+                outline: `2px solid ${theme.palette.primary.main}`,
+                outlineOffset: -2,
+              },
             },
             "& .MuiDataGrid-row": {
+              transition: "all 0.2s ease-in-out",
+              minHeight: "60px !important",
+              maxHeight: "none !important",
               "&:hover": {
-                backgroundColor: alpha(theme.palette.primary.main, 0.02),
+                backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                transform: "translateY(-1px)",
+                boxShadow: `0 2px 8px ${alpha(
+                  theme.palette.common.black,
+                  0.08
+                )}`,
               },
               "&.Mui-selected": {
-                backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                backgroundColor: alpha(theme.palette.primary.main, 0.08),
                 "&:hover": {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.06),
+                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
                 },
               },
-            },
-            "& .even": {
-              backgroundColor: alpha(theme.palette.grey[50], 0.5),
-            },
+              // Alternating row colors
+              "&:nth-of-type(even)": {
+                backgroundColor: alpha(theme.palette.grey[100], 0.5),
+                ...theme.applyStyles("dark", {
+                  backgroundColor: alpha(theme.palette.grey[900], 0.5),
+                }),
+              },
+              "& .MuiDataGrid-cell": {
+                whiteSpace: "normal",
+                overflow: "visible",
+                lineHeight: "1.5",
+              },
+            }, // Footer styling
             "& .MuiDataGrid-footerContainer": {
               borderTop: `2px solid ${theme.palette.divider}`,
               backgroundColor: alpha(theme.palette.primary.main, 0.02),
             },
+            "& .MuiTablePagination-root": {
+              "& .MuiTablePagination-selectLabel": {
+                fontWeight: 500,
+              },
+              "& .MuiTablePagination-displayedRows": {
+                fontWeight: 500,
+                color: theme.palette.text.secondary,
+              },
+            }, // Scrollbar styling
+            "& .MuiDataGrid-virtualScroller": {
+              "&::-webkit-scrollbar": {
+                width: 8,
+                height: 8,
+              },
+              "&::-webkit-scrollbar-track": {
+                background: alpha(theme.palette.grey[300], 0.3),
+                borderRadius: 4,
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: theme.palette.grey[400],
+                borderRadius: 4,
+                "&:hover": {
+                  background: theme.palette.grey[500],
+                },
+              },
+            },
+            // Loading overlay
+            "& .MuiDataGrid-overlay": {
+              backgroundColor: alpha(theme.palette.background.default, 0.9),
+              backdropFilter: "blur(4px)",
+            },
+            // Sort icon
+            "& .MuiDataGrid-sortIcon": {
+              color: theme.palette.primary.main,
+            }, // Menu icon
+            "& .MuiDataGrid-menuIcon": {
+              "& .MuiSvgIcon-root": {
+                color: theme.palette.text.secondary,
+              },
+            },
+            // Checkbox styling
             "& .MuiCheckbox-root": {
-              color: theme.palette.primary.light,
+              color: theme.palette.text.secondary,
               "&.Mui-checked": {
                 color: theme.palette.primary.main,
               },
             },
-            "& .MuiDataGrid-toolbarContainer": {
-              padding: 2,
-              backgroundColor: alpha(theme.palette.primary.main, 0.02),
-              borderBottom: `1px solid ${theme.palette.divider}`,
-            },
-            // Responsive styles
-            "@media (max-width: 600px)": {
-              "& .MuiDataGrid-columnHeader": {
-                padding: 1,
-              },
+            // Density
+            "&.MuiDataGrid-root--densityCompact": {
               "& .MuiDataGrid-cell": {
-                padding: 1,
+                paddingTop: 4,
+                paddingBottom: 4,
+              },
+            },
+            "&.MuiDataGrid-root--densityStandard": {
+              "& .MuiDataGrid-cell": {
+                paddingTop: 8,
+                paddingBottom: 8,
               },
             },
           }}

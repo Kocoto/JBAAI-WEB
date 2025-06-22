@@ -643,6 +643,11 @@ export default function AdminFranchiseList() {
                     // onPageChange={(newPage) => goToPage(newPage + 1)}
                     // onPageSizeChange={changePageSize}
                     pageSizeOptions={[10, 20, 50]}
+                    getRowClassName={(params) =>
+                      params.indexRelativeToCurrentPage % 2 === 0
+                        ? "even"
+                        : "odd"
+                    }
                     disableRowSelectionOnClick
                     disableColumnResize
                     loading={isLoading}
