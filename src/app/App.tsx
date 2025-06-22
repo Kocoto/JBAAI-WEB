@@ -63,6 +63,16 @@ function App() {
         }
       />
       <Route
+        path="/admin/campaigns/new"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminCampaign />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/franchises"
         element={
           <ProtectedRoute>

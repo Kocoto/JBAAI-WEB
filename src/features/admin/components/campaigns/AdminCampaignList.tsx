@@ -358,7 +358,7 @@ export default function AdminCampaignList() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ width: "100%", maxWidth: { sm: "100%", md: "1700px" } }}>
       {/* Header */}
       <Stack
         direction="row"
@@ -375,9 +375,10 @@ export default function AdminCampaignList() {
           </Typography>
         </Box>
         <Stack direction="row" spacing={2}>
-          <Tooltip title="Tải xuống báo cáo">
+          <Tooltip sx={{ display: "none" }} title="Tải xuống báo cáo">
             <IconButton
               sx={{
+                display: "none",
                 bgcolor: alpha(theme.palette.primary.main, 0.1),
                 "&:hover": {
                   bgcolor: alpha(theme.palette.primary.main, 0.2),
@@ -404,11 +405,16 @@ export default function AdminCampaignList() {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setShowCreateDialog(true)}
+            disabled
             sx={{
               borderRadius: 2,
               textTransform: "none",
               fontWeight: 600,
               boxShadow: 2,
+              "&.Mui-disabled": {
+                backgroundColor: theme.palette.grey[300],
+                color: theme.palette.grey[500],
+              },
             }}
           >
             Tạo chiến dịch mới

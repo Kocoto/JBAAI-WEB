@@ -457,7 +457,7 @@ export const useAdminCampaign = () => {
    * Navigate to create campaign
    */
   const navigateToCreateCampaign = useCallback(() => {
-    navigate("/admin/campaigns/create");
+    navigate("/admin/campaigns/new");
   }, [navigate]);
 
   /**
@@ -489,7 +489,7 @@ export const useAdminCampaign = () => {
 
   return {
     // State
-    campaignList: campaignList.data || [],
+    campaignList: Array.isArray(campaignList.data) ? campaignList.data : [],
     selectedCampaign,
     campaignStatistics: campaignStatistics.data,
     campaignPerformance: campaignPerformance.data,
