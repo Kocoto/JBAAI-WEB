@@ -489,7 +489,7 @@ export const useAdminCampaign = () => {
 
   return {
     // State
-    campaignList: campaignList.data,
+    campaignList: campaignList.data || [],
     selectedCampaign,
     campaignStatistics: campaignStatistics.data,
     campaignPerformance: campaignPerformance.data,

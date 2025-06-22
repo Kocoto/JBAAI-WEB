@@ -3,7 +3,8 @@
 /**
  * Campaign status enum
  */
-type CampaignStatus = "active" | "inactive" | "expired" | "deleted";
+export type CampaignStatus = "active" | "inactive" | "expired" | "deleted";
+
 // 2. (Tùy chọn nhưng khuyên dùng) Tạo một object để dễ gọi trong code
 export const CAMPAIGN_STATUS = {
   ACTIVE: "active",
