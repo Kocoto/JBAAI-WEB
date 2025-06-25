@@ -1,4 +1,4 @@
-// src/shared/hooks/useDashboardNavigation.ts
+// src/shared/hooks/useDashboardNavigation.tsx
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/features/auth/context/AuthProvider";
@@ -13,6 +13,13 @@ import BusinessIcon from "@mui/icons-material/Business";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import SettingsIcon from "@mui/icons-material/Settings";
 import RequestPageIcon from "@mui/icons-material/RequestPage";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import GroupIcon from "@mui/icons-material/Group";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import LocalActivityIcon from "@mui/icons-material/LocalActivity";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 
 // Định nghĩa kiểu cho navigation item
 export interface NavigationItem {
@@ -111,7 +118,6 @@ export const useDashboardNavigation = () => {
             path: "/admin/campaigns",
             icon: <CampaignIcon />,
             description: "Quản lý chiến dịch marketing",
-            // badge: 3, // Số lượng chiến dịch mới
           },
           {
             id: "reports",
@@ -165,7 +171,7 @@ export const useDashboardNavigation = () => {
             path: "/seller/orders",
             icon: <AssessmentIcon />,
             description: "Quản lý đơn hàng",
-            badge: 5, // Số đơn hàng mới
+            badge: 5,
           },
           {
             id: "campaigns",
@@ -190,35 +196,131 @@ export const useDashboardNavigation = () => {
             label: "Dashboard",
             path: "/franchise/dashboard",
             icon: <DashboardIcon />,
-            description: "Tổng quan chi nhánh",
+            description: "Tổng quan franchise",
           },
           {
-            id: "branches",
-            label: "Chi nhánh",
-            path: "/franchise/branches",
-            icon: <BusinessIcon />,
-            description: "Quản lý chi nhánh",
+            id: "quota",
+            label: "Quản lý Quota",
+            path: "/franchise/quota",
+            icon: <AccountBalanceWalletIcon />,
+            description: "Quản lý hạn mức mời dùng thử",
+            children: [
+              {
+                id: "my-quota",
+                label: "Quota của tôi",
+                path: "/franchise/quota/my-quota",
+                icon: <AccountBalanceWalletIcon fontSize="small" />,
+              },
+              {
+                id: "allocate-quota",
+                label: "Cấp phát Quota",
+                path: "/franchise/quota/allocate",
+                icon: <CardGiftcardIcon fontSize="small" />,
+              },
+              {
+                id: "quota-history",
+                label: "Lịch sử cấp phát",
+                path: "/franchise/quota/history",
+                icon: <AssessmentIcon fontSize="small" />,
+              },
+            ],
           },
           {
-            id: "employees",
-            label: "Nhân viên",
-            path: "/franchise/employees",
-            icon: <PeopleIcon />,
-            description: "Quản lý nhân viên",
+            id: "franchises",
+            label: "Franchise con",
+            path: "/franchise/children",
+            icon: <GroupIcon />,
+            description: "Quản lý franchise con",
+            children: [
+              {
+                id: "child-list",
+                label: "Danh sách Franchise con",
+                path: "/franchise/children/list",
+                icon: <GroupIcon fontSize="small" />,
+              },
+              {
+                id: "hierarchy",
+                label: "Cây phân cấp",
+                path: "/franchise/children/hierarchy",
+                icon: <AccountTreeIcon fontSize="small" />,
+              },
+            ],
           },
           {
-            id: "inventory",
-            label: "Kho hàng",
-            path: "/franchise/inventory",
-            icon: <InventoryIcon />,
-            description: "Quản lý kho",
+            id: "invitations",
+            label: "Mã mời",
+            path: "/franchise/invitations",
+            icon: <LocalActivityIcon />,
+            description: "Quản lý mã mời dùng thử",
+            children: [
+              {
+                id: "invitation-codes",
+                label: "Danh sách mã mời",
+                path: "/franchise/invitations/codes",
+                icon: <LocalActivityIcon fontSize="small" />,
+              },
+              {
+                id: "generate-code",
+                label: "Tạo mã mời",
+                path: "/franchise/invitations/generate",
+                icon: <CardGiftcardIcon fontSize="small" />,
+              },
+            ],
+          },
+          {
+            id: "performance",
+            label: "Hiệu suất",
+            path: "/franchise/performance",
+            icon: <TrendingUpIcon />,
+            description: "Báo cáo hiệu suất",
+            children: [
+              {
+                id: "my-performance",
+                label: "Hiệu suất của tôi",
+                path: "/franchise/performance/my-performance",
+                icon: <BarChartIcon fontSize="small" />,
+              },
+              {
+                id: "children-performance",
+                label: "Hiệu suất Franchise con",
+                path: "/franchise/performance/children",
+                icon: <AssessmentIcon fontSize="small" />,
+              },
+              {
+                id: "hierarchy-performance",
+                label: "Hiệu suất toàn bộ",
+                path: "/franchise/performance/hierarchy",
+                icon: <AccountTreeIcon fontSize="small" />,
+              },
+            ],
           },
           {
             id: "reports",
             label: "Báo cáo",
             path: "/franchise/reports",
             icon: <AssessmentIcon />,
-            description: "Báo cáo chi nhánh",
+            description: "Báo cáo tổng hợp",
+            children: [
+              {
+                id: "quota-utilization",
+                label: "Sử dụng Quota",
+                path: "/franchise/reports/quota-utilization",
+                icon: <AccountBalanceWalletIcon fontSize="small" />,
+              },
+              {
+                id: "export-reports",
+                label: "Xuất báo cáo",
+                path: "/franchise/reports/export",
+                icon: <AssessmentIcon fontSize="small" />,
+              },
+            ],
+          },
+          {
+            id: "profile",
+            label: "Thông tin",
+            path: "/franchise/profile",
+            icon: <AccountCircleIcon />,
+            description: "Thông tin franchise",
           },
         ];
 
