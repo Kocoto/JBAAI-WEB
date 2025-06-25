@@ -17,6 +17,7 @@ import FranchiseDashboard from "../features/franchise/pages/FranchiseDashboard";
 import DashboardPage from "../features/dashboard/pages/DashboardPage";
 import AdminFranchise from "@/features/admin/pages/AdminFranchise";
 import AdminCreateCampaign from "@/features/admin/pages/AdminCreateCampaign";
+import FranchiseInvitationCodes from "@/features/franchise/pages/FranchiseInvitationCodes";
 
 function App() {
   return (
@@ -31,7 +32,6 @@ function App() {
         }
       />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
-
       {/* Root route - redirect based on role */}
       <Route
         path="/"
@@ -41,7 +41,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-
       {/* Admin routes */}
       <Route
         path="/admin/dashboard"
@@ -93,7 +92,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-
       {/* Seller routes */}
       <Route
         path="/seller/dashboard"
@@ -105,7 +103,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-
       {/* Franchise routes */}
       <Route
         path="/franchise/dashboard"
@@ -116,8 +113,17 @@ function App() {
             </RoleBasedRoute>
           </ProtectedRoute>
         }
+      />{" "}
+      <Route
+        path="/franchise/invitations/codes"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseInvitationCodes />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
       />
-
       {/* User routes (nếu cần) */}
       <Route
         path="/user/dashboard"
@@ -129,7 +135,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
