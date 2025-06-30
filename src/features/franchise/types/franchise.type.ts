@@ -97,13 +97,18 @@ export interface FranchiseStatistics {
 export interface InvitationCode {
   _id: string;
   code: string;
+  codeType: "USER_TRIAL" | "FRANCHISE_HIERARCHY";
   createdByUserId: string;
-  campaignId: string;
-  usedByUserId?: string;
   status: "active" | "used" | "expired";
+  statistics: {
+    actualUsageCount: number;
+    lastInvitedUser: string | null;
+    lastUsedDate: string | null;
+    totalCumulativeUses: number;
+  };
+  currentLedgerInfo: any | null;
   createdAt: string;
-  usedAt?: string;
-  expiresAt?: string;
+  updatedAt: string;
 }
 
 /**
