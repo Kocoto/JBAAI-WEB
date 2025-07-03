@@ -29,6 +29,7 @@ export interface Campaign {
   endDate: string;
   renewalRequirementPercentage: number;
   status: CampaignStatus;
+  packageId: string;
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -47,6 +48,7 @@ export interface CreateCampaignPayload {
   startDate: string;
   endDate: string;
   renewalRequirement: number;
+  packageId: string;
   description?: string;
 }
 
@@ -58,6 +60,7 @@ export interface UpdateCampaignPayload {
   totalAllocated?: number;
   renewalRequirement?: number;
   endDate?: string;
+  packageId?: string;
   description?: string;
 }
 

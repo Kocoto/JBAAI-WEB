@@ -39,8 +39,8 @@ class CampaignServiceClass {
         payload
       );
       return response.data;
-    } catch (error) {
-      console.error("Error creating campaign:", error);
+    } catch (error: any) {
+      console.error("Error creating campaign:", error.response.data.message);
       throw error;
     }
   }
@@ -88,8 +88,11 @@ class CampaignServiceClass {
 
       const response = await apiClient.get<CampaignListResponse>(endpoint);
       return response.data;
-    } catch (error) {
-      console.error("Error fetching campaign list:", error);
+    } catch (error: any) {
+      console.error(
+        "Error fetching campaign list:",
+        error.response.data.message
+      );
       throw error;
     }
   }
@@ -105,8 +108,11 @@ class CampaignServiceClass {
         `${this.basePath}/${campaignId}`
       );
       return response.data;
-    } catch (error) {
-      console.error("Error fetching campaign by ID:", error);
+    } catch (error: any) {
+      console.error(
+        "Error fetching campaign by ID:",
+        error.response.data.message
+      );
       throw error;
     }
   }
@@ -127,8 +133,8 @@ class CampaignServiceClass {
         payload
       );
       return response.data;
-    } catch (error) {
-      console.error("Error updating campaign:", error);
+    } catch (error: any) {
+      console.error("Error updating campaign:", error.response.data.message);
       throw error;
     }
   }
@@ -150,8 +156,11 @@ class CampaignServiceClass {
         payload
       );
       return response.data;
-    } catch (error) {
-      console.error("Error changing campaign status:", error);
+    } catch (error: any) {
+      console.error(
+        "Error changing campaign status:",
+        error.response.data.message
+      );
       throw error;
     }
   }
@@ -167,8 +176,8 @@ class CampaignServiceClass {
         `${this.basePath}/${campaignId}`
       );
       return response.data;
-    } catch (error) {
-      console.error("Error deleting campaign:", error);
+    } catch (error: any) {
+      console.error("Error deleting campaign:", error.response.data.message);
       throw error;
     }
   }
@@ -183,8 +192,11 @@ class CampaignServiceClass {
         `${this.basePath}/statistics`
       );
       return response.data;
-    } catch (error) {
-      console.error("Error fetching campaign statistics:", error);
+    } catch (error: any) {
+      console.error(
+        "Error fetching campaign statistics:",
+        error.response.data.message
+      );
       throw error;
     }
   }
@@ -202,8 +214,11 @@ class CampaignServiceClass {
         `${this.basePath}/${campaignId}/performance-summary`
       );
       return response.data;
-    } catch (error) {
-      console.error("Error fetching campaign performance summary:", error);
+    } catch (error: any) {
+      console.error(
+        "Error fetching campaign performance summary:",
+        error.response.data.message
+      );
       throw error;
     }
   }

@@ -35,11 +35,13 @@ import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import EventIcon from "@mui/icons-material/Event";
 import DescriptionIcon from "@mui/icons-material/Description";
 import InfoIcon from "@mui/icons-material/Info";
+import Inventory2Icon from "@mui/icons-material/Inventory2";
 
 // Hooks & Types
 import { useAdminCampaign } from "@/features/admin/hooks/useAdminCampaign";
 import { useAdminFranchise } from "@/features/admin/hooks/useAdminFranchise";
 import { CreateCampaignPayload } from "@/features/admin/types/campaign.types";
+import apiClient from "@/shared/services/api/apiClient";
 
 interface AdminCampaignFormProps {
   onCancel?: () => void;
@@ -53,6 +55,20 @@ export default function AdminCampaignForm({
   const navigate = useNavigate();
   const { createCampaign, isCreating } = useAdminCampaign();
   const { franchiseList, fetchFranchiseList, isLoading } = useAdminFranchise();
+  const [packageList, setPackageList] = useState<any[]>([]);
+
+  const fetchPackageList = async () => {
+    try {
+      const response = await apiClient.post("/api/v1/package");
+      console.log("đã tới đây: ", response.data);
+      setPackageList(response.data);
+    } catch (error) {
+      console.error("Error fetching package list:", error);
+    }
+  };
+  useEffect(() => {
+    fetchPackageList();
+  }, []);
 
   // Form state
   const [formData, setFormData] = useState<CreateCampaignPayload>({
@@ -62,6 +78,7 @@ export default function AdminCampaignForm({
     startDate: dayjs().toISOString(),
     endDate: dayjs().add(30, "day").toISOString(),
     renewalRequirement: 0,
+    packageId: "",
     description: "",
   });
 
@@ -108,6 +125,21 @@ export default function AdminCampaignForm({
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.franchiseOwnerId;
+        return newErrors;
+      });
+    }
+  };
+
+  // Handle select change for package
+  const handlePackageSelectChange = (event: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      packageId: event.target.value,
+    }));
+    if (validationErrors.packageId) {
+      setValidationErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.packageId;
         return newErrors;
       });
     }
@@ -252,8 +284,43 @@ export default function AdminCampaignForm({
               />
             </Grid>
 
-            {/* Franchise Owner */}
+            {/* Package */}
             <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl
+                fullWidth
+                error={!!validationErrors.packageId}
+                required
+                sx={{ "& .MuiInputBase-root": { height: "56px" } }}
+              >
+                <InputLabel id="package-select-label">Package</InputLabel>
+                <Select
+                  labelId="package-select-label"
+                  value={formData.packageId}
+                  label="Package"
+                  onChange={handlePackageSelectChange}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <Inventory2Icon color="action" />
+                    </InputAdornment>
+                  }
+                >
+                  {packageList.length === 0 ? (
+                    <MenuItem disabled>Không có package nào</MenuItem>
+                  ) : (
+                    packageList.map((packageItem) => (
+                      <MenuItem key={packageItem._id} value={packageItem._id}>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography>{packageItem.packageName}</Typography>
+                        </Stack>
+                      </MenuItem>
+                    ))
+                  )}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Franchise Owner */}
+            <Grid size={{ xs: 12, md: 12 }}>
               <FormControl
                 fullWidth
                 error={!!validationErrors.franchiseOwnerId}

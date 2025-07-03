@@ -18,6 +18,7 @@ import DashboardPage from "../features/dashboard/pages/DashboardPage";
 import AdminFranchise from "@/features/admin/pages/AdminFranchise";
 import AdminCreateCampaign from "@/features/admin/pages/AdminCreateCampaign";
 import FranchiseInvitationCodes from "@/features/franchise/pages/FranchiseInvitationCodes";
+import FranchiseAllocateQuota from "@/features/franchise/pages/FranchiseAllocateQuota";
 
 function App() {
   return (
@@ -120,6 +121,16 @@ function App() {
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={["franchise"]}>
               <FranchiseInvitationCodes />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/quota/allocate"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseAllocateQuota />
             </RoleBasedRoute>
           </ProtectedRoute>
         }

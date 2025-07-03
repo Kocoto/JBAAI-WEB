@@ -26,9 +26,12 @@ const getRequestsByStatus = async (
 
     // Return the response data
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     // Log any errors that occur during the request
-    console.error("Error fetching pending requests:", error);
+    console.error(
+      "Error fetching pending requests:",
+      error.response.data.message
+    );
     throw error;
   }
 };
@@ -40,8 +43,8 @@ const acceptRequest = async (
     const endpoint = `/api/v1/upgrade-request/${requestId}/assign-seller`;
     const response = await apiClient.put(endpoint);
     return response.data;
-  } catch (error) {
-    console.error("Error accepting request:", error);
+  } catch (error: any) {
+    console.error("Error accepting request:", error.response.data.message);
     throw error;
   }
 };
@@ -51,8 +54,8 @@ const getRequestsById = async (): Promise<GetRequestResponse> => {
     const endpoint = `/api/v1/upgrade-request/get-by-seller-id/reviewing`;
     const response = await apiClient.get(endpoint);
     return response.data;
-  } catch (error) {
-    console.error("Error accepting request:", error);
+  } catch (error: any) {
+    console.error("Error accepting request:", error.response.data.message);
     throw error;
   }
 };
@@ -62,8 +65,8 @@ const approveRequest = async (requestId: string) => {
     const endpoint = `/api/v1/upgrade-request/${requestId}/approve`;
     const response = await apiClient.post(endpoint);
     return response.data;
-  } catch (error) {
-    console.error("Error accepting request:", error);
+  } catch (error: any) {
+    console.error("Error accepting request:", error.response.data.message);
     throw error;
   }
 };

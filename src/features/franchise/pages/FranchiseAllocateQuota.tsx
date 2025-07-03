@@ -1,10 +1,10 @@
-// import BaseDashboardLayout from "@/shared/components/layout/BaseDashboardLayout";
-// import QuotaCard from "@/features/franchise/components/quota/QuotaCard";
+import BaseDashboardLayout from "@/shared/components/layout/BaseDashboardLayout";
+import AllocateQuota from "@/features/franchise/components/AllocateQuotas/AllocateQuota";
 
-// export default function FranchiseAllocateQuota() {
-//   return (
-//     <BaseDashboardLayout>
-//       <QuotaCard />
-//     </BaseDashboardLayout>
-//   );
-// }
+export default function FranchiseAllocateQuota() {
+  return (
+    <BaseDashboardLayout>
+      <AllocateQuota />
+    </BaseDashboardLayout>
+  );
+}

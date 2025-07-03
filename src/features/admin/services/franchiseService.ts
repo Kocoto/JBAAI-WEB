@@ -59,8 +59,11 @@ class FranchiseServiceClass {
       //   response.data
       // );
       return response.data.data;
-    } catch (error) {
-      console.error("Error fetching franchise list:", error);
+    } catch (error: any) {
+      console.error(
+        "Error fetching franchise list:",
+        error.response.data.message
+      );
       throw error;
     }
   }
@@ -76,8 +79,11 @@ class FranchiseServiceClass {
         `${this.basePath}/${franchiseId}`
       );
       return response.data.data;
-    } catch (error) {
-      console.error("Error fetching franchise by ID:", error);
+    } catch (error: any) {
+      console.error(
+        "Error fetching franchise by ID:",
+        error.response.data.message
+      );
       throw error;
     }
   }
@@ -95,8 +101,11 @@ class FranchiseServiceClass {
         `${this.basePath}/${userId}/hierarchy`
       );
       return response.data;
-    } catch (error) {
-      console.error("Error fetching franchise hierarchy:", error);
+    } catch (error: any) {
+      console.error(
+        "Error fetching franchise hierarchy:",
+        error.response.data.message
+      );
       throw error;
     }
   }
@@ -111,8 +120,11 @@ class FranchiseServiceClass {
         `${this.basePath}/statistics`
       );
       return response.data;
-    } catch (error) {
-      console.error("Error fetching franchise statistics:", error);
+    } catch (error: any) {
+      console.error(
+        "Error fetching franchise statistics:",
+        error.response.data.message
+      );
       throw error;
     }
   }
@@ -133,8 +145,11 @@ class FranchiseServiceClass {
         { status }
       );
       return response.data.data;
-    } catch (error) {
-      console.error("Error updating franchise status:", error);
+    } catch (error: any) {
+      console.error(
+        "Error updating franchise status:",
+        error.response.data.message
+      );
       throw error;
     }
   }
@@ -187,8 +202,11 @@ class FranchiseServiceClass {
         `${this.basePath}/${franchiseId}/quota-details`
       );
       return response.data;
-    } catch (error) {
-      console.error("Error fetching franchise quota details:", error);
+    } catch (error: any) {
+      console.error(
+        "Error fetching franchise quota details:",
+        error.response.data.message
+      );
       throw error;
     }
   }
