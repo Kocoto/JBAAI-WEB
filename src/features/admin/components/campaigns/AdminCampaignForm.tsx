@@ -20,6 +20,8 @@ import {
   IconButton,
   Tooltip,
   Stack,
+  Chip,
+  ChipProps,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -36,17 +38,47 @@ import EventIcon from "@mui/icons-material/Event";
 import DescriptionIcon from "@mui/icons-material/Description";
 import InfoIcon from "@mui/icons-material/Info";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import CategoryIcon from "@mui/icons-material/Category";
+import PlaceIcon from "@mui/icons-material/Place";
 
 // Hooks & Types
 import { useAdminCampaign } from "@/features/admin/hooks/useAdminCampaign";
 import { useAdminFranchise } from "@/features/admin/hooks/useAdminFranchise";
 import { CreateCampaignPayload } from "@/features/admin/types/campaign.types";
 import apiClient from "@/shared/services/api/apiClient";
+import { useAdminPackage } from "../../hooks/useAdminPackage";
 
 interface AdminCampaignFormProps {
   onCancel?: () => void;
   onSuccess?: (campaign: any) => void;
 }
+
+interface InfoChipProps {
+  icon: React.ReactElement;
+  label: string | number;
+  // Lấy chính xác kiểu 'color' từ định nghĩa của MUI Chip
+  color?: ChipProps["color"];
+}
+
+// --- Component phụ: Hiển thị một "chip" thông tin ---
+const InfoChip: React.FC<InfoChipProps> = ({
+  icon,
+  label,
+  color = "default",
+}) => (
+  <Chip
+    icon={icon}
+    label={label}
+    color={color}
+    size="small"
+    variant="outlined"
+    sx={{
+      borderWidth: 1.5,
+      fontWeight: "medium",
+    }}
+  />
+);
 
 export default function AdminCampaignForm({
   onCancel,
@@ -55,22 +87,13 @@ export default function AdminCampaignForm({
   const navigate = useNavigate();
   const { createCampaign, isCreating } = useAdminCampaign();
   const { franchiseList, fetchFranchiseList, isLoading } = useAdminFranchise();
-  const [packageList, setPackageList] = useState<any[]>([]);
+  const { packageList, fetchPackageList, isLoadingPackages } =
+    useAdminPackage();
 
-  const fetchPackageList = async () => {
-    try {
-      const response = await apiClient.post("/api/v1/package");
-      console.log("đã tới đây: ", response.data);
-      setPackageList(response.data);
-    } catch (error) {
-      console.error("Error fetching package list:", error);
-    }
-  };
   useEffect(() => {
     fetchPackageList();
-  }, []);
+  }, [fetchPackageList]);
 
-  // Form state
   const [formData, setFormData] = useState<CreateCampaignPayload>({
     campaignName: "",
     franchiseOwnerId: "",
@@ -92,7 +115,6 @@ export default function AdminCampaignForm({
   useEffect(() => {
     fetchFranchiseList();
   }, [fetchFranchiseList]);
-
   // Handle text field changes
   const handleChange =
     (field: keyof CreateCampaignPayload) =>
@@ -303,14 +325,96 @@ export default function AdminCampaignForm({
                       <Inventory2Icon color="action" />
                     </InputAdornment>
                   }
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 400, // Giới hạn chiều cao của dropdown
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.1)", // Thêm bóng đổ cho menu
+                      },
+                    },
+                  }}
                 >
-                  {packageList.length === 0 ? (
+                  {isLoadingPackages ? (
+                    <MenuItem disabled>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={2}
+                        p={1}
+                      >
+                        <CircularProgress size={24} />
+                        <Typography>Đang tải danh sách gói...</Typography>
+                      </Stack>
+                    </MenuItem>
+                  ) : packageList.length === 0 ? (
                     <MenuItem disabled>Không có package nào</MenuItem>
                   ) : (
-                    packageList.map((packageItem) => (
-                      <MenuItem key={packageItem._id} value={packageItem._id}>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography>{packageItem.packageName}</Typography>
+                    packageList.map((pkg) => (
+                      <MenuItem
+                        value={pkg._id.toString()}
+                        sx={{
+                          // Thêm padding và border-bottom để phân tách các item
+                          py: 2,
+                          borderBottom: "1px ",
+                          "&:last-child": {
+                            borderBottom: "none", // Bỏ border cho item cuối cùng
+                          },
+                          // Hiệu ứng khi hover
+                          "&:hover": {
+                            backgroundColor: "rgba(0, 123, 255, 0.05)",
+                          },
+                          // Hiệu ứng khi được chọn
+                          "&.Mui-selected": {
+                            backgroundColor: "rgba(0, 123, 255, 0.1)",
+                            fontWeight: "bold",
+                          },
+                        }}
+                      >
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          width="100%"
+                        >
+                          {/* Phần thông tin bên trái */}
+                          <Box>
+                            <Typography
+                              variant="subtitle1"
+                              fontWeight="bold"
+                              color="primary.main"
+                              gutterBottom
+                            >
+                              {pkg.name}
+                            </Typography>
+                            <Stack direction="row" spacing={1} flexWrap="wrap">
+                              <InfoChip
+                                icon={<CalendarTodayIcon fontSize="small" />}
+                                label={`${pkg.duration} ngày`}
+                                color="info"
+                              />
+                              <InfoChip
+                                icon={<CategoryIcon fontSize="small" />}
+                                label={pkg.type}
+                                color="success"
+                              />
+                              <InfoChip
+                                icon={<PlaceIcon fontSize="small" />}
+                                label={pkg.location}
+                                color="warning"
+                              />
+                            </Stack>
+                          </Box>
+
+                          {/* Phần giá tiền bên phải */}
+                          {/* <Box textAlign="right" ml={2}>
+                            <Typography
+                              variant="h6"
+                              color="text.primary"
+                              fontWeight="600"
+                            >
+                              {formatCurrency(pkg.price)}
+                            </Typography>
+                          </Box> */}
                         </Stack>
                       </MenuItem>
                     ))
