@@ -41,6 +41,10 @@ import Inventory2Icon from "@mui/icons-material/Inventory2";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import CategoryIcon from "@mui/icons-material/Category";
 import PlaceIcon from "@mui/icons-material/Place";
+import EmailIcon from "@mui/icons-material/Email";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import BusinessIcon from "@mui/icons-material/Business";
+import StarIcon from "@mui/icons-material/Star";
 
 // Hooks & Types
 import { useAdminCampaign } from "@/features/admin/hooks/useAdminCampaign";
@@ -442,11 +446,26 @@ export default function AdminCampaignForm({
                       <PersonIcon color="action" />
                     </InputAdornment>
                   }
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        maxHeight: 400,
+                        boxShadow: "0 2px 20px rgba(0,0,0,0.1)",
+                      },
+                    },
+                  }}
                 >
                   {isLoading ? (
                     <MenuItem disabled>
-                      <CircularProgress size={20} sx={{ mr: 1 }} />
-                      Đang tải...
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={2}
+                        p={1}
+                      >
+                        <CircularProgress size={24} />
+                        <Typography>Đang tải danh sách franchise...</Typography>
+                      </Stack>
                     </MenuItem>
                   ) : franchiseList.length === 0 ? (
                     <MenuItem disabled>Không có franchise nào</MenuItem>
@@ -455,14 +474,67 @@ export default function AdminCampaignForm({
                       <MenuItem
                         key={franchise._id}
                         value={franchise.userId._id.toString()}
+                        sx={{
+                          // Thêm padding và border-bottom để phân tách các item
+                          py: 2,
+                          borderBottom: "1px solid rgba(0,0,0,0.08)",
+                          "&:last-child": {
+                            borderBottom: "none", // Bỏ border cho item cuối cùng
+                          },
+                          // Hiệu ứng khi hover
+                          "&:hover": {
+                            backgroundColor: "rgba(0, 123, 255, 0.05)",
+                          },
+                          // Hiệu ứng khi được chọn
+                          "&.Mui-selected": {
+                            backgroundColor: "rgba(0, 123, 255, 0.1)",
+                            fontWeight: "bold",
+                          },
+                        }}
                       >
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography>
-                            {franchise.userId.franchiseName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            (Level {franchise.franchiseLevel})
-                          </Typography>
+                        <Stack
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          width="100%"
+                        >
+                          {/* Phần thông tin bên trái */}
+                          <Box>
+                            <Typography
+                              variant="subtitle1"
+                              fontWeight="bold"
+                              color="primary.main"
+                              gutterBottom
+                            >
+                              {franchise.userId.franchiseName}
+                            </Typography>
+                            <Stack direction="row" spacing={1} flexWrap="wrap">
+                              <InfoChip
+                                icon={<AccountCircleIcon fontSize="small" />}
+                                label={franchise.userId.username}
+                                color="info"
+                              />
+                              <InfoChip
+                                icon={<EmailIcon fontSize="small" />}
+                                label={franchise.userId.email}
+                                color="success"
+                              />
+                              <InfoChip
+                                icon={<StarIcon fontSize="small" />}
+                                label={`Level ${franchise.franchiseLevel}`}
+                                color="warning"
+                              />
+                            </Stack>
+                          </Box>
+
+                          {/* Phần status bên phải */}
+                          <Box textAlign="right" ml={2}>
+                            <InfoChip
+                              icon={<BusinessIcon fontSize="small" />}
+                              label="Franchise"
+                              color="primary"
+                            />
+                          </Box>
                         </Stack>
                       </MenuItem>
                     ))
@@ -518,12 +590,12 @@ export default function AdminCampaignForm({
                 error={!!validationErrors.renewalRequirement}
                 helperText={
                   validationErrors.renewalRequirement ||
-                  "Phần trăm người dùng cần quay lại để gia hạn"
+                  "Phầm trăm người dùng cần quay lại để gia hạn"
                 }
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Tooltip title="Phần trăm người dùng cần quay lại để franchise được gia hạn quota">
+                      <Tooltip title="Phầm trăm người dùng cần quay lại để franchise được gia hạn quota">
                         <IconButton size="small">
                           <InfoIcon fontSize="small" />
                         </IconButton>

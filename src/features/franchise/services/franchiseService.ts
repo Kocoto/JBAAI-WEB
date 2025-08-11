@@ -16,6 +16,7 @@ import {
   ApiResponse,
   PaginatedResponse,
   ChildFranchise,
+  ApiDetailResponse,
 } from "../types/franchise.type";
 
 /**
@@ -28,9 +29,10 @@ class FranchiseService {
    * Get current franchise details
    * @returns Promise<ApiResponse<FranchiseDetails>>
    */
-  async getMyFranchiseDetails(): Promise<ApiResponse<FranchiseDetails>> {
+  async getMyFranchiseDetails(): Promise<ApiResponse<ApiDetailResponse>> {
     try {
       const response = await apiClient.get(`${this.basePath}/me/details`);
+      console.log("sssssssssssss: ", response);
       return response.data;
     } catch (error) {
       console.error("Error fetching franchise details:", error);
@@ -371,6 +373,16 @@ class FranchiseService {
       return response.data;
     } catch (error) {
       console.error("Error validating invitation code:", error);
+      throw error;
+    }
+  }
+
+  async activeCode() {
+    try {
+      const response = await apiClient.post(`${this.basePath}/code/active`);
+      return response.data;
+    } catch (error) {
+      console.error("Error active code:", error);
       throw error;
     }
   }

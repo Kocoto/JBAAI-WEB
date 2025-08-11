@@ -14,6 +14,16 @@ import {
   Tooltip,
   Divider,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
 } from "@mui/material";
 import LocalActivityIcon from "@mui/icons-material/LocalActivity";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -23,19 +33,31 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import UpdateIcon from "@mui/icons-material/Update";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import DownloadIcon from "@mui/icons-material/Download";
+
 import ErrorIcon from "@mui/icons-material/Error";
 import { useTheme } from "@mui/material";
 import { useFranchise } from "../../hooks/useFranchise";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function InvitationCodes() {
   const theme = useTheme();
-  const { invitationCodes, fetchInvitationCodes } = useFranchise();
+  const {
+    invitationCodes,
+    fetchInvitationCodes,
+    franchiseDetails,
+    fetchFranchiseDetails,
+
+    activeCode,
+  } = useFranchise();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  // Effect chỉ để fetch dữ liệu
   useEffect(() => {
     fetchInvitationCodes();
-  }, [fetchInvitationCodes]);
+    fetchFranchiseDetails();
+  }, [fetchInvitationCodes, fetchFranchiseDetails]);
 
   /**
    * Hàm sao chép mã mời vào clipboard
@@ -48,6 +70,13 @@ export default function InvitationCodes() {
       setTimeout(() => setCopiedCode(null), 2000);
     } catch (err) {
       console.error("Không thể sao chép mã:", err);
+    }
+  };
+
+  const handleActiveCode = async () => {
+    const result = await activeCode();
+    if (result.success) {
+      fetchInvitationCodes();
     }
   };
 
@@ -264,7 +293,7 @@ export default function InvitationCodes() {
               </Typography>
             </Box>
 
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {/* <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <VisibilityIcon sx={{ fontSize: 16, color: "text.secondary" }} />
               <Typography variant="body2" color="text.secondary">
                 Lần cuối sử dụng:
@@ -274,7 +303,7 @@ export default function InvitationCodes() {
                   ? formatDate(invitationCode.statistics.lastUsedDate)
                   : "Chưa sử dụng"}
               </Typography>
-            </Box>
+            </Box> */}
           </Stack>
         </Stack>
       </CardContent>
@@ -314,6 +343,44 @@ export default function InvitationCodes() {
           </Stack>
         </Box>
       </Fade>
+
+      <Grow in timeout={800}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          alignItems={{ md: "center" }}
+          sx={{ justifyContent: "flex-end", mb: 2 }}
+        >
+          <Stack direction="row" spacing={1}>
+            <Tooltip title="Làm mới">
+              <IconButton onClick={fetchInvitationCodes}>
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Xuất báo cáo" sx={{ display: "none" }}>
+              <IconButton>
+                <DownloadIcon />
+              </IconButton>
+            </Tooltip>
+            <Button
+              variant="contained"
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 600,
+                boxShadow: 2,
+                "&.Mui-disabled": {
+                  backgroundColor: theme.palette.grey[300],
+                  color: theme.palette.grey[500],
+                },
+              }}
+              onClick={handleActiveCode}
+            >
+              Kích hoạt mã mời
+            </Button>
+          </Stack>
+        </Stack>
+      </Grow>
 
       <Grow in={!invitationCodes.loading} timeout={800}>
         <Paper

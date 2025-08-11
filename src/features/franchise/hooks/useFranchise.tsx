@@ -17,13 +17,14 @@ import {
   QuotaUtilization,
   ChildFranchise,
   ApiError,
+  ApiDetailResponse,
 } from "../types/franchise.type";
 
 /**
  * State interface for franchise details
  */
 interface FranchiseDetailsState {
-  data: FranchiseDetails | null;
+  data: ApiDetailResponse | null;
   loading: boolean;
   error: ApiError | null;
 }
@@ -167,6 +168,7 @@ export const useFranchise = () => {
     setFranchiseDetails((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response = await franchiseService.getMyFranchiseDetails();
+      console.log("aaaaaaaa: ", response);
       setFranchiseDetails({
         data: response.data,
         loading: false,
@@ -525,6 +527,19 @@ export const useFranchise = () => {
     }
   }, []);
 
+  const activeCode = useCallback(async () => {
+    try {
+      const response = await franchiseService.activeCode();
+      return {
+        success: true,
+        message: response.data.message,
+      };
+    } catch (error) {
+      const apiError = error as ApiError;
+      return { success: false, error: apiError };
+    }
+  }, []);
+
   /**
    * Initialize all data on mount
    */
@@ -599,6 +614,7 @@ export const useFranchise = () => {
     searchFranchises,
     exportToExcel,
     validateInvitationCode,
+    activeCode,
 
     // Utility functions
     refreshAllData,

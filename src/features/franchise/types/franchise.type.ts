@@ -269,3 +269,66 @@ export interface PaginatedResponse<T> {
   data: T[];
   pagination: Pagination;
 }
+
+/**
+ * API Detail Response
+ */
+export interface ApiDetailResponse {
+  success: boolean;
+  message: string;
+  data: {
+    franchiseInfo: {
+      _id: string;
+      userId: {
+        _id: string;
+        username: string;
+        email: string;
+        phone: string | null;
+        role: string;
+        status: string;
+        type: string;
+        franchiseName: string;
+      };
+      parentId: {
+        _id: string;
+        username: string;
+        email: string;
+        franchiseName: string;
+      } | null;
+      franchiseLevel: number;
+      ancestorPath: string[];
+      createdAt: string;
+      updatedAt: string;
+    };
+    quotaInfo: {
+      totalActiveQuota: number;
+      activeQuotaDetails: Array<{
+        ledgerId: string;
+        sourceCampaignId: string;
+        totalAllocated: number;
+        consumedByOwnInvites: number;
+        allocatedToChildren: number;
+        availableQuota: number;
+        status: string;
+        createdAt: string;
+        updatedAt: string;
+      }>;
+      totalLedgerEntries: number;
+    };
+    statistics: {
+      totalInvitations: number;
+      totalTrialUsers: number;
+      totalRenewals: number;
+      conversionRate: number;
+      directChildrenCount: number;
+      lastActivityDate: string | null;
+    };
+    activeCampaigns: Array<{
+      _id: string;
+      campaignName: string;
+      status: string;
+      startDate: string;
+      endDate: string;
+    }>;
+  };
+}
