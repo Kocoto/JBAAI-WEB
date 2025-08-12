@@ -1,21 +1,28 @@
 // src/shared/components/router/RedirectIfLoggedIn.tsx
 
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../../../features/auth/context/AuthProvider";
 import { CircularProgress, Box } from "@mui/material";
 
-interface RedirectIfLoggedIn {
+// Định nghĩa các route mặc định cho từng role
+const roleDefaultRoutes = {
+  admin: "/admin/dashboard",
+  seller: "/seller/dashboard",
+  franchise: "/franchise/dashboard",
+  user: "/user/dashboard",
+};
+
+interface RedirectIfLoggedInProps {
   children: React.ReactElement;
 }
 
-export const RedirectIfLoggedIn: React.FC<RedirectIfLoggedIn> = ({
+export const RedirectIfLoggedIn: React.FC<RedirectIfLoggedInProps> = ({
   children,
 }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth(); // Lấy thêm thông tin `user`
 
-  // Nếu AuthProvider vẫn đang trong quá trình kiểm tra token (lần đầu tải trang)
-  // thì hiển thị một spinner loading.
+  // Hiển thị loading trong lúc chờ xác thực
   if (isLoading) {
     return (
       <Box
@@ -31,13 +38,14 @@ export const RedirectIfLoggedIn: React.FC<RedirectIfLoggedIn> = ({
     );
   }
 
-  // Nếu đã kiểm tra xong và người dùng chưa đăng nhập
-  // thì chuyển hướng họ về trang login.
-  // state: { from: location } để sau khi đăng nhập thành công, ta có thể đưa họ trở lại trang họ muốn vào.
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+  // Nếu đã đăng nhập và có thông tin user
+  if (isAuthenticated && user) {
+    // Lấy route mặc định dựa trên vai trò của user
+    const defaultRoute = roleDefaultRoutes[user.role] || "/";
+    // Điều hướng thẳng đến trang dashboard, phá vỡ vòng lặp!
+    return <Navigate to={defaultRoute} replace />;
   }
 
-  // Nếu đã đăng nhập, cho phép hiển thị component con (trang được bảo vệ).
+  // Nếu chưa đăng nhập, hiển thị trang con (chính là trang Login)
   return children;
 };

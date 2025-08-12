@@ -53,7 +53,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         // Token tồn tại, gọi API để xác thực và lấy thông tin user
         const response = await authService.getProfile();
-        setUser(response.user);
+        console.log("response: ", response);
+
+        setUser(response.profile.user);
         setIsAuthenticated(true);
       } catch (error) {
         // Lỗi xảy ra (token không hợp lệ), coi như chưa đăng nhập
@@ -81,7 +83,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const profileResponse = await authService.getProfile();
 
       // Cập nhật state
-      setUser(profileResponse.user);
+      setUser(profileResponse.profile.user);
+
       setIsAuthenticated(true);
     } catch (error) {
       console.error("Login failed:", error);

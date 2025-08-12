@@ -19,7 +19,12 @@ export interface User {
   isPayment: boolean;
   isHideScore: boolean;
   type: string;
-  optionEmail: string;
+  typeLogin?: {
+    type: string;
+  };
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  isHideGLB1?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,9 +35,9 @@ export interface User {
  */
 export interface LoginPayload {
   email: string;
-  password?: string; // Mật khẩu có thể không bắt buộc nếu đăng nhập bằng OTP
+  password?: string;
   clientId: string;
-  otp?: string; // Dành cho đăng nhập bằng OTP
+  otp?: string;
 }
 
 /**
@@ -60,9 +65,8 @@ export interface AuthResponse {
   data: {
     user: {
       _id: string;
-      // API login chỉ trả về _id, chúng ta sẽ cần gọi API /profile để lấy đủ thông tin
     };
-  } & AuthTokens; // Sử dụng AuthTokens trực tiếp ở đây
+  } & AuthTokens;
 }
 
 /**
@@ -70,34 +74,54 @@ export interface AuthResponse {
  */
 export interface ProfileResponse {
   profile: {
+    profile: {
+      _id: string;
+      userId: string;
+      height: number;
+      weight: number;
+      age: number;
+      gender: string;
+      smokingStatus: number;
+      __v?: number;
+    };
+    user: {
+      typeLogin: {
+        type: string;
+      };
+      discount: boolean;
+      isDeleted: boolean;
+      deletedAt: string | null;
+      isHideGLB1: boolean;
+      _id: string;
+      username: string;
+      email: string;
+      phone: string;
+      role: "user" | "admin" | "seller" | "franchise";
+      status: "active" | string;
+      verify: boolean;
+      language: string;
+      isSubscription: boolean;
+      emailNotificationsEnabled: boolean;
+      isPayment: boolean;
+      isHideScore: boolean;
+      type: string;
+      createdAt: string;
+      updatedAt: string;
+      __v?: number;
+    };
+    upgradeRequest: null | unknown | unknown[];
+  };
+  ring?: {
     _id: string;
     userId: string;
-    height: number;
-    weight: number;
-    age: number;
-    gender: string;
-    smokingStatus: number;
-  };
-  user: {
-    _id: string;
-    username: string;
-    email: string;
-    phone: string;
-    role: "user" | "admin" | "seller" | "franchise";
-    status: "active" | string;
-    verify: boolean;
-    language: string;
-    discount: boolean;
-    isSubscription: boolean;
-    emailNotificationsEnabled: boolean;
-    isPayment: boolean;
-    isHideScore: boolean;
-    type: string;
-    optionEmail: string;
+    calories: number;
+    steps: number;
+    step_length: number;
+    duration: number;
     createdAt: string;
     updatedAt: string;
+    __v?: number;
   };
-  upgradeRequest: null | unknown | unknown[];
 }
 
 /**

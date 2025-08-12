@@ -1,7 +1,8 @@
 // src/shared/components/router/RoleRedirect.tsx
 
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// 1. Import thêm useLocation
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../../features/auth/context/AuthProvider";
 import { CircularProgress, Box } from "@mui/material";
 
@@ -16,18 +17,31 @@ const roleDefaultRoutes = {
 export const RoleRedirect: React.FC = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  // 2. Lấy thông tin về đường dẫn hiện tại
+  const location = useLocation();
 
   useEffect(() => {
     if (!isLoading) {
+      console.log("aaaaaaaaaaaaaaa1: ", isAuthenticated, "  aa ", user);
+
       if (!isAuthenticated || !user) {
+        console.log("aaaaaaaaaaaaaaa2");
+
         navigate("/login", { replace: true });
       } else {
-        // Redirect đến dashboard tương ứng với role
+        console.log("aaaaaaaaaaaaaaa3");
+
         const defaultRoute = roleDefaultRoutes[user.role] || "/unauthorized";
-        navigate(defaultRoute, { replace: true });
+
+        // 3. THÊM ĐIỀU KIỆN QUAN TRỌNG:
+        // Chỉ điều hướng nếu người dùng đang ở trang chủ ('/')
+        if (location.pathname === "/") {
+          navigate(defaultRoute, { replace: true });
+        }
       }
     }
-  }, [user, isLoading, isAuthenticated, navigate]);
+    // 4. Thêm location.pathname vào dependency array
+  }, [user, isLoading, isAuthenticated, navigate, location.pathname]);
 
   // Hiển thị loading trong lúc chờ redirect
   return (
