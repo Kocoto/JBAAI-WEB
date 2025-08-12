@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useContext,
   ReactNode,
+  useMemo,
 } from "react";
 import { authService } from "../services/authService";
 import { User, LoginCredentials } from "../types";
@@ -20,16 +21,7 @@ interface AuthContextType {
 }
 
 // 2. Tạo Context
-const AuthContext = createContext<AuthContextType>(undefined!);
-
-// 3. Tạo custom Hook để sử dụng Context dễ dàng hơn
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+export const AuthContext = createContext<AuthContextType>(undefined!);
 
 // 4. Tạo component AuthProvider
 interface AuthProviderProps {
@@ -112,13 +104,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // 9. Cung cấp các giá trị cho các component con
-  const value = {
-    isAuthenticated,
-    user,
-    isLoading,
-    login,
-    logout,
-  };
+  const value = useMemo(
+    () => ({
+      isAuthenticated,
+      user,
+      isLoading,
+      login,
+      logout,
+    }),
+    [isAuthenticated, user, isLoading] // Dependency array: value chỉ tạo lại khi các giá trị này thay đổi
+  );
 
   // Chỉ render children khi đã hết loading
   return (

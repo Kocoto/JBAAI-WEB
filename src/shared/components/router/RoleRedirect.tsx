@@ -1,12 +1,13 @@
 // src/shared/components/router/RoleRedirect.tsx
 
-import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../features/auth/context/AuthProvider";
+import React from "react";
+// 1. Import thêm component <Navigate />
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../../../features/auth/hooks/useAuth";
 import { CircularProgress, Box } from "@mui/material";
 
 // Định nghĩa các route mặc định cho từng role
-const roleDefaultRoutes = {
+const roleDefaultRoutes: { [key: string]: string } = {
   admin: "/admin/dashboard",
   seller: "/seller/dashboard",
   franchise: "/franchise/dashboard",
@@ -15,31 +16,30 @@ const roleDefaultRoutes = {
 
 export const RoleRedirect: React.FC = () => {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (!isAuthenticated || !user) {
-        navigate("/login", { replace: true });
-      } else {
-        // Redirect đến dashboard tương ứng với role
-        const defaultRoute = roleDefaultRoutes[user.role] || "/unauthorized";
-        navigate(defaultRoute, { replace: true });
-      }
-    }
-  }, [user, isLoading, isAuthenticated, navigate]);
+  // 2. Xử lý logic ngay trong lúc render, không dùng useEffect
+  if (isLoading) {
+    // Nếu đang loading, hiển thị spinner
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-  // Hiển thị loading trong lúc chờ redirect
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-      }}
-    >
-      <CircularProgress />
-    </Box>
-  );
+  // 3. Nếu không đăng nhập, trả về component <Navigate /> để chuyển hướng
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // 4. Nếu đã đăng nhập, tính toán route và trả về component <Navigate />
+  const defaultRoute = roleDefaultRoutes[user.role] || "/unauthorized";
+  return <Navigate to={defaultRoute} replace />;
 };

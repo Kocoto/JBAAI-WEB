@@ -3,7 +3,7 @@
 import React from "react";
 import { Box, Container, Typography, Button, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../features/auth/context/AuthProvider";
+import { useAuth } from "../../features/auth/hooks/useAuth";
 import BlockIcon from "@mui/icons-material/Block";
 
 export const UnauthorizedPage: React.FC = () => {

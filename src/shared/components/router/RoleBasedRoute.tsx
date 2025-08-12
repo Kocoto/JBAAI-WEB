@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../../../features/auth/context/AuthProvider";
+import { useAuth } from "../../../features/auth/hooks/useAuth";
 import { CircularProgress, Box } from "@mui/material";
 
 type UserRole = "user" | "admin" | "seller" | "franchise";

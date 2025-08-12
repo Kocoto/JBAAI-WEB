@@ -20,7 +20,7 @@ import ForgotPassword from "../components/ForgotPassword";
 import AppTheme from "../../../shared/theme/AppTheme";
 import ColorModeSelect from "../../../shared/components/ui/ColorModeSelect";
 import { JBAAIIcon } from "../components/CustomIcons";
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../hooks/useAuth";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",

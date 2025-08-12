@@ -10,7 +10,7 @@ import SelectContent from "@/shared/components/ui/SelectContent";
 import MenuContent from "@/shared/components/ui/MenuContent";
 import CardAlert from "@/shared/components/feedback/CardAlert";
 import OptionsMenu from "@/shared/components/ui/OptionsMenu";
-import { useAuth } from "@/features/auth/context/AuthProvider";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 const drawerWidth = 240;
 

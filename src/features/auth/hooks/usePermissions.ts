@@ -1,6 +1,6 @@
 // src/features/auth/hooks/usePermissions.ts
 
-import { useAuth } from "../context/AuthProvider";
+import { useAuth } from "../hooks/useAuth";
 
 // Định nghĩa các permissions cho từng role
 const rolePermissions = {

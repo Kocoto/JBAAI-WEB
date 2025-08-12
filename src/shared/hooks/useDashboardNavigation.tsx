@@ -1,7 +1,7 @@
 // src/shared/hooks/useDashboardNavigation.tsx
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/features/auth/context/AuthProvider";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useMemo } from "react";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import CampaignIcon from "@mui/icons-material/Campaign";
