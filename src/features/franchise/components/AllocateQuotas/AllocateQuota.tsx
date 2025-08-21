@@ -28,7 +28,35 @@ import StorageIcon from "@mui/icons-material/Storage";
 import DoneIcon from "@mui/icons-material/Done";
 import BlockIcon from "@mui/icons-material/Block";
 
-const mockQuotaData = {
+// ------------------ TYPES ------------------
+type QuotaDetail = {
+  ledgerId: string;
+  franchiseName: string;
+  sourceCampaignId: string;
+  totalAllocated: number;
+  availableQuota: number;
+  status: string;
+  createdAt: string;
+};
+
+type QuotaData = {
+  totalActiveQuota: number;
+  activeQuotaDetails: QuotaDetail[];
+  statistics: {
+    totalInvitations: number;
+    remainingQuota: number;
+  };
+};
+
+type StatCardProps = {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  gradient: string;
+};
+
+// ------------------ MOCK DATA ------------------
+const mockQuotaData: QuotaData = {
   totalActiveQuota: 1123,
   activeQuotaDetails: [
     {
@@ -56,7 +84,8 @@ const mockQuotaData = {
   },
 };
 
-const StatCard = ({ title, value, icon, gradient }: any) => (
+// ------------------ STAT CARD ------------------
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradient }) => (
   <Paper
     sx={{
       p: 3,
@@ -94,8 +123,9 @@ const StatCard = ({ title, value, icon, gradient }: any) => (
   </Paper>
 );
 
+// ------------------ MAIN COMPONENT ------------------
 const AllocateQuota: React.FC = () => {
-  const [quotaData, setQuotaData] = useState<typeof mockQuotaData | null>(null);
+  const [quotaData, setQuotaData] = useState<QuotaData | null>(null);
   const [form, setForm] = useState({
     franchiseName: "",
     campaignId: "",
@@ -105,8 +135,10 @@ const AllocateQuota: React.FC = () => {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [orderBy, setOrderBy] = useState<keyof any>("franchiseName");
+
+  const [orderBy, setOrderBy] = useState<keyof QuotaDetail>("franchiseName");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
@@ -150,7 +182,7 @@ const AllocateQuota: React.FC = () => {
     alert("Quota đã được cấp phát!");
   };
 
-  const handleSort = (property: keyof any) => {
+  const handleSort = (property: keyof QuotaDetail) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
     setOrderBy(property);
@@ -184,7 +216,7 @@ const AllocateQuota: React.FC = () => {
 
       {/* Box thống kê */}
       <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} md={4}>
+        <Grid sx={{ xs: 12, md: 4 }}>
           <StatCard
             title="Tổng quota hiện tại"
             value={quotaData.totalActiveQuota}
@@ -192,7 +224,7 @@ const AllocateQuota: React.FC = () => {
             gradient="linear-gradient(135deg, #6a11cb, #2575fc)"
           />
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid sx={{ xs: 12, md: 4 }}>
           <StatCard
             title="Tổng invitations"
             value={quotaData.statistics.totalInvitations}
@@ -200,7 +232,7 @@ const AllocateQuota: React.FC = () => {
             gradient="linear-gradient(135deg, #11998e, #38ef7d)"
           />
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid sx={{ xs: 12, md: 4 }}>
           <StatCard
             title="Quota còn lại"
             value={quotaData.statistics.remainingQuota}
@@ -220,7 +252,7 @@ const AllocateQuota: React.FC = () => {
         }}
       >
         <Grid container spacing={3} direction="column">
-          <Grid item xs={12}>
+          <Grid sx={{ xs: 12 }}>
             <TextField
               select
               label="Chọn Franchise"
@@ -236,7 +268,7 @@ const AllocateQuota: React.FC = () => {
               ))}
             </TextField>
           </Grid>
-          <Grid item xs={12}>
+          <Grid sx={{ xs: 12 }}>
             <TextField
               label="Chiến dịch"
               name="campaignId"
@@ -246,7 +278,7 @@ const AllocateQuota: React.FC = () => {
               InputProps={{ readOnly: true }}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid sx={{ xs: 12 }}>
             <TextField
               label="Quota hiện tại"
               name="currentQuota"
@@ -255,7 +287,7 @@ const AllocateQuota: React.FC = () => {
               InputProps={{ readOnly: true }}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid sx={{ xs: 12 }}>
             <TextField
               label="Số quota cấp phát"
               name="allocateAmount"
@@ -265,7 +297,7 @@ const AllocateQuota: React.FC = () => {
               fullWidth
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid sx={{ xs: 12 }}>
             <TextField
               label="Ghi chú"
               name="note"
@@ -276,7 +308,7 @@ const AllocateQuota: React.FC = () => {
               rows={3}
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid sx={{ xs: 12 }}>
             <Button
               variant="contained"
               color="primary"
@@ -308,7 +340,7 @@ const AllocateQuota: React.FC = () => {
         </Typography>
 
         <Grid container spacing={2} mb={2}>
-          <Grid item xs={12} md={6}>
+          <Grid sx={{ xs: 12, md: 6 }}>
             <TextField
               label="Tìm kiếm theo tên Franchise"
               variant="outlined"
@@ -318,7 +350,7 @@ const AllocateQuota: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid sx={{ xs: 12, md: 6 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Lọc trạng thái</InputLabel>
               <Select
@@ -349,7 +381,9 @@ const AllocateQuota: React.FC = () => {
                     <TableSortLabel
                       active={orderBy === headCell.id}
                       direction={orderBy === headCell.id ? order : "asc"}
-                      onClick={() => handleSort(headCell.id)}
+                      onClick={() =>
+                        handleSort(headCell.id as keyof QuotaDetail)
+                      }
                     >
                       {headCell.label}
                     </TableSortLabel>
@@ -363,28 +397,36 @@ const AllocateQuota: React.FC = () => {
                   <TableCell>{row.franchiseName}</TableCell>
                   <TableCell>{row.totalAllocated}</TableCell>
                   <TableCell>{row.availableQuota}</TableCell>
-            <TableCell>
-              <Chip
-                icon={row.status === "active" ? <DoneIcon /> : <BlockIcon />}
-                label={row.status === "active" ? "Active" : "Inactive"}
-                color={row.status === "active" ? "success" : "error"}
-                variant="outlined"
-                sx={{
-                  fontWeight: "bold",
-                  textTransform: "capitalize",
-                  px: 1,
-                  borderRadius: "8px",
-                  ...(row.status === "active" && {
-                    animation: "pulse 1.5s infinite",
-                    "@keyframes pulse": {
-                      "0%": { boxShadow: "0 0 0 0 rgba(46, 204, 113, 0.6)" },
-                      "70%": { boxShadow: "0 0 0 10px rgba(46, 204, 113, 0)" },
-                      "100%": { boxShadow: "0 0 0 0 rgba(46, 204, 113, 0)" },
-                    },
-                  }),
-                }}
-               />
-            </TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={row.status === "active" ? <DoneIcon /> : <BlockIcon />}
+                      label={row.status === "active" ? "Active" : "Inactive"}
+                      color={row.status === "active" ? "success" : "error"}
+                      variant="outlined"
+                      sx={{
+                        fontWeight: "bold",
+                        textTransform: "capitalize",
+                        px: 1,
+                        borderRadius: "8px",
+                        ...(row.status === "active" && {
+                          animation: "pulse 1.5s infinite",
+                          "@keyframes pulse": {
+                            "0%": {
+                              boxShadow: "0 0 0 0 rgba(46, 204, 113, 0.6)",
+                            },
+                            "70%": {
+                              boxShadow:
+                                "0 0 0 10px rgba(46, 204, 113, 0)",
+                            },
+                            "100%": {
+                              boxShadow:
+                                "0 0 0 0 rgba(46, 204, 113, 0)",
+                            },
+                          },
+                        }),
+                      }}
+                    />
+                  </TableCell>
 
                   <TableCell>
                     {new Date(row.createdAt).toLocaleDateString()}
