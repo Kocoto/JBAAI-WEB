@@ -29,6 +29,9 @@ import FranchiseHierarchyPerformance from "@/features/franchise/pages/FranchiseH
 import FranchiseQuotaUtilization from "@/features/franchise/pages/FranchiseQuotaUtiliztion";
 import FranchiseExportReports from "@/features/franchise/pages/FranchiseExportReports";
 import FranchiseProfile from "@/features/franchise/pages/FranchiseProfile";
+import AdminAllUsers from "@/features/admin/pages/AdminAllUsers";
+import AdminAddUser from "@/features/admin/pages/AdminAddUser";
+import AdminReports from "@/features/admin/pages/AdminReports";
 
 function App() {
   return (
@@ -99,6 +102,36 @@ function App() {
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={["admin"]}>
               <AdminRequest />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users/all"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminAllUsers />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users/add"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminAddUser />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/reports"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminReports />
             </RoleBasedRoute>
           </ProtectedRoute>
         }

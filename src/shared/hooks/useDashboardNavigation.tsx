@@ -98,13 +98,13 @@ export const useDashboardNavigation = () => {
               },
             ],
           },
-          {
-            id: "sellers",
-            label: "Quản lý Sellers",
-            path: "/admin/sellers",
-            icon: <StoreIcon />,
-            description: "Quản lý nhà bán hàng",
-          },
+          // {
+          //   id: "sellers",
+          //   label: "Quản lý Sellers",
+          //   path: "/admin/sellers",
+          //   icon: <StoreIcon />,
+          //   description: "Quản lý nhà bán hàng",
+          // },
           {
             id: "franchises",
             label: "Quản lý Franchises",
