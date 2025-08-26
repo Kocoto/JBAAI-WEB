@@ -19,6 +19,16 @@ import AdminFranchise from "@/features/admin/pages/AdminFranchise";
 import AdminCreateCampaign from "@/features/admin/pages/AdminCreateCampaign";
 import FranchiseInvitationCodes from "@/features/franchise/pages/FranchiseInvitationCodes";
 import FranchiseAllocateQuota from "@/features/franchise/pages/FranchiseAllocateQuota";
+import FranchiseMyQuota from "@/features/franchise/pages/FranchiseMyQuota";
+import FranchiseHistoriesOfQuota from "@/features/franchise/pages/FranchiseHistoriesOfQuota";
+import FranchiseChildList from "@/features/franchise/pages/FranchiseChildList";
+import FranchiseHierachy from "@/features/franchise/pages/FranchiseHierachy";
+import FranchiseMyPerformance from "@/features/franchise/pages/FranchiseMyPerformance";
+import FranchiseChildrenPerformance from "@/features/franchise/pages/FranchiseChildrenPerformance";
+import FranchiseHierarchyPerformance from "@/features/franchise/pages/FranchiseHierarchyPerformance";
+import FranchiseQuotaUtilization from "@/features/franchise/pages/FranchiseQuotaUtiliztion";
+import FranchiseExportReports from "@/features/franchise/pages/FranchiseExportReports";
+import FranchiseProfile from "@/features/franchise/pages/FranchiseProfile";
 
 function App() {
   return (
@@ -131,6 +141,106 @@ function App() {
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={["franchise"]}>
               <FranchiseAllocateQuota />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/quota/my-quota"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseMyQuota />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/quota/history"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseHistoriesOfQuota />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/children/list"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseChildList />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/children/hierarchy"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseHierachy />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/performance/my-performance"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseMyPerformance />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/performance/children"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseChildrenPerformance />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/performance/hierarchy"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseHierarchyPerformance />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/reports/quota-utilization"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseQuotaUtilization />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/reports/export"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseExportReports />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/profile"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseProfile />
             </RoleBasedRoute>
           </ProtectedRoute>
         }

@@ -259,12 +259,12 @@ export const useDashboardNavigation = () => {
                 path: "/franchise/invitations/codes",
                 icon: <LocalActivityIcon fontSize="small" />,
               },
-              {
-                id: "generate-code",
-                label: "Tạo mã mời",
-                path: "/franchise/invitations/generate",
-                icon: <CardGiftcardIcon fontSize="small" />,
-              },
+              // {
+              //   id: "generate-code",
+              //   label: "Tạo mã mời",
+              //   path: "/franchise/invitations/generate",
+              //   icon: <CardGiftcardIcon fontSize="small" />,
+              // },
             ],
           },
           {
