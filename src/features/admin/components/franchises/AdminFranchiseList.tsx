@@ -7,16 +7,13 @@ import {
   Button,
   Chip,
   Fade,
-  FormControl,
   Grow,
   IconButton,
   InputAdornment,
-  InputLabel,
   LinearProgress,
   Menu,
   MenuItem,
   Paper,
-  Select,
   Skeleton,
   Stack,
   Tab,
@@ -63,18 +60,12 @@ export default function AdminFranchiseList() {
     franchiseList,
     franchiseStatistics,
     pagination,
-    filters,
     isLoading,
-    isLoadingStatistics,
     error,
     fetchFranchiseList,
-    fetchFranchiseHierarchy,
     searchFranchises,
     filterByLevel,
-    filterByStatus,
     updateFranchiseStatus,
-    goToPage,
-    changePageSize,
     navigateToFranchiseDetail,
     refreshData,
   } = useAdminFranchise();
@@ -397,18 +388,21 @@ export default function AdminFranchiseList() {
     if (!franchiseList || !Array.isArray(franchiseList)) {
       return [];
     }
-    return franchiseList.map((franchise) => ({
-      id: franchise._id,
-      franchiseName: franchise.userId.franchiseName,
-      ownerName: franchise.userId.username,
-      email: franchise.userId.email,
-      phone: franchise.userId.phone,
-      userId: franchise.userId._id,
-      level: franchise.franchiseLevel,
-      activeQuota: franchise.totalActiveQuota,
-      status: franchise.userId.status,
-      createdAt: franchise.createdAt,
-    }));
+    return franchiseList.map((franchise) => {
+      const user = franchise.userId ?? null;
+      return {
+        id: franchise._id ?? franchise.id ?? String(Math.random()).slice(2, 10),
+        franchiseName: user?.franchiseName ?? "N/A",
+        ownerName: user?.username ?? "N/A",
+        email: user?.email ?? "N/A",
+        phone: user?.phone ?? "N/A",
+        userId: user?._id ?? null,
+        level: franchise.franchiseLevel ?? 0,
+        activeQuota: franchise.totalActiveQuota ?? 0,
+        status: user?.status ?? franchise.status ?? "inactive",
+        createdAt: franchise.createdAt ?? new Date().toISOString(),
+      };
+    });
   }, [franchiseList]);
 
   return (

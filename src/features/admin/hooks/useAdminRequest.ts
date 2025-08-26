@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { RequestService } from "../services/requestService";
-import { Request, GetRequestResponse, ApiError } from "../types/request.types";
+import { Request, ApiError } from "../types/request.types";
 
 // Định nghĩa các status có thể có
 export type RequestStatus = "pending" | "approved" | "rejected" | "reviewing";

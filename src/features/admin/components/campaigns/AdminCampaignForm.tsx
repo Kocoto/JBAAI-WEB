@@ -50,7 +50,6 @@ import StarIcon from "@mui/icons-material/Star";
 import { useAdminCampaign } from "@/features/admin/hooks/useAdminCampaign";
 import { useAdminFranchise } from "@/features/admin/hooks/useAdminFranchise";
 import { CreateCampaignPayload } from "@/features/admin/types/campaign.types";
-import apiClient from "@/shared/services/api/apiClient";
 import { useAdminPackage } from "../../hooks/useAdminPackage";
 
 interface AdminCampaignFormProps {

@@ -33,7 +33,12 @@ export default function AllocateQuota() {
 
   // Mock data
   const rows = [
-    { id: 1, name: "Nguyễn Văn A", email: "a@example.com", phone: "0123456789" },
+    {
+      id: 1,
+      name: "Nguyễn Văn A",
+      email: "a@example.com",
+      phone: "0123456789",
+    },
     { id: 2, name: "Trần Thị B", email: "b@example.com", phone: "0987654321" },
     { id: 3, name: "Lê Văn C", email: "c@example.com", phone: "0111222333" },
   ];
@@ -61,7 +66,12 @@ export default function AllocateQuota() {
   };
 
   const CustomLoadingOverlay = () => (
-    <Stack alignItems="center" justifyContent="center" height="100%" spacing={2}>
+    <Stack
+      alignItems="center"
+      justifyContent="center"
+      height="100%"
+      spacing={2}
+    >
       <Box sx={{ width: "60%" }}>
         <LinearProgress color="primary" />
       </Box>
@@ -72,12 +82,22 @@ export default function AllocateQuota() {
   );
 
   const CustomNoRowsOverlay = () => (
-    <Stack alignItems="center" justifyContent="center" height="100%" spacing={2}>
+    <Stack
+      alignItems="center"
+      justifyContent="center"
+      height="100%"
+      spacing={2}
+    >
       <Box
         component="img"
         src="/empty-state.svg"
         alt="No data"
-        sx={{ width: 120, height: 120, opacity: 0.5, filter: "grayscale(100%)" }}
+        sx={{
+          width: 120,
+          height: 120,
+          opacity: 0.5,
+          filter: "grayscale(100%)",
+        }}
       />
       <Typography variant="h6" color="text.secondary">
         Không có dữ liệu
@@ -107,7 +127,9 @@ export default function AllocateQuota() {
                 border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
               }}
             >
-              <CardGiftcardIcon sx={{ color: theme.palette.primary.main, fontSize: 36 }} />
+              <CardGiftcardIcon
+                sx={{ color: theme.palette.primary.main, fontSize: 36 }}
+              />
             </Box>
             <Box>
               <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
@@ -120,8 +142,6 @@ export default function AllocateQuota() {
           </Stack>
         </Box>
       </Fade>
-
-
 
       {/* Search box */}
       <Paper

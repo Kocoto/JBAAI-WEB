@@ -2,7 +2,6 @@
 
 import apiClient from "@/shared/services/api/apiClient";
 import {
-  Campaign,
   CampaignListResponse,
   CampaignDetailResponse,
   CreateCampaignPayload,

@@ -49,7 +49,6 @@ import { useNavigate } from "react-router-dom";
 
 // Material UI Icons
 import SearchIcon from "@mui/icons-material/Search";
-import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -57,11 +56,6 @@ import CampaignIcon from "@mui/icons-material/Campaign";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PauseCircleIcon from "@mui/icons-material/PauseCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
-import EventIcon from "@mui/icons-material/Event";
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
-import PersonIcon from "@mui/icons-material/Person";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import AssignmentIcon from "@mui/icons-material/Assignment";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -134,24 +128,11 @@ export default function AdminCampaignList() {
 
   const {
     campaignList,
-    filters,
-    isCreating,
-    isUpdating,
-    isDeleting,
     fetchCampaignList,
     isLoading,
-    createCampaign,
-    updateCampaign,
-    deleteCampaign,
-    changeCampaignStatus,
     searchCampaigns,
     filterByStatus,
     // filterByFranchise,
-    filterByDateRange,
-    goToPage,
-    goToNextPage,
-    goToPrevPage,
-    changePageSize,
     clearFilters,
   } = useAdminCampaign();
 
@@ -160,7 +141,7 @@ export default function AdminCampaignList() {
   );
   const [searchTerm, setSearchTerm] = React.useState("");
   const [showCreateDialog, setShowCreateDialog] = React.useState(false);
-  const [selectedCampaign, setSelectedCampaign] = React.useState<any>(null);
+  const [setSelectedCampaign] = React.useState<any>(null);
 
   // Handle tab change
   const handleTabChange = async (
@@ -394,7 +375,7 @@ export default function AdminCampaignList() {
   };
 
   const filteredData = getFilteredData();
-
+  console.log("campaignList", campaignList);
   // Tab counts
   const tabCounts = {
     all: campaignList.length,
