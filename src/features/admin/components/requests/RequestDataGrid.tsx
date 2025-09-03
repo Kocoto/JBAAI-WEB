@@ -101,7 +101,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
           initialState={{
             pagination: { paginationModel: { pageSize: 20 } },
           }}
-          pageSizeOptions={[10, 20, 50]}
+          pageSizeOptions={[5, 10, 20, 50]}
           disableColumnResize
           density="comfortable"
           // getRowHeight={() => "auto"}
