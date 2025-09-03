@@ -49,6 +49,11 @@ export interface UserTrialQuotaLedger {
  */
 export interface Franchise {
   _id: string;
+
+  // 👇 thêm để fix lỗi TS2339
+  id?: string;
+  status?: "active" | "inactive";
+
   userId: FranchiseUser;
   parentId: string | null;
   franchiseLevel: number;

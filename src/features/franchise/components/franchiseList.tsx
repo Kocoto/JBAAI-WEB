@@ -6,17 +6,15 @@ import {
   Fade,
   Stack,
   TextField,
-  Grid,
   Paper,
   Button,
-  LinearProgress,
 } from "@mui/material";
 import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
 import SearchIcon from "@mui/icons-material/Search";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { useFranchise } from "../../hooks/useFranchise";
+import { useFranchise } from "../hooks/useFranchise";
 import { useState } from "react";
-import { AllocateQuotaPayload } from "../../types/franchise.type";
+import { AllocateQuotaPayload } from "../types/franchise.type";
 
 export default function AllocateQuota() {
   const theme = useTheme();
@@ -54,7 +52,7 @@ export default function AllocateQuota() {
       flex: 1,
       renderCell: () => (
         <Button variant="outlined" color="primary" size="small">
-          Câp phát
+          Cấp phát
         </Button>
       ),
     },
@@ -64,22 +62,6 @@ export default function AllocateQuota() {
     e.preventDefault();
     allocateQuota(formData);
   };
-
-  // const CustomLoadingOverlay = () => (
-  //   <Stack
-  //     alignItems="center"
-  //     justifyContent="center"
-  //     height="100%"
-  //     spacing={2}
-  //   >
-  //     <Box sx={{ width: "60%" }}>
-  //       <LinearProgress color="primary" />
-  //     </Box>
-  //     <Typography variant="body2" color="text.secondary">
-  //       Đang tải dữ liệu...
-  //     </Typography>
-  //   </Stack>
-  // );
 
   const CustomNoRowsOverlay = () => (
     <Stack
@@ -195,7 +177,6 @@ export default function AllocateQuota() {
             disableColumnResize
             density="comfortable"
             slots={{
-              loadingOverlay: CustomLoadingOverlay,
               noRowsOverlay: CustomNoRowsOverlay,
             }}
             sx={{

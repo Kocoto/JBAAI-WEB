@@ -216,14 +216,15 @@ export default function AdminAddUser() {
       field: "role",
       headerName: "Vai trò",
       width: 140,
-      renderCell: (params: GridRenderCellParams<string>) => (
+      renderCell: (params: GridRenderCellParams<User, User["role"]>) => (
         <Chip
-          label={params.value}
+          label={params.value ?? ""}
           size="small"
-          color={roleColor(params.value)}
+          color={roleColor(params.value ?? "")}
         />
       ),
     },
+
     { field: "createdAt", headerName: "Ngày tạo", width: 180 },
     {
       field: "actions",
@@ -632,7 +633,7 @@ function EditUserDialog({
       <DialogContent>
         <Box mt={1}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid sx={{ xs: 12 }}>
               <TextField
                 label="Họ và tên"
                 fullWidth
@@ -640,7 +641,7 @@ function EditUserDialog({
                 onChange={(e) => setForm({ ...form, fullName: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid sx={{ xs: 12, md: 6 }}>
               <TextField
                 label="Email"
                 fullWidth
@@ -648,7 +649,7 @@ function EditUserDialog({
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid sx={{ xs: 12, md: 6 }}>
               <TextField
                 label="Số điện thoại"
                 fullWidth
@@ -656,7 +657,7 @@ function EditUserDialog({
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid sx={{ xs: 12, md: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Vai trò</InputLabel>
                 <Select
