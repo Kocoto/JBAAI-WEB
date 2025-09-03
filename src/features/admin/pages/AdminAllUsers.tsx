@@ -4,7 +4,7 @@ import AdminRequestList from "@/features/admin/components/requests/AdminRequestL
 export default function AdminAllUsers() {
   return (
     <BaseDashboardLayout>
-      <AdminRequestList />
+      <h2>Danh sách Users</h2>
     </BaseDashboardLayout>
   );
 }

@@ -469,74 +469,75 @@ export default function AdminCampaignForm({
                   ) : franchiseList.length === 0 ? (
                     <MenuItem disabled>Không có franchise nào</MenuItem>
                   ) : (
-                    franchiseList.map((franchise) => (
-                      <MenuItem
-                        key={franchise._id}
-                        value={franchise.userId._id.toString()}
-                        sx={{
-                          // Thêm padding và border-bottom để phân tách các item
-                          py: 2,
-                          borderBottom: "1px solid rgba(0,0,0,0.08)",
-                          "&:last-child": {
-                            borderBottom: "none", // Bỏ border cho item cuối cùng
-                          },
-                          // Hiệu ứng khi hover
-                          "&:hover": {
-                            backgroundColor: "rgba(0, 123, 255, 0.05)",
-                          },
-                          // Hiệu ứng khi được chọn
-                          "&.Mui-selected": {
-                            backgroundColor: "rgba(0, 123, 255, 0.1)",
-                            fontWeight: "bold",
-                          },
-                        }}
-                      >
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          width="100%"
+                    franchiseList
+                      .filter((franchise) => franchise.userId) // ✅ chỉ lấy franchise có userId
+                      .map((franchise) => (
+                        <MenuItem
+                          key={franchise._id}
+                          value={franchise.userId._id.toString()}
+                          sx={{
+                            py: 2,
+                            borderBottom: "1px solid rgba(0,0,0,0.08)",
+                            "&:last-child": { borderBottom: "none" },
+                            "&:hover": {
+                              backgroundColor: "rgba(0, 123, 255, 0.05)",
+                            },
+                            "&.Mui-selected": {
+                              backgroundColor: "rgba(0, 123, 255, 0.1)",
+                              fontWeight: "bold",
+                            },
+                          }}
                         >
-                          {/* Phần thông tin bên trái */}
-                          <Box>
-                            <Typography
-                              variant="subtitle1"
-                              fontWeight="bold"
-                              color="primary.main"
-                              gutterBottom
-                            >
-                              {franchise.userId.franchiseName}
-                            </Typography>
-                            <Stack direction="row" spacing={1} flexWrap="wrap">
-                              <InfoChip
-                                icon={<AccountCircleIcon fontSize="small" />}
-                                label={franchise.userId.username}
-                                color="info"
-                              />
-                              <InfoChip
-                                icon={<EmailIcon fontSize="small" />}
-                                label={franchise.userId.email}
-                                color="success"
-                              />
-                              <InfoChip
-                                icon={<StarIcon fontSize="small" />}
-                                label={`Level ${franchise.franchiseLevel}`}
-                                color="warning"
-                              />
-                            </Stack>
-                          </Box>
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            width="100%"
+                          >
+                            {/* Thông tin bên trái */}
+                            <Box>
+                              <Typography
+                                variant="subtitle1"
+                                fontWeight="bold"
+                                color="primary.main"
+                                gutterBottom
+                              >
+                                {franchise.userId.franchiseName}
+                              </Typography>
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                flexWrap="wrap"
+                              >
+                                <InfoChip
+                                  icon={<AccountCircleIcon fontSize="small" />}
+                                  label={franchise.userId.username}
+                                  color="info"
+                                />
+                                <InfoChip
+                                  icon={<EmailIcon fontSize="small" />}
+                                  label={franchise.userId.email}
+                                  color="success"
+                                />
+                                <InfoChip
+                                  icon={<StarIcon fontSize="small" />}
+                                  label={`Level ${franchise.franchiseLevel}`}
+                                  color="warning"
+                                />
+                              </Stack>
+                            </Box>
 
-                          {/* Phần status bên phải */}
-                          <Box textAlign="right" ml={2}>
-                            <InfoChip
-                              icon={<BusinessIcon fontSize="small" />}
-                              label="Franchise"
-                              color="primary"
-                            />
-                          </Box>
-                        </Stack>
-                      </MenuItem>
-                    ))
+                            {/* Status bên phải */}
+                            <Box textAlign="right" ml={2}>
+                              <InfoChip
+                                icon={<BusinessIcon fontSize="small" />}
+                                label="Franchise"
+                                color="primary"
+                              />
+                            </Box>
+                          </Stack>
+                        </MenuItem>
+                      ))
                   )}
                 </Select>
                 {validationErrors.franchiseOwnerId && (
@@ -579,7 +580,7 @@ export default function AdminCampaignForm({
             </Grid>
 
             {/* Renewal Requirement */}
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid sx={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 type="number"

@@ -65,21 +65,21 @@ export default function AllocateQuota() {
     allocateQuota(formData);
   };
 
-  const CustomLoadingOverlay = () => (
-    <Stack
-      alignItems="center"
-      justifyContent="center"
-      height="100%"
-      spacing={2}
-    >
-      <Box sx={{ width: "60%" }}>
-        <LinearProgress color="primary" />
-      </Box>
-      <Typography variant="body2" color="text.secondary">
-        Đang tải dữ liệu...
-      </Typography>
-    </Stack>
-  );
+  // const CustomLoadingOverlay = () => (
+  //   <Stack
+  //     alignItems="center"
+  //     justifyContent="center"
+  //     height="100%"
+  //     spacing={2}
+  //   >
+  //     <Box sx={{ width: "60%" }}>
+  //       <LinearProgress color="primary" />
+  //     </Box>
+  //     <Typography variant="body2" color="text.secondary">
+  //       Đang tải dữ liệu...
+  //     </Typography>
+  //   </Stack>
+  // );
 
   const CustomNoRowsOverlay = () => (
     <Stack
