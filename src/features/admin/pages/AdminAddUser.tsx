@@ -347,7 +347,7 @@ export default function AdminAddUser() {
                   toggle: "confirm",
                 },
               ].map((field, i) => (
-                <Grid item xs={12} md={6} key={field.name}>
+                <Grid sx={{ xs: 12, md: 6 }} key={field.name}>
                   <motion.div
                     initial="hidden"
                     animate="visible"
@@ -414,7 +414,7 @@ export default function AdminAddUser() {
               ))}
 
               {/* Role */}
-              <Grid item xs={12} md={6}>
+              <Grid sx={{ xs: 12 }}>
                 <motion.div
                   initial="hidden"
                   animate="visible"
@@ -452,7 +452,7 @@ export default function AdminAddUser() {
               </Grid>
 
               {/* Buttons */}
-              <Grid item xs={12}>
+              <Grid sx={{ xs: 12, md: 6 }}>
                 <Stack direction="row" spacing={2} justifyContent="flex-end">
                   <Button
                     variant="outlined"

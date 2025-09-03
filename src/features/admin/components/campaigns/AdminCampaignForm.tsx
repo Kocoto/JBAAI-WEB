@@ -580,7 +580,7 @@ export default function AdminCampaignForm({
             </Grid>
 
             {/* Renewal Requirement */}
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid sx={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 type="number"
