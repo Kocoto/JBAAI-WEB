@@ -1,0 +1,561 @@
+{
+  "login": {
+    "title": "Đăng nhập",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "rememberMe": "Ghi nhớ đăng nhập",
+    "forgotPassword": "Quên mật khẩu?",
+    "signInButton": "Đăng nhập",
+    "signUpPrompt": "Chưa có tài khoản?",
+    "signUpLink": "Đăng ký",
+    "dividerOr": "hoặc",
+    "errors": {
+      "invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ.",
+      "shortPassword": "Mật khẩu phải có ít nhất 6 ký tự.",
+      "invalidCredentials": "Email hoặc mật khẩu không chính xác. Vui lòng thử lại.",
+      "unexpected": "Đã xảy ra lỗi, vui lòng thử lại sau."
+    }
+  },
+  "dashboard": {
+    "overview": "Tổng quan",
+    "details": "Chi tiết",
+    "interval": {
+      "last30days": "30 ngày gần đây"
+    },
+    "cards": {
+      "users": {
+        "title": "Người dùng"
+      },
+      "conversions": {
+        "title": "Chuyển đổi"
+      },
+      "eventCount": {
+        "title": "Số sự kiện"
+      }
+    },
+    "sessionsChart": {
+      "title": "Phiên truy cập",
+      "subtitle": "Số phiên truy cập mỗi ngày trong 30 ngày gần đây",
+      "series": {
+        "direct": "Trực tiếp",
+        "referral": "Giới thiệu",
+        "organic": "Tự nhiên"
+      }
+    },
+    "pageViewsChart": {
+      "title": "Lượt xem trang và lượt tải xuống",
+      "subtitle": "Lượt xem trang và lượt tải xuống trong 6 tháng gần đây",
+      "series": {
+        "pageViews": "Lượt xem trang",
+        "downloads": "Lượt tải xuống",
+        "conversions": "Chuyển đổi"
+      }
+    }
+  },
+  "adminRequests": {
+    "header": {
+      "title": "Quản lý Yêu cầu Nâng cấp",
+      "subtitle": "Xem xét và phê duyệt các yêu cầu nâng cấp tài khoản"
+    },
+    "filters": {
+      "searchPlaceholder": "Tìm theo tên, email, SĐT...",
+      "roleFilterLabel": "Lọc theo vai trò",
+      "roles": { "all": "Tất cả" }
+    },
+    "roles": {
+      "user": "User",
+      "franchise": "Franchise"
+    },
+    "status": {
+      "pending": "Đang chờ",
+      "reviewing": "Đang xét duyệt",
+      "approved": "Đã chấp thuận",
+      "rejected": "Đã từ chối"
+    },
+    "columns": {
+      "fullname": "Họ và tên",
+      "email": "Email",
+      "phone": "Số điện thoại",
+      "requestedRole": "Vai trò yêu cầu",
+      "createdAt": "Ngày tạo",
+      "actions": "Thao tác",
+      "id": "ID"
+    },
+    "buttons": {
+      "accept": "Chấp nhận",
+      "approve": "Phê duyệt",
+      "reject": "Từ chối"
+    },
+    "tooltips": {
+      "acceptRequest": "Chấp nhận yêu cầu",
+      "approve": "Phê duyệt",
+      "reject": "Từ chối"
+    },
+    "actions": {
+      "refresh": "Làm mới",
+      "export": "Xuất báo cáo"
+    },
+    "tabs": {
+      "pending": { "title": "Yêu cầu đang chờ" },
+      "reviewing": { "title": "Yêu cầu đang xét duyệt" },
+      "approved": { "title": "Yêu cầu đã được chấp thuận" },
+      "rejected": { "title": "Yêu cầu đã bị từ chối" }
+    },
+    "empty": {
+      "pending": "Không có yêu cầu nào đang chờ xử lý",
+      "reviewing": "Không có yêu cầu nào đang xét duyệt",
+      "approved": "Chưa có yêu cầu nào được chấp thuận",
+      "rejected": "Chưa có yêu cầu nào bị từ chối",
+      "noResultsTitle": "Không tìm thấy kết quả phù hợp",
+      "noResultsHint": "Thử tìm kiếm với từ khóa khác",
+      "placeholderHint": "Các yêu cầu mới sẽ xuất hiện ở đây"
+    }
+  },
+  "adminAddUser": {
+    "header": {
+      "title": "Thêm người dùng mới",
+      "subtitle": "Điền thông tin để tạo tài khoản người dùng mới."
+    },
+    "form": {
+      "labels": {
+        "fullName": "Họ và tên",
+        "email": "Email",
+        "phone": "Số điện thoại",
+        "password": "Mật khẩu",
+        "confirmPassword": "Xác nhận mật khẩu",
+        "role": "Vai trò"
+      }
+    },
+    "validation": {
+      "fullNameNoSpaces": "Tên viết liền không được cách nhau",
+      "fullNameRequired": "Họ và tên là bắt buộc",
+      "emailInvalid": "Email không hợp lệ",
+      "emailRequired": "Email là bắt buộc",
+      "phoneInvalid": "Số điện thoại không hợp lệ",
+      "phoneRequired": "Số điện thoại là bắt buộc",
+      "passwordMin": "Tối thiểu 6 ký tự",
+      "passwordRequired": "Mật khẩu là bắt buộc",
+      "passwordMismatch": "Mật khẩu không khớp",
+      "confirmPasswordRequired": "Xác nhận mật khẩu là bắt buộc",
+      "roleRequired": "Vai trò là bắt buộc"
+    },
+    "buttons": {
+      "reset": "Làm mới",
+      "create": "Tạo tài khoản",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "delete": "Xóa"
+    },
+    "search": {
+      "placeholder": "Tìm theo tên, email hoặc SĐT..."
+    },
+    "filters": {
+      "roleFilterLabel": "Lọc theo vai trò",
+      "roles": {
+        "all": "Tất cả"
+      }
+    },
+    "roles": {
+      "admin": "Admin",
+      "manager": "Manager",
+      "staff": "Staff",
+      "franchise": "Franchise",
+      "user": "User"
+    },
+    "table": {
+      "columns": {
+        "fullName": "Họ tên",
+        "email": "Email",
+        "phone": "Số điện thoại",
+        "role": "Vai trò",
+        "createdAt": "Ngày tạo",
+        "actions": "Hành động"
+      }
+    },
+    "dialogs": {
+      "editTitle": "Chỉnh sửa người dùng",
+      "deleteTitle": "Xác nhận xóa",
+      "deleteConfirm": "Bạn có chắc muốn xóa user {{name}}?"
+    },
+    "snackbar": {
+      "createSuccess": "Tạo user thành công",
+      "updateSuccess": "Cập nhật user thành công",
+      "deleteSuccess": "Xóa user thành công"
+    }
+  },
+  "adminFranchise": {
+    "header": {
+      "title": "Quản lý Franchise",
+      "subtitle": "Xem xét và quản lý thông tin Franchise"
+    },
+    "filters": {
+      "searchPlaceholder": "Tìm kiếm theo tên, email, SĐT..."
+    },
+    "actions": {
+      "refresh": "Làm mới",
+      "export": "Xuất báo cáo"
+    },
+    "tabs": {
+      "all": "Tất cả",
+      "level0": "Cấp 0",
+      "level1": "Cấp 1",
+      "level2plus": "Cấp 2+"
+    },
+    "columns": {
+      "franchiseName": "Tên Franchise",
+      "owner": "Chủ sở hữu",
+      "phone": "Số điện thoại",
+      "level": "Cấp bậc",
+      "activeQuota": "Quota hoạt động",
+      "status": "Trạng thái",
+      "createdAt": "Ngày tạo",
+      "actions": "Thao tác"
+    },
+    "status": {
+      "active": "Hoạt động",
+      "inactive": "Tạm ngưng"
+    },
+    "menu": {
+      "addCampaign": "Thêm chiến dịch",
+      "viewDetail": "Xem chi tiết",
+      "viewHierarchy": "Xem cây phân cấp",
+      "activate": "Kích hoạt",
+      "deactivate": "Tạm ngưng"
+    },
+    "overlays": {
+      "noDataAlt": "Không có dữ liệu",
+      "noDataTitle": "Không có dữ liệu",
+      "noDataHint": "Dữ liệu sẽ xuất hiện ở đây khi có"
+    },
+    "empty": {
+      "noItems": "Chưa có franchise nào",
+      "noResultsTitle": "Không tìm thấy kết quả phù hợp",
+      "noResultsHint": "Thử tìm kiếm với từ khóa khác",
+      "placeholderHint": "Các franchise mới sẽ xuất hiện ở đây"
+    },
+    "error": {
+      "title": "Có lỗi xảy ra",
+      "retry": "Thử lại"
+    },
+    "loading": "Đang tải dữ liệu...",
+    "common": {
+      "id": "ID"
+    }
+  },
+
+  "adminCampaignForm": {
+    "header": {
+      "title": "Tạo Chiến Dịch Mới",
+      "subtitle": "Điền thông tin để tạo chiến dịch mới cho franchise"
+    },
+    "form": {
+      "labels": {
+        "campaignName": "Tên chiến dịch",
+        "package": "Package",
+        "franchise": "Franchise",
+        "totalAllocated": "Số lượng phân bổ",
+        "renewalRequirement": "Tỷ lệ gia hạn (%)",
+        "startDate": "Ngày bắt đầu",
+        "endDate": "Ngày kết thúc",
+        "description": "Mô tả"
+      },
+      "placeholders": {
+        "campaignName": "Nhập tên chiến dịch",
+        "description": "Nhập mô tả chi tiết về chiến dịch..."
+      },
+      "helpers": {
+        "totalAllocated": "Tổng số lượng quota được phân bổ cho chiến dịch",
+        "renewalRequirement": "Phần trăm người dùng cần quay lại để gia hạn"
+      },
+      "tooltips": {
+        "renewalRequirement": "Phần trăm người dùng cần quay lại để franchise được gia hạn quota"
+      }
+    },
+    "validation": {
+      "campaignNameRequired": "Tên chiến dịch là bắt buộc",
+      "packageRequired": "Vui lòng chọn package",
+      "franchiseRequired": "Vui lòng chọn franchise",
+      "totalAllocatedPositive": "Số lượng phân bổ phải lớn hơn 0",
+      "renewalRequirementNonNegative": "Yêu cầu gia hạn không thể âm",
+      "endDateAfterStart": "Ngày kết thúc phải sau ngày bắt đầu"
+    },
+    "packages": {
+      "loading": "Đang tải danh sách gói...",
+      "empty": "Không có package nào"
+    },
+    "franchises": {
+      "loading": "Đang tải danh sách franchise...",
+      "empty": "Không có franchise nào"
+    },
+    "package": {
+      "durationDays": "{{count}} ngày"
+    },
+    "franchise": {
+      "level": "Level {{level}}",
+      "chip": "Franchise"
+    },
+    "buttons": {
+      "cancel": "Hủy",
+      "create": "Tạo chiến dịch"
+    },
+    "error": {
+      "createFailed": "Có lỗi xảy ra khi tạo chiến dịch"
+    }
+  },
+  "adminCampaignList": {
+    "header": {
+      "title": "Quản lý Chiến dịch",
+      "subtitle": "Quản lý và theo dõi các chiến dịch marketing"
+    },
+    "filters": {
+      "searchPlaceholder": "Tìm kiếm chiến dịch...",
+      "filterLabel": "Bộ lọc"
+    },
+    "actions": {
+      "refresh": "Làm mới",
+      "export": "Xuất báo cáo",
+      "create": "Tạo chiến dịch mới"
+    },
+    "tabs": {
+      "all": "Tất cả"
+    },
+    "status": {
+      "active": "Đang hoạt động",
+      "inactive": "Tạm dừng",
+      "expired": "Đã hết hạn"
+    },
+    "columns": {
+      "campaignName": "Tên chiến dịch",
+      "franchise": "Franchise",
+      "totalAllocated": "Tổng lượt sử dụng",
+      "requiredRate": "Tỉ lệ yêu cầu (%)",
+      "period": "Thời gian",
+      "status": "Trạng thái",
+      "actions": "Thao tác"
+    },
+    "stats": {
+      "remaining": "Còn lại",
+      "achieved": "Đã đạt được"
+    },
+    "common": {
+      "id": "ID",
+      "from": "Từ",
+      "to": "Đến",
+      "all": "Tất cả"
+    },
+    "franchise": {
+      "level": "Level {{level}}"
+    },
+    "menu": {
+      "viewDetail": "Xem chi tiết",
+      "edit": "Chỉnh sửa",
+      "delete": "Xóa"
+    },
+    "empty": {
+      "noItems": "Chưa có chiến dịch nào",
+      "noResultsTitle": "Không tìm thấy kết quả phù hợp",
+      "noResultsHint": "Thử tìm kiếm với từ khóa khác",
+      "placeholderHint": "Các chiến dịch mới sẽ xuất hiện ở đây"
+    },
+    "dialog": {
+      "createTitle": "Tạo chiến dịch mới",
+      "placeholder": "Form tạo chiến dịch sẽ được thêm vào đây",
+      "cancel": "Hủy",
+      "create": "Tạo chiến dịch"
+    }
+  },
+  "campaignDataGrid": {
+    "loading": "Đang tải dữ liệu chiến dịch...",
+    "empty": {
+      "title": "Không có dữ liệu chiến dịch",
+      "subtitle": "Dữ liệu sẽ xuất hiện ở đây khi có chiến dịch"
+    }
+  },
+  "nav": {
+    "home": "Trang chủ",
+
+    "admin": {
+      "dashboard": "Bảng điều khiển",
+      "requests": "Quản lý Request",
+      "users": "Quản lý Users",
+      "franchises": "Quản lý Franchises",
+      "campaigns": "Chiến dịch",
+      "reports": "Báo cáo",
+      "settings": "Cài đặt",
+
+      "users.all": "Tất cả Users",
+      "users.add": "Thêm User mới"
+    },
+
+    "seller": {
+      "dashboard": "Bảng điều khiển",
+      "products": "Sản phẩm",
+      "products.all": "Tất cả sản phẩm",
+      "products.add": "Thêm sản phẩm",
+      "orders": "Đơn hàng",
+      "campaigns": "Chiến dịch",
+      "profile": "Hồ sơ"
+    },
+
+    "franchise": {
+      "dashboard": "Bảng điều khiển",
+      "quota": "Quản lý Quota",
+      "quota.my": "Quota của tôi",
+      "quota.allocate": "Cấp phát Quota",
+      "quota.history": "Lịch sử cấp phát",
+
+      "children": "Franchise con",
+      "children.list": "Danh sách Franchise con",
+      "children.hierarchy": "Cây phân cấp",
+
+      "invitations": "Mã mời",
+      "invitations.codes": "Danh sách mã mời",
+
+      "performance": "Hiệu suất",
+      "performance.my": "Hiệu suất của tôi",
+      "performance.children": "Hiệu suất Franchise con",
+      "performance.hierarchy": "Hiệu suất toàn bộ",
+
+      "reports": "Báo cáo",
+      "reports.quota": "Sử dụng Quota",
+      "reports.export": "Xuất báo cáo",
+
+      "profile": "Thông tin"
+    },
+
+    "user": {
+      "dashboard": "Bảng điều khiển",
+      "campaigns": "Chiến dịch",
+      "profile": "Hồ sơ"
+    }
+  },
+
+  "navDesc": {
+    "admin": {
+      "dashboard": "Tổng quan hệ thống",
+      "requests": "Quản lý các yêu cầu nâng cấp",
+      "users": "Quản lý người dùng",
+      "franchises": "Quản lý chi nhánh",
+      "campaigns": "Quản lý chiến dịch marketing",
+      "reports": "Báo cáo và thống kê",
+      "settings": "Cài đặt hệ thống"
+    },
+    "seller": {
+      "dashboard": "Tổng quan cửa hàng",
+      "products": "Quản lý sản phẩm",
+      "orders": "Quản lý đơn hàng",
+      "campaigns": "Chiến dịch khuyến mãi",
+      "profile": "Thông tin cá nhân"
+    },
+    "franchise": {
+      "dashboard": "Tổng quan franchise",
+      "quota": "Quản lý hạn mức mời dùng thử",
+      "children": "Quản lý franchise con",
+      "invitations": "Quản lý mã mời dùng thử",
+      "performance": "Báo cáo hiệu suất",
+      "reports": "Báo cáo tổng hợp",
+      "profile": "Thông tin franchise"
+    },
+    "user": {
+      "dashboard": "Trang chính",
+      "campaigns": "Xem chiến dịch",
+      "profile": "Thông tin cá nhân"
+    }
+  },
+  "common": {
+    "copied": "Đã sao chép!",
+    "copy": "Sao chép mã",
+    "status": {
+      "active": "Hoạt động",
+      "inactive": "Không hoạt động"
+    },
+    "refresh": "Làm mới",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "processing": "Đang xử lý...",
+    "createdAt": "Ngày tạo:",
+    "updatedAt": "Cập nhật:",
+    "never": "Chưa sử dụng"
+  },
+  "franchise": {
+    "invitations": {
+      "title": "Quản lý Mã Mời",
+      "subtitle": "Quản lý và theo dõi các mã mời của hệ thống",
+      "codeType": {
+        "userTrial": "Dùng thử miễn phí",
+        "joinSystem": "Tham gia hệ thống"
+      },
+      "stats": {
+        "title": "📊 Thống kê sử dụng",
+        "usage": "Lần sử dụng",
+        "total": "Tổng tích lũy"
+      },
+      "activate": {
+        "btn": "Kích hoạt mã mời"
+      },
+      "cards": {
+        "userTrial": "Mã Mời Dùng Thử",
+        "franchise": "Mã Mời Franchise"
+      }
+    }
+  },
+  "common": {
+    "copy": "Sao chép mã",
+    "copied": "Đã sao chép!",
+    "status": {
+      "active": "Hoạt động",
+      "inactive": "Không hoạt động"
+    },
+    "createdAt": "Ngày tạo:",
+    "updatedAt": "Cập nhật:",
+    "refresh": "Làm mới",
+    "export": "Xuất báo cáo"
+  },
+  "franchise": {
+    "quota": {
+      "allocate": {
+        "title": "Cấp phát Quota cho Franchise con",
+        "stats": {
+          "totalAllocated": "Tổng đã cấp",
+          "totalInvitations": "Tổng số lời mời",
+          "remainingQuota": "Quota còn lại"
+        },
+        "form": {
+          "franchise": "Chọn Franchise",
+          "sourceLedger": "Nguồn sổ cái",
+          "currentQuota": "Quota hiện tại",
+          "allocateAmount": "Số quota cấp phát",
+          "submit": "Cấp phát Quota"
+        },
+        "history": {
+          "title": "Lịch sử cấp phát",
+          "searchLabel": "Tìm theo tên franchise",
+          "statusLabel": "Lọc trạng thái"
+        },
+        "table": {
+          "headers": {
+            "franchiseName": "Tên Franchise",
+            "totalAllocated": "Tổng đã cấp",
+            "availableQuota": "Quota khả dụng",
+            "status": "Trạng thái"
+          }
+        },
+        "messages": {
+          "missingFields": "Vui lòng chọn franchise và nhập số quota hợp lệ!",
+          "success": "Cấp phát quota thành công!",
+          "error": "Có lỗi xảy ra khi cấp phát quota!"
+        }
+      }
+    }
+  },
+  "common": {
+    "loading": "Đang tải dữ liệu...",
+    "noResults": "Không tìm thấy kết quả",
+    "all": "Tất cả",
+    "status": {
+      "active": "Hoạt động",
+      "inactive": "Không hoạt động"
+    },
+    "createdAtHeader": "Ngày tạo"
+  }
+}

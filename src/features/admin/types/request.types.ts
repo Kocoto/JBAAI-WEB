@@ -7,11 +7,12 @@ export interface Request {
   role: "user" | "franchise";
   address: string;
   franchiseName?: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "reviewing"; // 👈 thêm reviewing nếu dùng ở hook
   createdAt: string;
   updatedAt: string;
   __v: number;
 }
+
 export interface Pagination {
   currentPage: number;
   hasNextPage: boolean;
@@ -20,10 +21,9 @@ export interface Pagination {
   totalPages: number;
 }
 
-
 export interface GetRequestResponse {
   data: Request[];
-  Pagination?: Pagination;
+  pagination?: Pagination; // 👈 camelCase
 }
 
 export interface ApiError {

@@ -1,0 +1,535 @@
+{
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot your password?",
+    "signInButton": "Sign in",
+    "signUpPrompt": "Don't have an account?",
+    "signUpLink": "Sign up",
+    "dividerOr": "or",
+    "errors": {
+      "invalidEmail": "Please enter a valid email address.",
+      "shortPassword": "Password must be at least 6 characters long.",
+      "invalidCredentials": "Invalid email or password. Please try again.",
+      "unexpected": "An unexpected error occurred. Please try again later."
+    }
+  },
+
+  "dashboard": {
+    "overview": "Overview",
+    "details": "Details",
+    "interval": {
+      "last30days": "Last 30 days"
+    },
+    "cards": {
+      "users": {
+        "title": "Users"
+      },
+      "conversions": {
+        "title": "Conversions"
+      },
+      "eventCount": {
+        "title": "Event count"
+      }
+    },
+    "sessionsChart": {
+      "title": "Sessions",
+      "subtitle": "Sessions per day for the last 30 days",
+      "series": {
+        "direct": "Direct",
+        "referral": "Referral",
+        "organic": "Organic"
+      }
+    },
+    "pageViewsChart": {
+      "title": "Page views and downloads",
+      "subtitle": "Page views and downloads for the last 6 months",
+      "series": {
+        "pageViews": "Page views",
+        "downloads": "Downloads",
+        "conversions": "Conversions"
+      }
+    }
+  },
+  "adminRequests": {
+    "header": {
+      "title": "Upgrade Request Management",
+      "subtitle": "Review and approve account upgrade requests"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name, email, phone...",
+      "roleFilterLabel": "Filter by role",
+      "roles": { "all": "All" }
+    },
+    "roles": {
+      "user": "User",
+      "franchise": "Franchise"
+    },
+    "status": {
+      "pending": "Pending",
+      "reviewing": "Reviewing",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "columns": {
+      "fullname": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "requestedRole": "Requested role",
+      "createdAt": "Created at",
+      "actions": "Actions",
+      "id": "ID"
+    },
+    "buttons": {
+      "accept": "Accept",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "tooltips": {
+      "acceptRequest": "Accept request",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "export": "Export report"
+    },
+    "tabs": {
+      "pending": { "title": "Pending requests" },
+      "reviewing": { "title": "Requests under review" },
+      "approved": { "title": "Approved requests" },
+      "rejected": { "title": "Rejected requests" }
+    },
+    "empty": {
+      "pending": "No pending requests",
+      "reviewing": "No requests under review",
+      "approved": "No approved requests yet",
+      "rejected": "No rejected requests yet",
+      "noResultsTitle": "No matching results",
+      "noResultsHint": "Try a different keyword",
+      "placeholderHint": "New requests will appear here"
+    }
+  },
+  "adminAddUser": {
+    "header": {
+      "title": "Add new user",
+      "subtitle": "Enter information to create a new account."
+    },
+    "form": {
+      "labels": {
+        "fullName": "Full name",
+        "email": "Email",
+        "phone": "Phone",
+        "password": "Password",
+        "confirmPassword": "Confirm password",
+        "role": "Role"
+      }
+    },
+    "validation": {
+      "fullNameNoSpaces": "Name must not contain spaces",
+      "fullNameRequired": "Full name is required",
+      "emailInvalid": "Please enter a valid email address",
+      "emailRequired": "Email is required",
+      "phoneInvalid": "Invalid phone number",
+      "phoneRequired": "Phone is required",
+      "passwordMin": "At least 6 characters",
+      "passwordRequired": "Password is required",
+      "passwordMismatch": "Passwords do not match",
+      "confirmPasswordRequired": "Confirm password is required",
+      "roleRequired": "Role is required"
+    },
+    "buttons": {
+      "reset": "Reset",
+      "create": "Create account",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "search": {
+      "placeholder": "Search by name, email or phone..."
+    },
+    "filters": {
+      "roleFilterLabel": "Filter by role",
+      "roles": {
+        "all": "All"
+      }
+    },
+    "roles": {
+      "admin": "Admin",
+      "manager": "Manager",
+      "staff": "Staff",
+      "franchise": "Franchise",
+      "user": "User"
+    },
+    "table": {
+      "columns": {
+        "fullName": "Full name",
+        "email": "Email",
+        "phone": "Phone",
+        "role": "Role",
+        "createdAt": "Created at",
+        "actions": "Actions"
+      }
+    },
+    "dialogs": {
+      "editTitle": "Edit user",
+      "deleteTitle": "Confirm delete",
+      "deleteConfirm": "Are you sure you want to delete user {{name}}?"
+    },
+    "snackbar": {
+      "createSuccess": "User created successfully",
+      "updateSuccess": "User updated successfully",
+      "deleteSuccess": "User deleted successfully"
+    }
+  },
+  "adminFranchise": {
+    "header": {
+      "title": "Franchise Management",
+      "subtitle": "Review and manage franchise information"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name, email, phone..."
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "export": "Export report"
+    },
+    "tabs": {
+      "all": "All",
+      "level0": "Level 0",
+      "level1": "Level 1",
+      "level2plus": "Level 2+"
+    },
+    "columns": {
+      "franchiseName": "Franchise name",
+      "owner": "Owner",
+      "phone": "Phone",
+      "level": "Level",
+      "activeQuota": "Active quota",
+      "status": "Status",
+      "createdAt": "Created at",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "menu": {
+      "addCampaign": "Add campaign",
+      "viewDetail": "View details",
+      "viewHierarchy": "View hierarchy",
+      "activate": "Activate",
+      "deactivate": "Deactivate"
+    },
+    "overlays": {
+      "noDataAlt": "No data",
+      "noDataTitle": "No data",
+      "noDataHint": "Data will appear here when available"
+    },
+    "empty": {
+      "noItems": "No franchises yet",
+      "noResultsTitle": "No matching results",
+      "noResultsHint": "Try a different keyword",
+      "placeholderHint": "New franchises will appear here"
+    },
+    "error": {
+      "title": "Something went wrong",
+      "retry": "Retry"
+    },
+    "loading": "Loading data...",
+    "common": {
+      "id": "ID"
+    }
+  },
+  "adminCampaignForm": {
+    "header": {
+      "title": "Create New Campaign",
+      "subtitle": "Enter details to create a new campaign for the franchise"
+    },
+    "form": {
+      "labels": {
+        "campaignName": "Campaign name",
+        "package": "Package",
+        "franchise": "Franchise",
+        "totalAllocated": "Total allocated",
+        "renewalRequirement": "Renewal rate (%)",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "description": "Description"
+      },
+      "placeholders": {
+        "campaignName": "Enter campaign name",
+        "description": "Enter detailed description of the campaign..."
+      },
+      "helpers": {
+        "totalAllocated": "Total quota allocated for this campaign",
+        "renewalRequirement": "Percentage of users who must return to renew"
+      },
+      "tooltips": {
+        "renewalRequirement": "Users returning rate required for franchise to renew quota"
+      }
+    },
+    "validation": {
+      "campaignNameRequired": "Campaign name is required",
+      "packageRequired": "Please select a package",
+      "franchiseRequired": "Please select a franchise",
+      "totalAllocatedPositive": "Total allocated must be greater than 0",
+      "renewalRequirementNonNegative": "Renewal requirement cannot be negative",
+      "endDateAfterStart": "End date must be after start date"
+    },
+    "packages": {
+      "loading": "Loading packages...",
+      "empty": "No packages available"
+    },
+    "franchises": {
+      "loading": "Loading franchises...",
+      "empty": "No franchises available"
+    },
+    "package": {
+      "durationDays": "{{count}} days"
+    },
+    "franchise": {
+      "level": "Level {{level}}",
+      "chip": "Franchise"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "create": "Create campaign"
+    },
+    "error": {
+      "createFailed": "An error occurred while creating the campaign"
+    }
+  },
+  "adminCampaignList": {
+    "header": {
+      "title": "Campaign Management",
+      "subtitle": "Manage and track marketing campaigns"
+    },
+    "filters": {
+      "searchPlaceholder": "Search campaigns...",
+      "filterLabel": "Filter"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "export": "Export report",
+      "create": "Create new campaign"
+    },
+    "tabs": {
+      "all": "All"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Paused",
+      "expired": "Expired"
+    },
+    "columns": {
+      "campaignName": "Campaign name",
+      "franchise": "Franchise",
+      "totalAllocated": "Total uses",
+      "requiredRate": "Required rate (%)",
+      "period": "Period",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "stats": {
+      "remaining": "Remaining",
+      "achieved": "Achieved"
+    },
+    "common": {
+      "id": "ID",
+      "from": "From",
+      "to": "To",
+      "all": "All"
+    },
+    "franchise": {
+      "level": "Level {{level}}"
+    },
+    "menu": {
+      "viewDetail": "View details",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "empty": {
+      "noItems": "No campaigns yet",
+      "noResultsTitle": "No matching results",
+      "noResultsHint": "Try a different keyword",
+      "placeholderHint": "New campaigns will appear here"
+    },
+    "dialog": {
+      "createTitle": "Create new campaign",
+      "placeholder": "The campaign creation form will be added here",
+      "cancel": "Cancel",
+      "create": "Create campaign"
+    }
+  },
+  "campaignDataGrid": {
+    "loading": "Loading campaign data...",
+    "empty": {
+      "title": "No campaign data",
+      "subtitle": "Data will appear here once campaigns are available"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "admin": {
+      "dashboard": "Dashboard",
+      "requests": "Requests",
+      "users": "Users",
+      "franchises": "Franchises",
+      "campaigns": "Campaigns",
+      "reports": "Reports",
+      "settings": "Settings",
+      "users.all": "All users",
+      "users.add": "Add new user"
+    },
+    "seller": {
+      "dashboard": "Dashboard",
+      "products": "Products",
+      "products.all": "All products",
+      "products.add": "Add product",
+      "orders": "Orders",
+      "campaigns": "Campaigns",
+      "profile": "Profile"
+    },
+    "franchise": {
+      "dashboard": "Dashboard",
+      "quota": "Quota management",
+      "quota.my": "My quota",
+      "quota.allocate": "Allocate quota",
+      "quota.history": "Allocation history",
+      "children": "Child franchises",
+      "children.list": "Child franchise list",
+      "children.hierarchy": "Hierarchy",
+      "invitations": "Invitations",
+      "invitations.codes": "Invitation codes",
+      "performance": "Performance",
+      "performance.my": "My performance",
+      "performance.children": "Children performance",
+      "performance.hierarchy": "Overall performance",
+      "reports": "Reports",
+      "reports.quota": "Quota usage",
+      "reports.export": "Export reports",
+      "profile": "Info"
+    },
+    "user": {
+      "dashboard": "Dashboard",
+      "campaigns": "Campaigns",
+      "profile": "Profile"
+    }
+  },
+  "navDesc": {
+    "admin": {
+      "dashboard": "System overview",
+      "requests": "Manage upgrade requests",
+      "users": "Manage users",
+      "franchises": "Manage branches",
+      "campaigns": "Manage marketing campaigns",
+      "reports": "Reports & analytics",
+      "settings": "System settings"
+    },
+    "seller": {
+      "dashboard": "Store overview",
+      "products": "Manage products",
+      "orders": "Manage orders",
+      "campaigns": "Promotional campaigns",
+      "profile": "Personal information"
+    },
+    "franchise": {
+      "dashboard": "Franchise overview",
+      "quota": "Invite-quota management",
+      "children": "Manage child franchises",
+      "invitations": "Manage trial-invite codes",
+      "performance": "Performance reports",
+      "reports": "Aggregate reports",
+      "profile": "Franchise information"
+    },
+    "user": {
+      "dashboard": "Home",
+      "campaigns": "View campaigns",
+      "profile": "Personal information"
+    }
+  },
+  "franchise": {
+    "invitations": {
+      "title": "Invitation Codes",
+      "subtitle": "Manage and monitor your system invitation codes",
+      "codeType": {
+        "userTrial": "Free trial",
+        "joinSystem": "Join the system"
+      },
+      "stats": {
+        "title": "Usage stats",
+        "usage": "Uses",
+        "total": "Total accumulated"
+      },
+      "activate": {
+        "btn": "Activate invitation code"
+      },
+      "cards": {
+        "userTrial": "User Trial Code",
+        "franchise": "Franchise Invitation Code"
+      }
+    }
+  },
+  "common": {
+    "copy": "Copy",
+    "copied": "Copied!",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "createdAt": "Created:",
+    "updatedAt": "Updated:",
+    "refresh": "Refresh",
+    "export": "Export"
+  },
+  "franchise": {
+    "quota": {
+      "allocate": {
+        "title": "Allocate Quota to Child Franchise",
+        "stats": {
+          "totalAllocated": "Total Allocated",
+          "totalInvitations": "Total Invitations",
+          "remainingQuota": "Available Quota"
+        },
+        "form": {
+          "franchise": "Select Franchise",
+          "sourceLedger": "Source ledger",
+          "currentQuota": "Current quota",
+          "allocateAmount": "Allocation amount",
+          "submit": "Allocate Quota"
+        },
+        "history": {
+          "title": "Allocation History",
+          "searchLabel": "Search by franchise name",
+          "statusLabel": "Filter status"
+        },
+        "table": {
+          "headers": {
+            "franchiseName": "Franchise Name",
+            "totalAllocated": "Total Allocated",
+            "availableQuota": "Available Quota",
+            "status": "Status"
+          }
+        },
+        "messages": {
+          "missingFields": "Please select a franchise and enter a valid amount!",
+          "success": "Quota has been allocated successfully!",
+          "error": "An error occurred while allocating quota!"
+        }
+      }
+    }
+  },
+  "common": {
+    "loading": "Loading data...",
+    "noResults": "No results found",
+    "all": "All",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "createdAtHeader": "Created At"
+  }
+}

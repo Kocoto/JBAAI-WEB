@@ -1,9 +1,5 @@
 // src/features/admin/components/campaigns/AdminCampaignList.tsx
-
-// Core React import
 import React from "react";
-
-// Material UI Components
 import {
   Box,
   Typography,
@@ -34,11 +30,7 @@ import {
   DialogActions,
   Menu,
 } from "@mui/material";
-
-// Material UI Data Grid
 import { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-
-// Custom Hooks & Components
 import { useAdminCampaign } from "@/features/admin/hooks/useAdminCampaign";
 import CampaignDataGrid from "./CampaignDataGrid";
 import {
@@ -46,8 +38,6 @@ import {
   CampaignStatus,
 } from "@/features/admin/types/campaign.types";
 import { useNavigate } from "react-router-dom";
-
-// Material UI Icons
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -60,71 +50,59 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { useTranslation } from "react-i18next";
 
-// Status configuration với màu sắc và icon
-const statusConfig = {
+// status UI config (màu & icon)
+const statusUI = {
   [CAMPAIGN_STATUS.ACTIVE]: {
     color: "success" as const,
     icon: <CheckCircleIcon />,
-    label: "Đang hoạt động",
     bgColor: "#e8f5e9",
     textColor: "#388e3c",
   },
   [CAMPAIGN_STATUS.INACTIVE]: {
     color: "warning" as const,
     icon: <PauseCircleIcon />,
-    label: "Tạm dừng",
     bgColor: "#fff8e1",
     textColor: "#f57c00",
   },
   [CAMPAIGN_STATUS.EXPIRED]: {
     color: "error" as const,
     icon: <CancelIcon />,
-    label: "Đã hết hạn",
     bgColor: "#ffebee",
     textColor: "#d32f2f",
   },
 };
 
-// Component cho status chip
-const StatusChip: React.FC<{ status: CampaignStatus }> = ({ status }) => {
-  const config = statusConfig[status as keyof typeof statusConfig];
+function StatusChip({
+  status,
+  label,
+}: {
+  status: CampaignStatus;
+  label: string;
+}) {
+  const cfg = statusUI[status as keyof typeof statusUI];
   return (
     <Chip
       size="small"
-      label={config.label}
-      icon={config.icon}
+      label={label}
+      icon={cfg.icon}
       sx={{
-        bgcolor: config.bgColor,
-        color: config.textColor,
-        "& .MuiChip-icon": {
-          color: config.textColor,
-        },
+        bgcolor: cfg.bgColor,
+        color: cfg.textColor,
+        "& .MuiChip-icon": { color: cfg.textColor },
         fontWeight: 600,
         borderRadius: "8px",
       }}
     />
   );
-};
-
-// Format date helper
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-};
-
-// Format number helper
-const formatNumber = (num: number) => {
-  return new Intl.NumberFormat("vi-VN").format(num);
-};
+}
 
 export default function AdminCampaignList() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("vi") ? "vi-VN" : "en-US";
 
   const {
     campaignList,
@@ -132,7 +110,6 @@ export default function AdminCampaignList() {
     isLoading,
     searchCampaigns,
     filterByStatus,
-    // filterByFranchise,
     clearFilters,
   } = useAdminCampaign();
 
@@ -141,42 +118,54 @@ export default function AdminCampaignList() {
   );
   const [searchTerm, setSearchTerm] = React.useState("");
   const [showCreateDialog, setShowCreateDialog] = React.useState(false);
-  const [setSelectedCampaign] = React.useState<any>(null);
+  const [selectedCampaign, setSelectedCampaign] = React.useState<any>(null);
 
-  // Handle tab change
+  const getStatusLabel = (s: CampaignStatus) => {
+    if (s === CAMPAIGN_STATUS.ACTIVE)
+      return t("adminCampaignList.status.active");
+    if (s === CAMPAIGN_STATUS.INACTIVE)
+      return t("adminCampaignList.status.inactive");
+    return t("adminCampaignList.status.expired");
+  };
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+  const formatNumber = (num: number) =>
+    new Intl.NumberFormat(locale).format(num ?? 0);
+
+  // Tabs change
   const handleTabChange = async (
-    event: React.SyntheticEvent,
+    _e: React.SyntheticEvent,
     newValue: CampaignStatus | "all"
   ) => {
     setSelectedTab(newValue);
-    if (newValue === "all") {
-      await clearFilters();
-    } else {
-      await filterByStatus(newValue);
-    }
+    if (newValue === "all") await clearFilters();
+    else await filterByStatus(newValue);
   };
 
-  // Handle search
+  // Search
   const handleSearch = React.useCallback(
     async (value: string) => {
       setSearchTerm(value);
-      if (value.trim()) {
-        await searchCampaigns(value);
-      } else {
-        await fetchCampaignList();
-      }
+      if (value.trim()) await searchCampaigns(value);
+      else await fetchCampaignList();
     },
     [searchCampaigns, fetchCampaignList]
   );
 
-  // Handle refresh
+  // Refresh
   const handleRefresh = async () => {
     setSearchTerm("");
     setSelectedTab("all");
     await clearFilters();
   };
 
-  // Định nghĩa columns cho DataGrid
+  // DataGrid columns
   const columns: GridColDef[] = [
     {
       field: "avatar",
@@ -192,13 +181,13 @@ export default function AdminCampaignList() {
             fontSize: "0.875rem",
           }}
         >
-          {params.row.franchiseOwnerId?.franchiseName.charAt(0).toUpperCase()}
+          {params.row.franchiseOwnerId?.franchiseName?.charAt(0)?.toUpperCase()}
         </Avatar>
       ),
     },
     {
       field: "campaignName",
-      headerName: "Tên chiến dịch",
+      headerName: t("adminCampaignList.columns.campaignName"),
       flex: 0.6,
       minWidth: 200,
       renderCell: (params: GridRenderCellParams) => (
@@ -207,14 +196,15 @@ export default function AdminCampaignList() {
             {params.value}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            ID: {params.row.id.substring(0, 8)}...
+            {t("adminCampaignList.common.id")}: {params.row.id.substring(0, 8)}
+            ...
           </Typography>
         </Box>
       ),
     },
     {
       field: "franchiseOwner",
-      headerName: "Franchise",
+      headerName: t("adminCampaignList.columns.franchise"),
       width: 200,
       flex: 0.6,
       renderCell: (params: GridRenderCellParams) => (
@@ -223,75 +213,83 @@ export default function AdminCampaignList() {
             {params.row.franchiseOwnerId?.franchiseName || "N/A"}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Level {params.row.franchiseOwnerId?.franchiseLevel || 0}
+            {t("adminCampaignList.franchise.level", {
+              level: params.row.franchiseOwnerId?.franchiseLevel || 0,
+            })}
           </Typography>
         </Box>
       ),
     },
     {
       field: "totalAllocated",
-      headerName: "Tổng lượt sử dụng",
-      width: 150,
+      headerName: t("adminCampaignList.columns.totalAllocated"),
+      width: 170,
       renderCell: (params: GridRenderCellParams) => (
         <Box sx={{ textAlign: "center" }}>
           <Typography variant="body2" fontWeight={600} color="primary">
             {formatNumber(params.value)}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Còn lại:{" "}
+            {t("adminCampaignList.stats.remaining")}:{" "}
             {formatNumber(
-              params.row.totalAllocated - params.row.consumedUses
-            ) || "N/A"}
+              (params.row.totalAllocated ?? 0) - (params.row.consumedUses ?? 0)
+            )}
           </Typography>
         </Box>
       ),
     },
     {
       field: "renewalRequirementPercentage",
-      headerName: "Tỉ lệ yêu cầu (%)",
+      headerName: t("adminCampaignList.columns.requiredRate"),
       width: 180,
-      renderCell: (params: GridRenderCellParams) => (
-        <Box sx={{ textAlign: "center" }}>
-          <Typography variant="body2" fontWeight={600} color="primary">
-            {formatNumber(params.value)}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Đã đạt được:{" "}
-            {formatNumber(
-              (params.row.consumedUses / params.row.totalAllocated) * 100
-            )}
-            %
-          </Typography>
-        </Box>
-      ),
+      renderCell: (params: GridRenderCellParams) => {
+        const achieved =
+          ((params.row.consumedUses ?? 0) /
+            Math.max(params.row.totalAllocated ?? 1, 1)) *
+          100;
+        return (
+          <Box sx={{ textAlign: "center" }}>
+            <Typography variant="body2" fontWeight={600} color="primary">
+              {formatNumber(params.value)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {t("adminCampaignList.stats.achieved")}: {formatNumber(achieved)}%
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       field: "dateRange",
-      headerName: "Thời gian",
-      width: 200,
+      headerName: t("adminCampaignList.columns.period"),
+      width: 220,
       renderCell: (params: GridRenderCellParams) => (
         <Box sx={{ display: "flex", flexDirection: "column" }}>
           <Typography variant="body2" fontWeight={600}>
-            Từ: {formatDate(params.row.startDate)}
+            {t("adminCampaignList.common.from")}:{" "}
+            {formatDate(params.row.startDate)}
           </Typography>
           <Typography variant="body2" fontWeight={600}>
-            Đến: {formatDate(params.row.endDate)}
+            {t("adminCampaignList.common.to")}: {formatDate(params.row.endDate)}
           </Typography>
         </Box>
       ),
     },
     {
       field: "status",
-      headerName: "Trạng thái",
+      headerName: t("adminCampaignList.columns.status"),
       width: 180,
       renderCell: (params: GridRenderCellParams) => (
-        <StatusChip status={params.value} />
+        <StatusChip
+          status={params.value}
+          label={getStatusLabel(params.value)}
+        />
       ),
     },
     {
       field: "actions",
-      headerName: "Thao tác",
-      width: 100,
+      headerName: t("adminCampaignList.columns.actions"),
+      width: 110,
       sortable: false,
       align: "center",
       headerAlign: "center",
@@ -311,7 +309,6 @@ export default function AdminCampaignList() {
           setSelectedCampaignId(id);
           setSelectedCampaign(params.row);
         };
-
         const handleMenuClose = () => {
           setAnchorEl(null);
           setSelectedCampaignId(null);
@@ -335,29 +332,29 @@ export default function AdminCampaignList() {
               <MenuItem
                 onClick={() => {
                   handleMenuClose();
-                  // Handle view details
+                  // view details
                 }}
               >
                 <VisibilityIcon fontSize="small" sx={{ mr: 1 }} />
-                Xem chi tiết
+                {t("adminCampaignList.menu.viewDetail")}
               </MenuItem>
               <MenuItem
                 onClick={() => {
                   handleMenuClose();
-                  // Handle edit
+                  // edit
                 }}
               >
                 <EditIcon fontSize="small" sx={{ mr: 1 }} />
-                Chỉnh sửa
+                {t("adminCampaignList.menu.edit")}
               </MenuItem>
               <MenuItem
                 onClick={() => {
                   handleMenuClose();
-                  // Handle delete
+                  // delete
                 }}
               >
                 <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-                Xóa
+                {t("adminCampaignList.menu.delete")}
               </MenuItem>
             </Menu>
           </>
@@ -366,17 +363,11 @@ export default function AdminCampaignList() {
     },
   ];
 
-  // Get filtered data based on selected tab
-  const getFilteredData = () => {
-    if (selectedTab === "all") {
-      return campaignList;
-    }
-    return campaignList.filter((campaign) => campaign.status === selectedTab);
-  };
+  const filteredData =
+    selectedTab === "all"
+      ? campaignList
+      : campaignList.filter((c) => c.status === selectedTab);
 
-  const filteredData = getFilteredData();
-  console.log("campaignList", campaignList);
-  // Tab counts
   const tabCounts = {
     all: campaignList.length,
     [CAMPAIGN_STATUS.ACTIVE]: campaignList.filter(
@@ -392,7 +383,7 @@ export default function AdminCampaignList() {
 
   return (
     <Box sx={{ width: "100%", maxWidth: { sm: "100%", md: "1700px" } }}>
-      {/* Header Section */}
+      {/* Header */}
       <Fade in timeout={600}>
         <Box>
           <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
@@ -411,17 +402,17 @@ export default function AdminCampaignList() {
             </Box>
             <Box>
               <Typography variant="h4" fontWeight={700}>
-                Quản lý Chiến dịch
+                {t("adminCampaignList.header.title")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Quản lý và theo dõi các chiến dịch marketing
+                {t("adminCampaignList.header.subtitle")}
               </Typography>
             </Box>
           </Stack>
         </Box>
       </Fade>
 
-      {/* Filters and Actions */}
+      {/* Filters & Actions */}
       <Grow in timeout={800}>
         <Paper
           elevation={0}
@@ -439,7 +430,7 @@ export default function AdminCampaignList() {
           >
             <TextField
               size="small"
-              placeholder="Tìm kiếm chiến dịch..."
+              placeholder={t("adminCampaignList.filters.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               InputProps={{
@@ -453,21 +444,31 @@ export default function AdminCampaignList() {
             />
 
             <FormControl size="small" sx={{ minWidth: 150, display: "none" }}>
-              <InputLabel>Bộ lọc</InputLabel>
-              <Select value="all" label="Bộ lọc">
-                <MenuItem value="all">Tất cả</MenuItem>
+              <InputLabel>
+                {t("adminCampaignList.filters.filterLabel")}
+              </InputLabel>
+              <Select
+                value="all"
+                label={t("adminCampaignList.filters.filterLabel")}
+              >
+                <MenuItem value="all">
+                  {t("adminCampaignList.common.all")}
+                </MenuItem>
               </Select>
             </FormControl>
 
             <Box sx={{ flexGrow: 1 }} />
 
             <Stack direction="row" spacing={1}>
-              <Tooltip title="Làm mới">
+              <Tooltip title={t("adminCampaignList.actions.refresh")}>
                 <IconButton onClick={handleRefresh} disabled={isLoading}>
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Xuất báo cáo" sx={{ display: "none" }}>
+              <Tooltip
+                title={t("adminCampaignList.actions.export")}
+                sx={{ display: "none" }}
+              >
                 <IconButton>
                   <DownloadIcon />
                 </IconButton>
@@ -487,14 +488,14 @@ export default function AdminCampaignList() {
                   },
                 }}
               >
-                Tạo chiến dịch mới
+                {t("adminCampaignList.actions.create")}
               </Button>
             </Stack>
           </Stack>
         </Paper>
       </Grow>
 
-      {/* Main Content */}
+      {/* Main */}
       <Grow in timeout={1000}>
         <Paper
           elevation={0}
@@ -529,7 +530,7 @@ export default function AdminCampaignList() {
                 label={
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <CampaignIcon />
-                    <span>Tất cả</span>
+                    <span>{t("adminCampaignList.tabs.all")}</span>
                     <Badge
                       badgeContent={tabCounts.all}
                       color="primary"
@@ -540,32 +541,38 @@ export default function AdminCampaignList() {
                 }
                 value="all"
               />
-              {Object.entries(statusConfig).map(([status, config]) => (
-                <Tab
-                  key={status}
-                  label={
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      {config.icon}
-                      <span>{config.label}</span>
-                      <Badge
-                        badgeContent={
-                          tabCounts[status as keyof typeof tabCounts]
-                        }
-                        color={config.color}
-                        max={99}
-                        sx={{ paddingLeft: 1 }}
-                      />
-                    </Stack>
-                  }
-                  value={status}
-                />
-              ))}
+              {[
+                CAMPAIGN_STATUS.ACTIVE,
+                CAMPAIGN_STATUS.INACTIVE,
+                CAMPAIGN_STATUS.EXPIRED,
+              ].map((status) => {
+                const cfg = statusUI[status];
+                return (
+                  <Tab
+                    key={status}
+                    value={status}
+                    label={
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        {cfg.icon}
+                        <span>{getStatusLabel(status)}</span>
+                        <Badge
+                          badgeContent={
+                            tabCounts[status as keyof typeof tabCounts]
+                          }
+                          color={cfg.color}
+                          max={99}
+                          sx={{ paddingLeft: 1 }}
+                        />
+                      </Stack>
+                    }
+                  />
+                );
+              })}
             </Tabs>
           </Box>
 
           <Box p={3}>
             {isLoading ? (
-              // Loading skeleton
               <Stack spacing={2}>
                 {[1, 2, 3, 4, 5].map((item) => (
                   <Skeleton
@@ -577,14 +584,7 @@ export default function AdminCampaignList() {
                 ))}
               </Stack>
             ) : filteredData.length === 0 ? (
-              // Empty state
-              <Box
-                sx={{
-                  py: 8,
-                  textAlign: "center",
-                  color: "text.secondary",
-                }}
-              >
+              <Box sx={{ py: 8, textAlign: "center", color: "text.secondary" }}>
                 <Box
                   sx={{
                     width: 120,
@@ -602,22 +602,18 @@ export default function AdminCampaignList() {
                 </Box>
                 <Typography variant="h6" gutterBottom>
                   {searchTerm
-                    ? "Không tìm thấy kết quả phù hợp"
-                    : "Chưa có chiến dịch nào"}
+                    ? t("adminCampaignList.empty.noResultsTitle")
+                    : t("adminCampaignList.empty.noItems")}
                 </Typography>
                 <Typography variant="body2">
                   {searchTerm
-                    ? "Thử tìm kiếm với từ khóa khác"
-                    : "Các chiến dịch mới sẽ xuất hiện ở đây"}
+                    ? t("adminCampaignList.empty.noResultsHint")
+                    : t("adminCampaignList.empty.placeholderHint")}
                 </Typography>
               </Box>
             ) : (
-              // Data grid
               <CampaignDataGrid
-                rows={filteredData.map((item) => ({
-                  ...item,
-                  id: item._id,
-                }))}
+                rows={filteredData.map((item) => ({ ...item, id: item._id }))}
                 columns={columns}
                 loading={isLoading}
               />
@@ -626,25 +622,26 @@ export default function AdminCampaignList() {
         </Paper>
       </Grow>
 
-      {/* Create Campaign Dialog */}
+      {/* Create Campaign Dialog (placeholder) */}
       <Dialog
         open={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Tạo chiến dịch mới</DialogTitle>
+        <DialogTitle>{t("adminCampaignList.dialog.createTitle")}</DialogTitle>
         <DialogContent>
-          {/* Add form fields here */}
-          <Typography>Form tạo chiến dịch sẽ được thêm vào đây</Typography>
+          <Typography>{t("adminCampaignList.dialog.placeholder")}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowCreateDialog(false)}>Hủy</Button>
+          <Button onClick={() => setShowCreateDialog(false)}>
+            {t("adminCampaignList.dialog.cancel")}
+          </Button>
           <Button
             variant="contained"
             onClick={() => setShowCreateDialog(false)}
           >
-            Tạo chiến dịch
+            {t("adminCampaignList.dialog.create")}
           </Button>
         </DialogActions>
       </Dialog>

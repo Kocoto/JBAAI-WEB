@@ -12,6 +12,10 @@ import MenuButton from "@/shared/components/ui/MenuButton";
 import ColorModeIconDropdown from "@/shared/components/ui/ColorModeIconDropdown";
 import SideMenuMobile from "./SideMenuMobile";
 
+// ✅ i18n & hook điều hướng (để lấy nhãn đã dịch)
+import { useTranslation } from "react-i18next";
+import { useDashboardNavigation } from "@/shared/hooks/useDashboardNavigation";
+
 const Toolbar = styled(MuiToolbar)({
   width: "100%",
   padding: "12px",
@@ -30,6 +34,14 @@ const Toolbar = styled(MuiToolbar)({
 
 export default function AppNavbar() {
   const [open, setOpen] = React.useState(false);
+  const { t } = useTranslation();
+  const { currentNavItem } = useDashboardNavigation();
+
+  // ✅ Tiêu đề trang: ưu tiên key i18n nếu có, fallback về label gốc, rồi đến "Home"
+  const title =
+    (currentNavItem?.labelKey && t(currentNavItem.labelKey)) ||
+    currentNavItem?.label ||
+    t("nav.home");
 
   const toggleDrawer = (newOpen: boolean) => () => {
     setOpen(newOpen);
@@ -69,7 +81,7 @@ export default function AppNavbar() {
               component="h1"
               sx={{ color: "text.primary" }}
             >
-              Dashboard
+              {title}
             </Typography>
           </Stack>
           <ColorModeIconDropdown />

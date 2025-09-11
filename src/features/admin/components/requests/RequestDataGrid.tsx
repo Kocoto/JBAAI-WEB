@@ -1,3 +1,5 @@
+// src/features/admin/components/RequestDataGrid.tsx
+
 import {
   Box,
   Fade,
@@ -17,18 +19,19 @@ interface RequestDataGridProps {
   loading: boolean;
   sx?: SxProps;
 }
+
 export default function RequestDataGrid(props: RequestDataGridProps) {
   const theme = useTheme();
   const { columns, rows, loading, sx } = props;
   const height = 600;
   const autoHeight = false;
+
   const enhancedColumns: GridColDef[] = columns.map((col) => ({
     ...col,
     headerAlign: col.headerAlign || "center",
     align: col.align || "center",
     disableColumnMenu: false,
     sortable: col.sortable !== false,
-    // resizable: true,
   }));
 
   // Custom Loading Component
@@ -50,7 +53,6 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
 
   // Custom No Rows Component
   const CustomNoRowsOverlay = () => {
-    const theme = useTheme();
     return (
       <Stack
         alignItems="center"
@@ -60,7 +62,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
       >
         <Box
           component="img"
-          src="/empty-state.svg" // Thêm SVG illustration nếu có
+          src="/empty-state.svg"
           alt="No data"
           sx={{
             width: 120,
@@ -78,6 +80,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
       </Stack>
     );
   };
+
   return (
     <Fade in={!loading} timeout={700}>
       <Paper
@@ -104,7 +107,6 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
           pageSizeOptions={[5, 10, 20, 50]}
           disableColumnResize
           density="comfortable"
-          // getRowHeight={() => "auto"}
           slots={{
             loadingOverlay: CustomLoadingOverlay,
             noRowsOverlay: CustomNoRowsOverlay,
@@ -140,9 +142,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
               backgroundColor: alpha(theme.palette.primary.main, 0.04),
               borderBottom: `2px solid ${theme.palette.divider}`,
               "& .MuiDataGrid-columnHeader": {
-                "&:focus": {
-                  outline: "none",
-                },
+                "&:focus": { outline: "none" },
                 "&:focus-within": {
                   outline: `2px solid ${theme.palette.primary.main}`,
                   outlineOffset: -2,
@@ -160,9 +160,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
             },
             "& .MuiDataGrid-columnSeparator": {
               color: theme.palette.divider,
-              "&:hover": {
-                color: theme.palette.primary.main,
-              },
+              "&:hover": { color: theme.palette.primary.main },
             },
             "& .MuiDataGrid-cell": {
               borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
@@ -171,9 +169,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
               alignItems: "center",
               justifyContent: "center",
               padding: "12px 16px",
-              "&:focus": {
-                outline: "none",
-              },
+              "&:focus": { outline: "none" },
               "&:focus-within": {
                 outline: `2px solid ${theme.palette.primary.main}`,
                 outlineOffset: -2,
@@ -197,12 +193,7 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
                   backgroundColor: alpha(theme.palette.primary.main, 0.12),
                 },
               },
-              "&.even": {
-                backgroundColor: alpha(theme.palette.grey[100], 0.5),
-                ...theme.applyStyles("dark", {
-                  backgroundColor: alpha(theme.palette.grey[900], 0.5),
-                }),
-              },
+              // ❌ Bỏ zebra striping => tất cả row đồng bộ màu
               "& .MuiDataGrid-cell": {
                 whiteSpace: "normal",
                 overflow: "visible",
@@ -214,19 +205,14 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
               backgroundColor: alpha(theme.palette.primary.main, 0.02),
             },
             "& .MuiTablePagination-root": {
-              "& .MuiTablePagination-selectLabel": {
-                fontWeight: 500,
-              },
+              "& .MuiTablePagination-selectLabel": { fontWeight: 500 },
               "& .MuiTablePagination-displayedRows": {
                 fontWeight: 500,
                 color: theme.palette.text.secondary,
               },
             },
             "& .MuiDataGrid-virtualScroller": {
-              "&::-webkit-scrollbar": {
-                width: 8,
-                height: 8,
-              },
+              "&::-webkit-scrollbar": { width: 8, height: 8 },
               "&::-webkit-scrollbar-track": {
                 background: alpha(theme.palette.grey[300], 0.3),
                 borderRadius: 4,
@@ -234,40 +220,28 @@ export default function RequestDataGrid(props: RequestDataGridProps) {
               "&::-webkit-scrollbar-thumb": {
                 background: theme.palette.grey[400],
                 borderRadius: 4,
-                "&:hover": {
-                  background: theme.palette.grey[500],
-                },
+                "&:hover": { background: theme.palette.grey[500] },
               },
             },
             "& .MuiDataGrid-overlay": {
               backgroundColor: alpha(theme.palette.background.default, 0.9),
               backdropFilter: "blur(4px)",
             },
-            "& .MuiDataGrid-sortIcon": {
-              color: theme.palette.primary.main,
-            },
-            "& .MuiDataGrid-menuIcon": {
-              "& .MuiSvgIcon-root": {
-                color: theme.palette.text.secondary,
-              },
+            "& .MuiDataGrid-sortIcon": { color: theme.palette.primary.main },
+            "& .MuiDataGrid-menuIcon .MuiSvgIcon-root": {
+              color: theme.palette.text.secondary,
             },
             "& .MuiCheckbox-root": {
               color: theme.palette.text.secondary,
-              "&.Mui-checked": {
-                color: theme.palette.primary.main,
-              },
+              "&.Mui-checked": { color: theme.palette.primary.main },
             },
-            "&.MuiDataGrid-root--densityCompact": {
-              "& .MuiDataGrid-cell": {
-                paddingTop: 4,
-                paddingBottom: 4,
-              },
+            "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": {
+              paddingTop: 4,
+              paddingBottom: 4,
             },
-            "&.MuiDataGrid-root--densityStandard": {
-              "& .MuiDataGrid-cell": {
-                paddingTop: 8,
-                paddingBottom: 8,
-              },
+            "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
+              paddingTop: 8,
+              paddingBottom: 8,
             },
           }}
         />

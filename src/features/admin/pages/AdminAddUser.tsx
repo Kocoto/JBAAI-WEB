@@ -3,11 +3,12 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { Paper } from "@mui/material";
+
 import {
   Box,
   Button,
   Grid,
-  Paper,
   TextField,
   Typography,
   MenuItem,
@@ -44,32 +45,19 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-import { motion } from "framer-motion"; // 👈 thêm animation
+import { motion } from "framer-motion";
 import BaseDashboardLayout from "@/shared/components/layout/BaseDashboardLayout";
+import { useTranslation } from "react-i18next";
 
-// ------------------ Validation schema ------------------
-const schema = yup.object({
-  fullName: yup
-    .string()
-    .matches(/^\S+$/, "Tên viết liền không được cách nhau")
-    .required("Họ và tên là bắt buộc"),
-  email: yup.string().email("Email không hợp lệ").required("Email là bắt buộc"),
-  phone: yup
-    .string()
-    .matches(/^(0|\+84)[0-9]{9,10}$/, "Số điện thoại không hợp lệ")
-    .required("Số điện thoại là bắt buộc"),
-  password: yup
-    .string()
-    .min(6, "Tối thiểu 6 ký tự")
-    .required("Mật khẩu là bắt buộc"),
-  confirmPassword: yup
-    .string()
-    .oneOf([yup.ref("password")], "Mật khẩu không khớp")
-    .required("Xác nhận mật khẩu là bắt buộc"),
-  role: yup.string().required("Vai trò là bắt buộc"),
-});
-
-type FormData = yup.InferType<typeof schema>;
+// ------------------ Types ------------------
+type FormData = {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  role: string;
+};
 
 type User = {
   id: number;
@@ -77,7 +65,7 @@ type User = {
   email: string;
   phone: string;
   role: string;
-  createdAt: string; // ISO or localized
+  createdAt: string;
 };
 
 // ------------------ Helper ------------------
@@ -108,6 +96,44 @@ const formVariants = {
 
 // ------------------ Component ------------------
 export default function AdminAddUser() {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("vi") ? "vi-VN" : "en-US";
+
+  // Validation schema (i18n)
+  const schema = useMemo(
+    () =>
+      yup.object({
+        fullName: yup
+          .string()
+          .matches(/^\S+$/, t("adminAddUser.validation.fullNameNoSpaces"))
+          .required(t("adminAddUser.validation.fullNameRequired")),
+        email: yup
+          .string()
+          .email(t("adminAddUser.validation.emailInvalid"))
+          .required(t("adminAddUser.validation.emailRequired")),
+        phone: yup
+          .string()
+          .matches(
+            /^(0|\+84)[0-9]{9,10}$/,
+            t("adminAddUser.validation.phoneInvalid")
+          )
+          .required(t("adminAddUser.validation.phoneRequired")),
+        password: yup
+          .string()
+          .min(6, t("adminAddUser.validation.passwordMin"))
+          .required(t("adminAddUser.validation.passwordRequired")),
+        confirmPassword: yup
+          .string()
+          .oneOf(
+            [yup.ref("password")],
+            t("adminAddUser.validation.passwordMismatch")
+          )
+          .required(t("adminAddUser.validation.confirmPasswordRequired")),
+        role: yup.string().required(t("adminAddUser.validation.roleRequired")),
+      }),
+    [t, i18n.language]
+  );
+
   const {
     control,
     handleSubmit,
@@ -137,7 +163,6 @@ export default function AdminAddUser() {
     localStorage.setItem("users", JSON.stringify(users));
   }, [users]);
 
-  // loading simulation
   const [loading, setLoading] = useState(false);
 
   // search & filter
@@ -173,12 +198,12 @@ export default function AdminAddUser() {
       email: data.email,
       phone: data.phone,
       role: data.role,
-      createdAt: new Date().toLocaleString("vi-VN"),
+      createdAt: new Date().toLocaleString(locale),
     };
     setUsers((prev) => [newUser, ...prev]);
     setLoading(false);
     reset();
-    setSnackbarMsg("Tạo user thành công");
+    setSnackbarMsg(t("adminAddUser.snackbar.createSuccess"));
     setSnackbarOpen(true);
   };
 
@@ -209,26 +234,44 @@ export default function AdminAddUser() {
         </Avatar>
       ),
     },
-    { field: "fullName", headerName: "Họ tên", flex: 1, minWidth: 180 },
-    { field: "email", headerName: "Email", flex: 1.2, minWidth: 200 },
-    { field: "phone", headerName: "Số điện thoại", flex: 1, minWidth: 140 },
+    {
+      field: "fullName",
+      headerName: t("adminAddUser.table.columns.fullName"),
+      flex: 1,
+      minWidth: 180,
+    },
+    {
+      field: "email",
+      headerName: t("adminAddUser.table.columns.email"),
+      flex: 1.2,
+      minWidth: 200,
+    },
+    {
+      field: "phone",
+      headerName: t("adminAddUser.table.columns.phone"),
+      flex: 1,
+      minWidth: 140,
+    },
     {
       field: "role",
-      headerName: "Vai trò",
+      headerName: t("adminAddUser.table.columns.role"),
       width: 140,
       renderCell: (params: GridRenderCellParams<User, User["role"]>) => (
         <Chip
-          label={params.value ?? ""}
+          label={params.value ? t(`adminAddUser.roles.${params.value}`) : ""}
           size="small"
           color={roleColor(params.value ?? "")}
         />
       ),
     },
-
-    { field: "createdAt", headerName: "Ngày tạo", width: 180 },
+    {
+      field: "createdAt",
+      headerName: t("adminAddUser.table.columns.createdAt"),
+      width: 180,
+    },
     {
       field: "actions",
-      headerName: "Hành động",
+      headerName: t("adminAddUser.table.columns.actions"),
       width: 140,
       renderCell: (params: GridRenderCellParams<any, User>) => (
         <Stack direction="row" spacing={1}>
@@ -260,7 +303,7 @@ export default function AdminAddUser() {
   const handleEditSave = (updated: User) => {
     setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
     setEditOpen(false);
-    setSnackbarMsg("Cập nhật user thành công");
+    setSnackbarMsg(t("adminAddUser.snackbar.updateSuccess"));
     setSnackbarOpen(true);
   };
 
@@ -269,7 +312,7 @@ export default function AdminAddUser() {
     if (!deletingUser) return;
     setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
     setDeleteOpen(false);
-    setSnackbarMsg("Xóa user thành công");
+    setSnackbarMsg(t("adminAddUser.snackbar.deleteSuccess"));
     setSnackbarOpen(true);
   };
 
@@ -278,33 +321,31 @@ export default function AdminAddUser() {
       <Box
         sx={{
           width: "100%",
-          maxWidth: "1400px", // hoặc tùy kích thước bạn muốn
-          mx: "auto", // căn giữa
+          maxWidth: "1400px",
+          mx: "auto",
           p: 3,
           borderRadius: 3,
           bgcolor: "background.paper",
+          border: "2px solid #61666f",
         }}
       >
         <Paper
           elevation={6}
-          sx={{
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
+          style={{
+            padding: "24px",
+            borderRadius: 12,
             width: "100%",
-            mx: "auto",
+            background: "inherit",
           }}
         >
           {/* Header */}
           <Stack direction="row" spacing={2} alignItems="center" mb={3}>
-            <Avatar sx={{ bgcolor: "primary.main", width: 56, height: 56 }}>
-              {avatarLetter}
-            </Avatar>
             <Box>
               <Typography variant="h5" fontWeight={700}>
-                ➕ Thêm người dùng mới
+                ➕ {t("adminAddUser.header.title")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Điền thông tin để tạo tài khoản người dùng mới.
+                {t("adminAddUser.header.subtitle")}
               </Typography>
             </Box>
           </Stack>
@@ -317,32 +358,32 @@ export default function AdminAddUser() {
               {[
                 {
                   name: "fullName",
-                  label: "Họ và tên",
+                  label: t("adminAddUser.form.labels.fullName"),
                   icon: <PersonIcon />,
                   type: "text",
                 },
                 {
                   name: "email",
-                  label: "Email",
+                  label: t("adminAddUser.form.labels.email"),
                   icon: <EmailIcon />,
                   type: "email",
                 },
                 {
                   name: "phone",
-                  label: "Số điện thoại",
+                  label: t("adminAddUser.form.labels.phone"),
                   icon: <PhoneIcon />,
                   type: "text",
                 },
                 {
                   name: "password",
-                  label: "Mật khẩu",
+                  label: t("adminAddUser.form.labels.password"),
                   icon: <LockIcon />,
                   type: showPassword ? "text" : "password",
                   toggle: "password",
                 },
                 {
                   name: "confirmPassword",
-                  label: "Xác nhận mật khẩu",
+                  label: t("adminAddUser.form.labels.confirmPassword"),
                   icon: <LockIcon />,
                   type: showConfirmPassword ? "text" : "password",
                   toggle: "confirm",
@@ -363,10 +404,12 @@ export default function AdminAddUser() {
                           {...f}
                           label={field.label}
                           fullWidth
-                          type={field.type}
+                          type={field.type as string}
                           error={!!errors[field.name as keyof FormData]}
                           helperText={
-                            errors[field.name as keyof FormData]?.message
+                            (errors[field.name as keyof FormData]?.message as
+                              | string
+                              | undefined) ?? " "
                           }
                           InputProps={{
                             startAdornment: (
@@ -407,6 +450,17 @@ export default function AdminAddUser() {
                                 </InputAdornment>
                               ) : null,
                           }}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              "& fieldset": { border: "2px solid #61666f" },
+                              "&:hover fieldset": {
+                                border: "2px solid #42464d",
+                              },
+                              "&.Mui-focused fieldset": {
+                                border: "2px solid #1976d2",
+                              },
+                            },
+                          }}
                         />
                       )}
                     />
@@ -414,7 +468,7 @@ export default function AdminAddUser() {
                 </Grid>
               ))}
 
-              {/* Role */}
+              {/* Role select */}
               <Grid sx={{ xs: 12 }}>
                 <motion.div
                   initial="hidden"
@@ -429,10 +483,10 @@ export default function AdminAddUser() {
                       <TextField
                         {...field}
                         select
-                        label="Vai trò"
+                        label={t("adminAddUser.form.labels.role")}
                         fullWidth
                         error={!!errors.role}
-                        helperText={errors.role?.message}
+                        helperText={(errors.role?.message as string) ?? " "}
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">
@@ -440,12 +494,33 @@ export default function AdminAddUser() {
                             </InputAdornment>
                           ),
                         }}
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            "& fieldset": { border: "2px solid #61666f" },
+                            "&:hover fieldset": {
+                              border: "2px solid #42464d",
+                            },
+                            "&.Mui-focused fieldset": {
+                              border: "2px solid #1976d2",
+                            },
+                          },
+                        }}
                       >
-                        <MenuItem value="admin">Admin</MenuItem>
-                        <MenuItem value="manager">Manager</MenuItem>
-                        <MenuItem value="staff">Staff</MenuItem>
-                        <MenuItem value="franchise">Franchise</MenuItem>
-                        <MenuItem value="user">User</MenuItem>
+                        <MenuItem value="admin">
+                          {t("adminAddUser.roles.admin")}
+                        </MenuItem>
+                        <MenuItem value="manager">
+                          {t("adminAddUser.roles.manager")}
+                        </MenuItem>
+                        <MenuItem value="staff">
+                          {t("adminAddUser.roles.staff")}
+                        </MenuItem>
+                        <MenuItem value="franchise">
+                          {t("adminAddUser.roles.franchise")}
+                        </MenuItem>
+                        <MenuItem value="user">
+                          {t("adminAddUser.roles.user")}
+                        </MenuItem>
                       </TextField>
                     )}
                   />
@@ -466,7 +541,7 @@ export default function AdminAddUser() {
                     }}
                     disabled={isSubmitting || loading}
                   >
-                    Làm mới
+                    {t("adminAddUser.buttons.reset")}
                   </Button>
                   <Button
                     type="submit"
@@ -474,7 +549,11 @@ export default function AdminAddUser() {
                     startIcon={<AddUserIcon />}
                     disabled={isSubmitting || loading}
                   >
-                    {loading ? <CircularProgress size={22} /> : "Tạo tài khoản"}
+                    {loading ? (
+                      <CircularProgress size={22} />
+                    ) : (
+                      t("adminAddUser.buttons.create")
+                    )}
                   </Button>
                 </Stack>
               </Grid>
@@ -492,7 +571,7 @@ export default function AdminAddUser() {
           >
             <TextField
               size="small"
-              placeholder="Tìm theo tên, email hoặc SĐT..."
+              placeholder={t("adminAddUser.search.placeholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
@@ -506,10 +585,12 @@ export default function AdminAddUser() {
             />
 
             <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel> Lọc theo vai trò</InputLabel>
+              <InputLabel>
+                {t("adminAddUser.filters.roleFilterLabel")}
+              </InputLabel>
               <Select
                 value={filterRole}
-                label=" Lọc theo vai trò"
+                label={t("adminAddUser.filters.roleFilterLabel")}
                 onChange={(e) => setFilterRole(String(e.target.value))}
                 startAdornment={
                   <InputAdornment position="start">
@@ -517,12 +598,22 @@ export default function AdminAddUser() {
                   </InputAdornment>
                 }
               >
-                <MenuItem value="all">Tất cả</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
-                <MenuItem value="manager">Manager</MenuItem>
-                <MenuItem value="staff">Staff</MenuItem>
-                <MenuItem value="franchise">Franchise</MenuItem>
-                <MenuItem value="user">User</MenuItem>
+                <MenuItem value="all">
+                  {t("adminAddUser.filters.roles.all")}
+                </MenuItem>
+                <MenuItem value="admin">
+                  {t("adminAddUser.roles.admin")}
+                </MenuItem>
+                <MenuItem value="manager">
+                  {t("adminAddUser.roles.manager")}
+                </MenuItem>
+                <MenuItem value="staff">
+                  {t("adminAddUser.roles.staff")}
+                </MenuItem>
+                <MenuItem value="franchise">
+                  {t("adminAddUser.roles.franchise")}
+                </MenuItem>
+                <MenuItem value="user">{t("adminAddUser.roles.user")}</MenuItem>
               </Select>
             </FormControl>
           </Stack>
@@ -544,6 +635,8 @@ export default function AdminAddUser() {
                 }}
                 disableRowSelectionOnClick
                 sx={{
+                  bgcolor: "background.paper",
+                  border: "2px solid #61666f",
                   borderRadius: 2,
                   "& .MuiDataGrid-columnHeaders": {
                     bgcolor: (theme) =>
@@ -570,20 +663,24 @@ export default function AdminAddUser() {
 
       {/* Delete Confirm */}
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
-        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogTitle>{t("adminAddUser.dialogs.deleteTitle")}</DialogTitle>
         <DialogContent>
           <Typography>
-            Bạn có chắc muốn xóa user <strong>{deletingUser?.fullName}</strong>?
+            {t("adminAddUser.dialogs.deleteConfirm", {
+              name: deletingUser?.fullName ?? "",
+            })}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)}>Hủy</Button>
+          <Button onClick={() => setDeleteOpen(false)}>
+            {t("adminAddUser.buttons.cancel")}
+          </Button>
           <Button
             color="error"
             variant="contained"
             onClick={handleConfirmDelete}
           >
-            Xóa
+            {t("adminAddUser.buttons.delete")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -619,6 +716,7 @@ function EditUserDialog({
   onClose: () => void;
   onSave: (u: User) => void;
 }) {
+  const { t, i18n } = useTranslation();
   const [form, setForm] = useState<User | null>(user);
 
   useEffect(() => {
@@ -629,13 +727,13 @@ function EditUserDialog({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Chỉnh sửa người dùng</DialogTitle>
+      <DialogTitle>{t("adminAddUser.dialogs.editTitle")}</DialogTitle>
       <DialogContent>
         <Box mt={1}>
           <Grid container spacing={2}>
             <Grid sx={{ xs: 12 }}>
               <TextField
-                label="Họ và tên"
+                label={t("adminAddUser.form.labels.fullName")}
                 fullWidth
                 value={form.fullName}
                 onChange={(e) => setForm({ ...form, fullName: e.target.value })}
@@ -643,7 +741,7 @@ function EditUserDialog({
             </Grid>
             <Grid sx={{ xs: 12, md: 6 }}>
               <TextField
-                label="Email"
+                label={t("adminAddUser.form.labels.email")}
                 fullWidth
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -651,7 +749,7 @@ function EditUserDialog({
             </Grid>
             <Grid sx={{ xs: 12, md: 6 }}>
               <TextField
-                label="Số điện thoại"
+                label={t("adminAddUser.form.labels.phone")}
                 fullWidth
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -659,17 +757,27 @@ function EditUserDialog({
             </Grid>
             <Grid sx={{ xs: 12, md: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Vai trò</InputLabel>
+                <InputLabel>{t("adminAddUser.form.labels.role")}</InputLabel>
                 <Select
                   value={form.role}
-                  label="Vai trò"
+                  label={t("adminAddUser.form.labels.role")}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
                 >
-                  <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="manager">Manager</MenuItem>
-                  <MenuItem value="staff">Staff</MenuItem>
-                  <MenuItem value="franchise">Franchise</MenuItem>
-                  <MenuItem value="user">User</MenuItem>
+                  <MenuItem value="admin">
+                    {t("adminAddUser.roles.admin")}
+                  </MenuItem>
+                  <MenuItem value="manager">
+                    {t("adminAddUser.roles.manager")}
+                  </MenuItem>
+                  <MenuItem value="staff">
+                    {t("adminAddUser.roles.staff")}
+                  </MenuItem>
+                  <MenuItem value="franchise">
+                    {t("adminAddUser.roles.franchise")}
+                  </MenuItem>
+                  <MenuItem value="user">
+                    {t("adminAddUser.roles.user")}
+                  </MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -678,14 +786,14 @@ function EditUserDialog({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>Hủy</Button>
+        <Button onClick={onClose}>{t("adminAddUser.buttons.cancel")}</Button>
         <Button
           variant="contained"
           onClick={() => {
             if (form) onSave(form);
           }}
         >
-          Lưu
+          {t("adminAddUser.buttons.save")}
         </Button>
       </DialogActions>
     </Dialog>

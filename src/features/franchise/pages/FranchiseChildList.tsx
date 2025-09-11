@@ -83,7 +83,7 @@ export default function FranchiseChildList() {
       setLoading(true);
       try {
         const token =
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODUwZTVlOTA4OGY5ZDU5ZmU2N2Y3ODkiLCJjbGllbnRJZCI6IndlYi1hcHAtdjEiLCJpYXQiOjE3NTYxOTI0MjksImV4cCI6MTc1NjE5NjAyOX0.3nj5cdI5PGAo2alH_MoagkzukTH2HRluLCk_gafYerU"; // Thay token thực tế
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODUwZTVlOTA4OGY5ZDU5ZmU2N2Y3ODkiLCJjbGllbnRJZCI6IndlYi1hcHAtdjEiLCJpYXQiOjE3NTczMTMwMjUsImV4cCI6MTc1NzMxNjYyNX0.qtw6YmGJRFtZNgdk57nepK-hByZs-X_myPseXfl3sPU"; // Thay token thực tế
         const res = await axios.get(
           "https://jbaai-y7mb.onrender.com/api/v1/franchise/me/details",
           { headers: { Authorization: `Bearer ${token}` } }
@@ -92,11 +92,10 @@ export default function FranchiseChildList() {
         const data = res.data?.data || {};
         const franchiseInfo = data.franchiseInfo?.userId || {};
         const quotaData = data.quotaInfo?.activeQuotaDetails || [];
-
         const mappedData: FranchiseRow[] = quotaData.map(
           (item: any, index: number) => ({
             id: item.ledgerId || `${index + 1}-${Date.now()}`,
-            name: franchiseInfo.franchiseName || "Chưa có tên",
+            name: franchiseInfo.username || "Chưa có tên",
             email: franchiseInfo.email || "N/A",
             phone: franchiseInfo.phone || "N/A",
             role: franchiseInfo.role || "N/A",

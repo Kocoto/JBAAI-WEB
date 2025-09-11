@@ -59,46 +59,93 @@ import {
 import { useFranchise } from "../../hooks/useFranchise";
 
 // React Hooks
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
-// Định nghĩa các loại quota
-const QUOTA_OPTIONS = [
+// ------- QUOTA PRESET KEYS (dịch bên trong component) --------
+const QUOTA_PRESETS = [
   {
     value: "basic",
-    label: "Basic",
-    description: "100 lượt sử dụng",
     icon: <StarIcon />,
     color: "#2196f3",
-    features: ["100 lượt sử dụng/tháng", "Hỗ trợ cơ bản", "Báo cáo hàng tháng"],
+    labelKey: "franchise.invitations.quota.basic.title",
+    labelDefault: "Basic",
+    descKey: "franchise.invitations.quota.basic.desc",
+    descDefault: "100 uses",
+    featureKeys: [
+      {
+        key: "franchise.invitations.quota.basic.features.0",
+        defaultValue: "100 uses / month",
+      },
+      {
+        key: "franchise.invitations.quota.basic.features.1",
+        defaultValue: "Basic support",
+      },
+      {
+        key: "franchise.invitations.quota.basic.features.2",
+        defaultValue: "Monthly report",
+      },
+    ],
   },
   {
     value: "premium",
-    label: "Premium",
-    description: "500 lượt sử dụng",
     icon: <PremiumIcon />,
     color: "#ff9800",
-    features: [
-      "500 lượt sử dụng/tháng",
-      "Hỗ trợ ưu tiên 24/7",
-      "Báo cáo chi tiết hàng tuần",
-      "Tùy chỉnh giao diện",
+    labelKey: "franchise.invitations.quota.premium.title",
+    labelDefault: "Premium",
+    descKey: "franchise.invitations.quota.premium.desc",
+    descDefault: "500 uses",
+    featureKeys: [
+      {
+        key: "franchise.invitations.quota.premium.features.0",
+        defaultValue: "500 uses / month",
+      },
+      {
+        key: "franchise.invitations.quota.premium.features.1",
+        defaultValue: "Priority support 24/7",
+      },
+      {
+        key: "franchise.invitations.quota.premium.features.2",
+        defaultValue: "Weekly detailed reports",
+      },
+      {
+        key: "franchise.invitations.quota.premium.features.3",
+        defaultValue: "UI customization",
+      },
     ],
   },
   {
     value: "enterprise",
-    label: "Enterprise",
-    description: "Không giới hạn",
     icon: <AllInclusiveIcon />,
     color: "#4caf50",
-    features: [
-      "Không giới hạn sử dụng",
-      "Hỗ trợ chuyên biệt",
-      "API tích hợp",
-      "Báo cáo tùy chỉnh",
-      "Quản lý đa chi nhánh",
+    labelKey: "franchise.invitations.quota.enterprise.title",
+    labelDefault: "Enterprise",
+    descKey: "franchise.invitations.quota.enterprise.desc",
+    descDefault: "Unlimited",
+    featureKeys: [
+      {
+        key: "franchise.invitations.quota.enterprise.features.0",
+        defaultValue: "Unlimited usage",
+      },
+      {
+        key: "franchise.invitations.quota.enterprise.features.1",
+        defaultValue: "Dedicated support",
+      },
+      {
+        key: "franchise.invitations.quota.enterprise.features.2",
+        defaultValue: "API integration",
+      },
+      {
+        key: "franchise.invitations.quota.enterprise.features.3",
+        defaultValue: "Custom reports",
+      },
+      {
+        key: "franchise.invitations.quota.enterprise.features.4",
+        defaultValue: "Multi-branch management",
+      },
     ],
   },
-];
+] as const;
 
 /**
  * Component quản lý và hiển thị thông tin mã mời
@@ -106,6 +153,7 @@ const QUOTA_OPTIONS = [
  */
 export default function InvitationCodes() {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
   const { invitationCodes, fetchInvitationCodes } = useFranchise();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isActivating, setIsActivating] = useState(false);
@@ -120,11 +168,22 @@ export default function InvitationCodes() {
   });
   const [selectedQuota, setSelectedQuota] = useState("");
 
+  // Dữ liệu quota đã dịch
+  const QUOTA_OPTIONS = useMemo(() => {
+    return QUOTA_PRESETS.map((p) => ({
+      value: p.value,
+      icon: p.icon,
+      color: p.color,
+      label: t(p.labelKey, { defaultValue: p.labelDefault }),
+      description: t(p.descKey, { defaultValue: p.descDefault }),
+      features: p.featureKeys.map((f) =>
+        t(f.key, { defaultValue: f.defaultValue })
+      ),
+    }));
+  }, [t, i18n.language]);
+
   /**
    * Xử lý mở dialog kích hoạt mã mời
-   * @param codeId - ID của mã mời
-   * @param codeType - Loại mã mời
-   * @param code - Mã mời
    */
   const handleActivateCode = (
     codeId: string,
@@ -146,14 +205,9 @@ export default function InvitationCodes() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // API call để kích hoạt mã với quota đã chọn
+      // API call thực tế:
       // await activateInvitationCode(activationDialog.codeId, selectedQuota);
-      console.log(
-        "Kích hoạt mã:",
-        activationDialog.codeId,
-        "với quota:",
-        selectedQuota
-      );
+      // console.log("Kích hoạt mã:", activationDialog.codeId, "với quota:", selectedQuota);
 
       // Reset dialog state
       setActivationDialog({
@@ -168,8 +222,12 @@ export default function InvitationCodes() {
       // Refresh data
       fetchInvitationCodes();
     } catch (error) {
-      console.error("Lỗi kích hoạt mã:", error);
-      setActivationError("Có lỗi xảy ra khi kích hoạt mã. Vui lòng thử lại.");
+      console.error("Activate code error:", error);
+      setActivationError(
+        t("franchise.invitations.activate.error", {
+          defaultValue: "Có lỗi xảy ra khi kích hoạt mã. Vui lòng thử lại.",
+        })
+      );
       setIsActivating(false);
     }
   };
@@ -195,8 +253,7 @@ export default function InvitationCodes() {
   }, [fetchInvitationCodes]);
 
   /**
-   * Hàm sao chép mã mời vào clipboard
-   * @param code - Mã mời cần sao chép
+   * Sao chép mã
    */
   const handleCopyCode = async (code: string) => {
     try {
@@ -204,32 +261,29 @@ export default function InvitationCodes() {
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2000);
     } catch (err) {
-      console.error("Không thể sao chép mã:", err);
+      console.error("Clipboard copy failed:", err);
     }
   };
 
   /**
-   * Hàm định dạng ngày tháng
-   * @param dateString - Chuỗi ngày tháng
-   * @returns Ngày tháng đã định dạng
+   * Định dạng ngày theo ngôn ngữ hiện tại
    */
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      return new Date(dateString).toLocaleString(i18n.language || "vi-VN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "N/A";
+    }
   };
 
   /**
-   * Component hiển thị thông tin chi tiết của mã mời
-   * @param props - Props của component
-   * @param props.invitationCode - Dữ liệu mã mời
-   * @param props.title - Tiêu đề của card
-   * @param props.icon - Icon hiển thị
-   * @param props.color - Màu chủ đạo
+   * Card thông tin mã mời
    */
   const InvitationCodeCard = ({
     invitationCode,
@@ -261,7 +315,7 @@ export default function InvitationCodes() {
       }}
     >
       <CardContent sx={{ p: 3 }}>
-        {/* Header với icon và tiêu đề */}
+        {/* Header */}
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
           <Box
             sx={{
@@ -280,13 +334,17 @@ export default function InvitationCodes() {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {invitationCode?.codeType === "USER_TRIAL"
-                ? "Dùng thử miễn phí"
-                : "Tham gia hệ thống"}
+                ? t("franchise.invitations.codeType.userTrial", {
+                    defaultValue: "Dùng thử miễn phí",
+                  })
+                : t("franchise.invitations.codeType.joinSystem", {
+                    defaultValue: "Tham gia hệ thống",
+                  })}
             </Typography>
           </Box>
         </Stack>
 
-        {/* Mã mời với nút sao chép */}
+        {/* Code + copy */}
         <Box
           sx={{
             p: 2,
@@ -312,8 +370,8 @@ export default function InvitationCodes() {
             <Tooltip
               title={
                 copiedCode === invitationCode?.code
-                  ? "Đã sao chép!"
-                  : "Sao chép mã"
+                  ? t("common.copied", { defaultValue: "Đã sao chép!" })
+                  : t("common.copy", { defaultValue: "Sao chép mã" })
               }
             >
               <IconButton
@@ -338,7 +396,7 @@ export default function InvitationCodes() {
           </Stack>
         </Box>
 
-        {/* Trạng thái */}
+        {/* Status */}
         <Box sx={{ mb: 2 }}>
           <Chip
             icon={
@@ -350,8 +408,10 @@ export default function InvitationCodes() {
             }
             label={
               invitationCode?.status === "active"
-                ? "Hoạt động"
-                : "Không hoạt động"
+                ? t("common.status.active", { defaultValue: "Hoạt động" })
+                : t("common.status.inactive", {
+                    defaultValue: "Không hoạt động",
+                  })
             }
             color={invitationCode?.status === "active" ? "success" : "error"}
             variant="filled"
@@ -359,7 +419,7 @@ export default function InvitationCodes() {
           />
         </Box>
 
-        {/* Nút kích hoạt mã mời - chỉ hiển thị khi mã chưa được kích hoạt */}
+        {/* Activate button if inactive */}
         {invitationCode?.status !== "active" && (
           <Box sx={{ mb: 2 }}>
             <Button
@@ -389,17 +449,21 @@ export default function InvitationCodes() {
                 },
               }}
             >
-              Kích hoạt mã mời
+              {t("franchise.invitations.activate.btn", {
+                defaultValue: "Kích hoạt mã mời",
+              })}
             </Button>
           </Box>
         )}
 
         <Divider sx={{ my: 2 }} />
 
-        {/* Thống kê sử dụng */}
+        {/* Stats */}
         <Stack spacing={2}>
           <Typography variant="subtitle2" fontWeight={600} color={color}>
-            📊 Thống kê sử dụng
+            {t("franchise.invitations.stats.title", {
+              defaultValue: "Thống kê sử dụng",
+            })}
           </Typography>
 
           <Grid container spacing={2}>
@@ -416,7 +480,9 @@ export default function InvitationCodes() {
                   {invitationCode?.statistics?.actualUsageCount || 0}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Lần sử dụng
+                  {t("franchise.invitations.stats.usage", {
+                    defaultValue: "Lần sử dụng",
+                  })}
                 </Typography>
               </Box>
             </Grid>
@@ -433,20 +499,22 @@ export default function InvitationCodes() {
                   {invitationCode?.statistics?.totalCumulativeUses || 0}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Tổng tích lũy
+                  {t("franchise.invitations.stats.total", {
+                    defaultValue: "Tổng tích lũy",
+                  })}
                 </Typography>
               </Box>
             </Grid>
           </Grid>
 
-          {/* Thông tin chi tiết */}
+          {/* Details */}
           <Stack spacing={1.5}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <CalendarTodayIcon
                 sx={{ fontSize: 16, color: "text.secondary" }}
               />
               <Typography variant="body2" color="text.secondary">
-                Ngày tạo:
+                {t("common.createdAt", { defaultValue: "Ngày tạo:" })}
               </Typography>
               <Typography variant="body2" fontWeight={500}>
                 {invitationCode?.createdAt
@@ -458,7 +526,7 @@ export default function InvitationCodes() {
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <UpdateIcon sx={{ fontSize: 16, color: "text.secondary" }} />
               <Typography variant="body2" color="text.secondary">
-                Cập nhật:
+                {t("common.updatedAt", { defaultValue: "Cập nhật:" })}
               </Typography>
               <Typography variant="body2" fontWeight={500}>
                 {invitationCode?.updatedAt
@@ -470,12 +538,14 @@ export default function InvitationCodes() {
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <VisibilityIcon sx={{ fontSize: 16, color: "text.secondary" }} />
               <Typography variant="body2" color="text.secondary">
-                Lần cuối sử dụng:
+                {t("franchise.invitations.stats.lastUsed", {
+                  defaultValue: "Lần cuối sử dụng:",
+                })}
               </Typography>
               <Typography variant="body2" fontWeight={500}>
                 {invitationCode?.statistics?.lastUsedDate
                   ? formatDate(invitationCode.statistics.lastUsedDate)
-                  : "Chưa sử dụng"}
+                  : t("common.never", { defaultValue: "Chưa sử dụng" })}
               </Typography>
             </Box>
           </Stack>
@@ -484,7 +554,7 @@ export default function InvitationCodes() {
     </Card>
   );
 
-  // Lấy quota option đã chọn
+  // Quota option đã chọn
   const selectedQuotaOption = QUOTA_OPTIONS.find(
     (opt) => opt.value === selectedQuota
   );
@@ -514,10 +584,14 @@ export default function InvitationCodes() {
             </Box>
             <Box>
               <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
-                Quản lý Mã Mời
+                {t("franchise.invitations.title", {
+                  defaultValue: "Quản lý Mã Mời",
+                })}
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Quản lý và theo dõi các mã mời của hệ thống
+                {t("franchise.invitations.subtitle", {
+                  defaultValue: "Quản lý và theo dõi các mã mời của hệ thống",
+                })}
               </Typography>
             </Box>
           </Stack>
@@ -541,7 +615,9 @@ export default function InvitationCodes() {
               }
               sx={{ textTransform: "none" }}
             >
-              Quản lý kích hoạt mã
+              {t("franchise.invitations.activate.manage", {
+                defaultValue: "Quản lý kích hoạt mã",
+              })}
             </Button>
             <Button
               variant="contained"
@@ -549,7 +625,7 @@ export default function InvitationCodes() {
               onClick={() => fetchInvitationCodes()}
               sx={{ textTransform: "none" }}
             >
-              Làm mới
+              {t("common.refresh", { defaultValue: "Làm mới" })}
             </Button>
           </Stack>
         </Box>
@@ -570,7 +646,9 @@ export default function InvitationCodes() {
             <Grid size={{ xs: 12, md: 6 }}>
               <InvitationCodeCard
                 invitationCode={invitationCodes?.data?.[0]}
-                title="Mã Mời Dùng Thử"
+                title={t("franchise.invitations.cards.userTrial", {
+                  defaultValue: "Mã Mời Dùng Thử",
+                })}
                 icon={
                   <PersonIcon
                     sx={{ color: theme.palette.info.main, fontSize: 28 }}
@@ -582,7 +660,9 @@ export default function InvitationCodes() {
             <Grid size={{ xs: 12, md: 6 }}>
               <InvitationCodeCard
                 invitationCode={invitationCodes?.data?.[1]}
-                title="Mã Mời Franchise"
+                title={t("franchise.invitations.cards.franchise", {
+                  defaultValue: "Mã Mời Franchise",
+                })}
                 icon={
                   <BusinessIcon
                     sx={{ color: theme.palette.success.main, fontSize: 28 }}
@@ -595,7 +675,7 @@ export default function InvitationCodes() {
         </Paper>
       </Grow>
 
-      {/* Dialog kích hoạt mã mời - Đã tối ưu */}
+      {/* Dialog kích hoạt mã mời */}
       <Dialog
         open={activationDialog.open}
         onClose={handleCloseActivationDialog}
@@ -631,10 +711,14 @@ export default function InvitationCodes() {
               </Box>
               <Box>
                 <Typography variant="h5" fontWeight={700}>
-                  Kích hoạt mã mời
+                  {t("franchise.invitations.activate.title", {
+                    defaultValue: "Kích hoạt mã mời",
+                  })}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Chọn gói phù hợp với nhu cầu của bạn
+                  {t("franchise.invitations.activate.subtitle", {
+                    defaultValue: "Chọn gói phù hợp với nhu cầu của bạn",
+                  })}
                 </Typography>
               </Box>
             </Stack>
@@ -655,7 +739,7 @@ export default function InvitationCodes() {
         </DialogTitle>
 
         <DialogContent sx={{ mt: 2 }}>
-          {/* Hiển thị mã đang kích hoạt */}
+          {/* Mã đang kích hoạt */}
           {activationDialog.code && (
             <Alert
               severity="info"
@@ -668,7 +752,9 @@ export default function InvitationCodes() {
               }}
             >
               <Typography variant="body2">
-                Mã kích hoạt:{" "}
+                {t("franchise.invitations.activate.code", {
+                  defaultValue: "Mã kích hoạt:",
+                })}{" "}
                 <strong style={{ fontFamily: "monospace" }}>
                   {activationDialog.code}
                 </strong>
@@ -676,7 +762,7 @@ export default function InvitationCodes() {
             </Alert>
           )}
 
-          {/* Progress bar khi đang xử lý */}
+          {/* Progress */}
           {isActivating && (
             <Box sx={{ mb: 3 }}>
               <LinearProgress />
@@ -685,12 +771,14 @@ export default function InvitationCodes() {
                 color="text.secondary"
                 sx={{ mt: 1, textAlign: "center" }}
               >
-                Đang xử lý kích hoạt...
+                {t("franchise.invitations.activate.processing", {
+                  defaultValue: "Đang xử lý kích hoạt...",
+                })}
               </Typography>
             </Box>
           )}
 
-          {/* Error message */}
+          {/* Error */}
           {activationError && (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
               {activationError}
@@ -698,13 +786,19 @@ export default function InvitationCodes() {
           )}
 
           <Stack spacing={3}>
-            {/* Quota Selection */}
+            {/* Quota Select */}
             <FormControl fullWidth variant="outlined">
-              <InputLabel>Chọn gói dịch vụ</InputLabel>
+              <InputLabel>
+                {t("franchise.invitations.quota.selectLabel", {
+                  defaultValue: "Chọn gói dịch vụ",
+                })}
+              </InputLabel>
               <Select
                 value={selectedQuota}
                 onChange={(e) => setSelectedQuota(e.target.value)}
-                label="Chọn gói dịch vụ"
+                label={t("franchise.invitations.quota.selectLabel", {
+                  defaultValue: "Chọn gói dịch vụ",
+                })}
                 disabled={isActivating}
               >
                 {QUOTA_OPTIONS.map((option) => (
@@ -729,11 +823,14 @@ export default function InvitationCodes() {
                 ))}
               </Select>
               <FormHelperText>
-                Mỗi gói có các tính năng và giới hạn khác nhau
+                {t("franchise.invitations.quota.helper", {
+                  defaultValue:
+                    "Mỗi gói có các tính năng và giới hạn khác nhau",
+                })}
               </FormHelperText>
             </FormControl>
 
-            {/* Hiển thị chi tiết gói đã chọn */}
+            {/* Chi tiết gói đã chọn */}
             {selectedQuotaOption && (
               <Fade in={true}>
                 <Paper
@@ -759,7 +856,10 @@ export default function InvitationCodes() {
                       </Box>
                       <Box>
                         <Typography variant="h6" fontWeight={700}>
-                          Gói {selectedQuotaOption.label}
+                          {t("franchise.invitations.quota.packageTitle", {
+                            defaultValue: "Gói {{name}}",
+                            name: selectedQuotaOption.label,
+                          })}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           {selectedQuotaOption.description}
@@ -775,7 +875,9 @@ export default function InvitationCodes() {
                         fontWeight={600}
                         sx={{ mb: 1 }}
                       >
-                        Tính năng nổi bật:
+                        {t("franchise.invitations.quota.featuresTitle", {
+                          defaultValue: "Tính năng nổi bật:",
+                        })}
                       </Typography>
                       <List dense sx={{ py: 0 }}>
                         {selectedQuotaOption.features.map((feature, index) => (
@@ -812,7 +914,7 @@ export default function InvitationCodes() {
             variant="outlined"
             sx={{ borderRadius: 2 }}
           >
-            Hủy
+            {t("common.cancel", { defaultValue: "Hủy" })}
           </Button>
           <Button
             variant="contained"
@@ -838,7 +940,9 @@ export default function InvitationCodes() {
               },
             }}
           >
-            {isActivating ? "Đang xử lý..." : "Xác nhận"}
+            {isActivating
+              ? t("common.processing", { defaultValue: "Đang xử lý..." })
+              : t("common.confirm", { defaultValue: "Xác nhận" })}
           </Button>
         </DialogActions>
       </Dialog>

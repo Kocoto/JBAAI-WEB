@@ -42,8 +42,9 @@ import {
   Add as AddIcon,
 } from "@mui/icons-material";
 import React from "react";
-import { viVN } from "@mui/x-data-grid/locales";
+import { viVN, enUS } from "@mui/x-data-grid/locales";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface TabConfig {
   id: string;
@@ -56,6 +57,9 @@ interface TabConfig {
 export default function AdminFranchiseList() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("vi") ? "vi-VN" : "en-US";
+
   const {
     franchiseList,
     franchiseStatistics,
@@ -83,28 +87,28 @@ export default function AdminFranchiseList() {
   const tabConfigs: TabConfig[] = [
     {
       id: "all",
-      label: "Tất cả",
+      label: t("adminFranchise.tabs.all"),
       icon: <BusinessIcon />,
       count: pagination.total,
       color: theme.palette.primary.main,
     },
     {
       id: "level-0",
-      label: "Cấp 0",
+      label: t("adminFranchise.tabs.level0"),
       icon: <PeopleIcon />,
       count: franchiseStatistics?.franchisesByLevel?.[0],
       color: theme.palette.info.main,
     },
     {
       id: "level-1",
-      label: "Cấp 1",
+      label: t("adminFranchise.tabs.level1"),
       icon: <TrendingUpIcon />,
       count: franchiseStatistics?.franchisesByLevel?.[1],
       color: theme.palette.success.main,
     },
     {
       id: "level-2",
-      label: "Cấp 2+",
+      label: t("adminFranchise.tabs.level2plus"),
       icon: <AccountTreeIcon />,
       count: franchiseStatistics?.franchisesByLevel?.[2],
       color: theme.palette.warning.main,
@@ -116,16 +120,16 @@ export default function AdminFranchiseList() {
     setSelectedTab(newValue);
     setSearchTerm("");
     switch (newValue) {
-      case 0: // All
+      case 0:
         filterByLevel(undefined);
         break;
-      case 1: // Level 0
+      case 1:
         filterByLevel(0);
         break;
-      case 2: // Level 1
+      case 2:
         filterByLevel(1);
         break;
-      case 3: // Level 2+
+      case 3:
         filterByLevel(2);
         break;
     }
@@ -189,8 +193,8 @@ export default function AdminFranchiseList() {
       >
         <Box
           component="img"
-          src="/empty-state.svg" // Thêm SVG illustration nếu có
-          alt="No data"
+          src="/empty-state.svg"
+          alt={t("adminFranchise.overlays.noDataAlt")}
           sx={{
             width: 120,
             height: 120,
@@ -199,10 +203,10 @@ export default function AdminFranchiseList() {
           }}
         />
         <Typography variant="h6" color="text.secondary">
-          Không có dữ liệu
+          {t("adminFranchise.overlays.noDataTitle")}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Dữ liệu sẽ xuất hiện ở đây khi có
+          {t("adminFranchise.overlays.noDataHint")}
         </Typography>
       </Stack>
     );
@@ -219,7 +223,7 @@ export default function AdminFranchiseList() {
         <LinearProgress color="primary" />
       </Box>
       <Typography variant="body2" color="text.secondary">
-        Đang tải dữ liệu...
+        {t("adminFranchise.loading")}
       </Typography>
     </Stack>
   );
@@ -245,25 +249,25 @@ export default function AdminFranchiseList() {
     },
     {
       field: "franchiseName",
-      headerName: "Tên Franchise",
-      flex: 1.5, // Tăng flex để ưu tiên không gian cho cột quan trọng này
-      minWidth: 220, // Tăng minWidth để không bị quá chật
+      headerName: t("adminFranchise.columns.franchiseName"),
+      flex: 1.5,
+      minWidth: 220,
       renderCell: (params: GridRenderCellParams) => (
         <Box>
           <Typography variant="body2" fontWeight={600}>
             {params.value}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            ID: {params.row.id.substring(0, 8)}...
+            {t("adminFranchise.common.id")}: {params.row.id.substring(0, 8)}...
           </Typography>
         </Box>
       ),
     },
     {
       field: "ownerInfo",
-      headerName: "Chủ sở hữu",
-      flex: 1.5, // Tăng flex
-      minWidth: 250, // Tăng minWidth để chứa được email dài
+      headerName: t("adminFranchise.columns.owner"),
+      flex: 1.5,
+      minWidth: 250,
       renderCell: (params: GridRenderCellParams) => (
         <Box>
           <Typography variant="body2">{params.row.ownerName}</Typography>
@@ -275,20 +279,20 @@ export default function AdminFranchiseList() {
     },
     {
       field: "phone",
-      headerName: "Số điện thoại",
+      headerName: t("adminFranchise.columns.phone"),
       width: 140,
     },
     {
       field: "level",
       flex: 1,
-      headerName: "Cấp bậc",
+      headerName: t("adminFranchise.columns.level"),
       renderCell: (params: GridRenderCellParams) => (
         <FranchiseStatusChip level={params.value} />
       ),
     },
     {
       field: "activeQuota",
-      headerName: "Quota hoạt động",
+      headerName: t("adminFranchise.columns.activeQuota"),
       width: 160,
       align: "center",
       headerAlign: "center",
@@ -303,11 +307,15 @@ export default function AdminFranchiseList() {
     },
     {
       field: "status",
-      headerName: "Trạng thái",
+      headerName: t("adminFranchise.columns.status"),
       width: 120,
       renderCell: (params: GridRenderCellParams) => (
         <Chip
-          label={params.value === "active" ? "Hoạt động" : "Tạm ngưng"}
+          label={
+            params.value === "active"
+              ? t("adminFranchise.status.active")
+              : t("adminFranchise.status.inactive")
+          }
           size="small"
           color={params.value === "active" ? "success" : "error"}
           variant="outlined"
@@ -317,18 +325,18 @@ export default function AdminFranchiseList() {
     },
     {
       field: "createdAt",
-      headerName: "Ngày tạo",
+      headerName: t("adminFranchise.columns.createdAt"),
       width: 120,
       renderCell: (params: GridRenderCellParams) => (
         <Typography variant="body2" color="text.secondary">
-          {new Date(params.value).toLocaleDateString("vi-VN")}
+          {new Date(params.value).toLocaleDateString(locale)}
         </Typography>
       ),
     },
     {
       field: "actions",
       flex: 0.5,
-      headerName: "Thao tác",
+      headerName: t("adminFranchise.columns.actions"),
       width: 100,
       sortable: false,
       align: "center",
@@ -350,15 +358,15 @@ export default function AdminFranchiseList() {
           >
             <MenuItem onClick={() => navigate("/admin/campaigns/new")}>
               <AddIcon fontSize="small" sx={{ mr: 1 }} />
-              Thêm chiến dịch
+              {t("adminFranchise.menu.addCampaign")}
             </MenuItem>
             <MenuItem onClick={() => navigateToFranchiseDetail(params.row.id)}>
               <VisibilityIcon fontSize="small" sx={{ mr: 1 }} />
-              Xem chi tiết
+              {t("adminFranchise.menu.viewDetail")}
             </MenuItem>
             <MenuItem onClick={() => handleViewHierarchy(params.row.userId)}>
               <AccountTreeIcon fontSize="small" sx={{ mr: 1 }} />
-              Xem cây phân cấp
+              {t("adminFranchise.menu.viewHierarchy")}
             </MenuItem>
             <MenuItem
               onClick={() =>
@@ -368,12 +376,12 @@ export default function AdminFranchiseList() {
               {params.row.status === "active" ? (
                 <>
                   <BlockIcon fontSize="small" sx={{ mr: 1 }} />
-                  Tạm ngưng
+                  {t("adminFranchise.menu.deactivate")}
                 </>
               ) : (
                 <>
                   <CheckCircleIcon fontSize="small" sx={{ mr: 1 }} />
-                  Kích hoạt
+                  {t("adminFranchise.menu.activate")}
                 </>
               )}
             </MenuItem>
@@ -385,9 +393,7 @@ export default function AdminFranchiseList() {
 
   // Transform franchise data for DataGrid
   const rows = useMemo(() => {
-    if (!franchiseList || !Array.isArray(franchiseList)) {
-      return [];
-    }
+    if (!franchiseList || !Array.isArray(franchiseList)) return [];
     return franchiseList.map((franchise) => {
       const user = franchise.userId ?? null;
       return {
@@ -425,10 +431,10 @@ export default function AdminFranchiseList() {
             </Box>
             <Box>
               <Typography variant="h4" fontWeight={700}>
-                Quản lý Franchise
+                {t("adminFranchise.header.title")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Xem xét và quản lý thông tin Franchise
+                {t("adminFranchise.header.subtitle")}
               </Typography>
             </Box>
           </Stack>
@@ -452,9 +458,9 @@ export default function AdminFranchiseList() {
           >
             <TextField
               size="small"
-              placeholder="Tìm kiếm theo tên, email, SĐT..."
+              placeholder={t("adminFranchise.filters.searchPlaceholder")}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -465,27 +471,17 @@ export default function AdminFranchiseList() {
               sx={{ minWidth: 300 }}
             />
 
-            {/* <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Lọc theo level</InputLabel>
-              <Select
-                value={filterByLevel}
-                onChange={(e) => setFilterByLevel(e.target.value)}
-                label="Lọc theo level"
-              >
-                <MenuItem value="1">1</MenuItem>
-                <MenuItem value="2">2</MenuItem>
-                <MenuItem value="3">3</MenuItem>
-              </Select>
-            </FormControl> */}
-
             <Box sx={{ flexGrow: 1 }} />
             <Stack direction="row" spacing={1}>
-              <Tooltip title="Làm mới">
+              <Tooltip title={t("adminFranchise.actions.refresh")}>
                 <IconButton onClick={handleRefresh} disabled={isLoading}>
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Xuất báo cáo" sx={{ display: "none" }}>
+              <Tooltip
+                title={t("adminFranchise.actions.export")}
+                sx={{ display: "none" }}
+              >
                 <IconButton>
                   <DownloadIcon />
                 </IconButton>
@@ -494,6 +490,7 @@ export default function AdminFranchiseList() {
           </Stack>
         </Paper>
       </Grow>
+
       <Grow in timeout={1000}>
         <Paper
           elevation={0}
@@ -553,6 +550,7 @@ export default function AdminFranchiseList() {
               ))}
             </Tabs>
           </Box>
+
           <Box p={2}>
             {isLoading ? (
               <Stack spacing={2} sx={{ p: 2 }}>
@@ -566,29 +564,17 @@ export default function AdminFranchiseList() {
                 ))}
               </Stack>
             ) : error ? (
-              <Box
-                sx={{
-                  py: 8,
-                  textAlign: "center",
-                  color: "text.secondary",
-                }}
-              >
+              <Box sx={{ py: 8, textAlign: "center", color: "text.secondary" }}>
                 <Typography variant="h6" gutterBottom>
-                  Có lỗi xảy ra
+                  {t("adminFranchise.error.title")}
                 </Typography>
                 <Typography variant="body2">{error.message}</Typography>
                 <Button variant="outlined" onClick={refreshData} sx={{ mt: 2 }}>
-                  Thử lại
+                  {t("adminFranchise.error.retry")}
                 </Button>
               </Box>
             ) : rows.length === 0 ? (
-              <Box
-                sx={{
-                  py: 8,
-                  textAlign: "center",
-                  color: "text.secondary",
-                }}
-              >
+              <Box sx={{ py: 8, textAlign: "center", color: "text.secondary" }}>
                 <Box
                   sx={{
                     width: 120,
@@ -606,13 +592,13 @@ export default function AdminFranchiseList() {
                 </Box>
                 <Typography variant="h6" gutterBottom>
                   {searchTerm
-                    ? "Không tìm thấy kết quả phù hợp"
-                    : "Chưa có franchise nào"}
+                    ? t("adminFranchise.empty.noResultsTitle")
+                    : t("adminFranchise.empty.noItems")}
                 </Typography>
                 <Typography variant="body2">
                   {searchTerm
-                    ? "Thử tìm kiếm với từ khóa khác"
-                    : "Các franchise mới sẽ xuất hiện ở đây"}
+                    ? t("adminFranchise.empty.noResultsHint")
+                    : t("adminFranchise.empty.placeholderHint")}
                 </Typography>
               </Box>
             ) : (
@@ -630,12 +616,8 @@ export default function AdminFranchiseList() {
                   <DataGrid
                     rows={rows}
                     columns={columns}
-                    // pageSize={pagination.limit}
-                    // page={pagination.page - 1}
                     rowCount={pagination.total}
                     paginationMode="server"
-                    // onPageChange={(newPage) => goToPage(newPage + 1)}
-                    // onPageSizeChange={changePageSize}
                     pageSizeOptions={[10, 20, 50]}
                     getRowClassName={(params) =>
                       params.indexRelativeToCurrentPage % 2 === 0
@@ -646,12 +628,9 @@ export default function AdminFranchiseList() {
                     disableColumnResize
                     loading={isLoading}
                     localeText={
-                      viVN.components.MuiDataGrid.defaultProps.localeText
+                      (i18n.language?.startsWith("vi") ? viVN : enUS).components
+                        .MuiDataGrid.defaultProps.localeText
                     }
-                    // components={{
-                    //   Toolbar: CustomToolbar,
-                    // }}
-                    density="comfortable"
                     slots={{
                       loadingOverlay: CustomLoadingOverlay,
                       noRowsOverlay: CustomNoRowsOverlay,
@@ -690,9 +669,7 @@ export default function AdminFranchiseList() {
                         ),
                         borderBottom: `2px solid ${theme.palette.divider}`,
                         "& .MuiDataGrid-columnHeader": {
-                          "&:focus": {
-                            outline: "none",
-                          },
+                          "&:focus": { outline: "none" },
                           "&:focus-within": {
                             outline: `2px solid ${theme.palette.primary.main}`,
                             outlineOffset: -2,
@@ -705,17 +682,13 @@ export default function AdminFranchiseList() {
                       "& .MuiDataGrid-columnHeaderTitle": {
                         fontWeight: 600,
                         fontSize: "0.875rem",
-                        // color: theme.palette.text.primary,
                         textTransform: "uppercase",
                         letterSpacing: "0.5px",
                       },
                       "& .MuiDataGrid-columnSeparator": {
                         color: theme.palette.divider,
-                        "&:hover": {
-                          color: theme.palette.primary.main,
-                        },
+                        "&:hover": { color: theme.palette.primary.main },
                       },
-
                       "& .MuiDataGrid-cell": {
                         borderBottom: `1px solid ${alpha(
                           theme.palette.divider,
@@ -726,9 +699,7 @@ export default function AdminFranchiseList() {
                         alignItems: "center",
                         justifyContent: "center",
                         padding: "12px 16px",
-                        "&:focus": {
-                          outline: "none",
-                        },
+                        "&:focus": { outline: "none" },
                         "&:focus-within": {
                           outline: `2px solid ${theme.palette.primary.main}`,
                           outlineOffset: -2,
@@ -761,7 +732,6 @@ export default function AdminFranchiseList() {
                             ),
                           },
                         },
-                        // Alternating row colors
                         "&:nth-of-type(even)": {
                           backgroundColor: alpha(theme.palette.grey[100], 0.5),
                           ...theme.applyStyles("dark", {
@@ -776,7 +746,7 @@ export default function AdminFranchiseList() {
                           overflow: "visible",
                           lineHeight: "1.5",
                         },
-                      }, // Footer styling
+                      },
                       "& .MuiDataGrid-footerContainer": {
                         borderTop: `2px solid ${theme.palette.divider}`,
                         backgroundColor: alpha(
@@ -792,12 +762,9 @@ export default function AdminFranchiseList() {
                           fontWeight: 500,
                           color: theme.palette.text.secondary,
                         },
-                      }, // Scrollbar styling
+                      },
                       "& .MuiDataGrid-virtualScroller": {
-                        "&::-webkit-scrollbar": {
-                          width: 8,
-                          height: 8,
-                        },
+                        "&::-webkit-scrollbar": { width: 8, height: 8 },
                         "&::-webkit-scrollbar-track": {
                           background: alpha(theme.palette.grey[300], 0.3),
                           borderRadius: 4,
@@ -805,12 +772,9 @@ export default function AdminFranchiseList() {
                         "&::-webkit-scrollbar-thumb": {
                           background: theme.palette.grey[400],
                           borderRadius: 4,
-                          "&:hover": {
-                            background: theme.palette.grey[500],
-                          },
+                          "&:hover": { background: theme.palette.grey[500] },
                         },
                       },
-                      // Loading overlay
                       "& .MuiDataGrid-overlay": {
                         backgroundColor: alpha(
                           theme.palette.background.default,
@@ -818,34 +782,23 @@ export default function AdminFranchiseList() {
                         ),
                         backdropFilter: "blur(4px)",
                       },
-                      // Sort icon
                       "& .MuiDataGrid-sortIcon": {
                         color: theme.palette.primary.main,
-                      }, // Menu icon
-                      "& .MuiDataGrid-menuIcon": {
-                        "& .MuiSvgIcon-root": {
-                          color: theme.palette.text.secondary,
-                        },
                       },
-                      // Checkbox styling
+                      "& .MuiDataGrid-menuIcon .MuiSvgIcon-root": {
+                        color: theme.palette.text.secondary,
+                      },
                       "& .MuiCheckbox-root": {
                         color: theme.palette.text.secondary,
-                        "&.Mui-checked": {
-                          color: theme.palette.primary.main,
-                        },
+                        "&.Mui-checked": { color: theme.palette.primary.main },
                       },
-                      // Density
-                      "&.MuiDataGrid-root--densityCompact": {
-                        "& .MuiDataGrid-cell": {
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                        },
+                      "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": {
+                        paddingTop: 4,
+                        paddingBottom: 4,
                       },
-                      "&.MuiDataGrid-root--densityStandard": {
-                        "& .MuiDataGrid-cell": {
-                          paddingTop: 8,
-                          paddingBottom: 8,
-                        },
+                      "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
+                        paddingTop: 8,
+                        paddingBottom: 8,
                       },
                     }}
                   />

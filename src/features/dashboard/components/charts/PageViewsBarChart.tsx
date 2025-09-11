@@ -5,20 +5,25 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { useTheme } from "@mui/material/styles";
+import { useTranslation } from "react-i18next";
 
 export default function PageViewsBarChart() {
   const theme = useTheme();
+  const { t } = useTranslation();
+
   const colorPalette = [
     (theme.vars || theme).palette.primary.dark,
     (theme.vars || theme).palette.primary.main,
     (theme.vars || theme).palette.primary.light,
   ];
+
   return (
     <Card variant="outlined" sx={{ width: "100%" }}>
       <CardContent>
         <Typography component="h2" variant="subtitle2" gutterBottom>
-          Page views and downloads
+          {t("dashboard.pageViewsChart.title")}
         </Typography>
+
         <Stack sx={{ justifyContent: "space-between" }}>
           <Stack
             direction="row"
@@ -34,9 +39,10 @@ export default function PageViewsBarChart() {
             <Chip size="small" color="error" label="-8%" />
           </Stack>
           <Typography variant="caption" sx={{ color: "text.secondary" }}>
-            Page views and downloads for the last 6 months
+            {t("dashboard.pageViewsChart.subtitle")}
           </Typography>
         </Stack>
+
         <BarChart
           borderRadius={8}
           colors={colorPalette}
@@ -52,19 +58,19 @@ export default function PageViewsBarChart() {
           series={[
             {
               id: "page-views",
-              label: "Page views",
+              label: t("dashboard.pageViewsChart.series.pageViews"),
               data: [2234, 3872, 2998, 4125, 3357, 2789, 2998],
               stack: "A",
             },
             {
               id: "downloads",
-              label: "Downloads",
+              label: t("dashboard.pageViewsChart.series.downloads"),
               data: [3098, 4215, 2384, 2101, 4752, 3593, 2384],
               stack: "A",
             },
             {
               id: "conversions",
-              label: "Conversions",
+              label: t("dashboard.pageViewsChart.series.conversions"),
               data: [4051, 2275, 3129, 4693, 3904, 2038, 2275],
               stack: "A",
             },

@@ -18,9 +18,13 @@ import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import ForgotPassword from "../components/ForgotPassword";
 import AppTheme from "../../../shared/theme/AppTheme";
-import ColorModeSelect from "../../../shared/components/ui/ColorModeSelect";
 import { JBAAIIcon } from "../components/CustomIcons";
 import { useAuth } from "../context/AuthProvider";
+import { useTranslation } from "react-i18next";
+
+// ✅ các component đã refactor hỗ trợ sx
+import LanguageSwitcher from "@/shared/components/ui/LanguageSwitcher";
+import ColorModeSelect from "@/shared/components/ui/ColorModeSelect";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
@@ -67,37 +71,32 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 export default function LoginPage(props: { disableCustomTheme?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated } = useAuth();
+  const { login } = useAuth();
+  const { t } = useTranslation();
 
   // State cho form
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [rememberMe, setRememberMe] = React.useState(false);
 
-  // State cho validation
+  // Validation errors
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
 
-  // State cho forgot password dialog
+  // Forgot password dialog
   const [open, setOpen] = React.useState(false);
 
-  // State cho loading và error từ API
+  // Loading + API error
   const [isLoading, setIsLoading] = React.useState(false);
   const [apiError, setApiError] = React.useState("");
 
-  // Lấy redirect URL từ state (nếu có)
-  // Nếu không có, sẽ redirect về "/" và RoleRedirect sẽ xử lý
+  // Redirect URL
   const from = location.state?.from?.pathname || "/";
 
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const handleClickOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
 
   const validateInputs = () => {
     let isValid = true;
@@ -127,17 +126,12 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
     event.preventDefault();
     setApiError("");
 
-    if (!validateInputs()) {
-      return;
-    }
+    if (!validateInputs()) return;
 
     setIsLoading(true);
 
     try {
-      await login({
-        email,
-        password,
-      });
+      await login({ email, password });
 
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", email);
@@ -173,22 +167,28 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
       <SignInContainer direction="column" justifyContent="space-between">
-        <ColorModeSelect
+        {/* ✅ dùng sx trực tiếp */}
+        <LanguageSwitcher
           sx={{ position: "fixed", top: "1rem", right: "1rem" }}
         />
+        <ColorModeSelect
+          sx={{ position: "fixed", top: "1rem", right: "4rem" }}
+        />
+
         <Card variant="outlined">
           <Box sx={{ marginTop: 2, marginBottom: -2 }}>
             <JBAAIIcon />
           </Box>
+
           <Typography
             component="h1"
             variant="h4"
             sx={{ width: "100%", fontSize: "clamp(2rem, 10vw, 2.15rem)" }}
           >
-            Sign in
+            {t("login.title")}
           </Typography>
 
-          {/* Hiển thị lỗi từ API nếu có */}
+          {/* API error */}
           {apiError && (
             <Alert severity="error" onClose={() => setApiError("")}>
               {apiError}
@@ -207,14 +207,14 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
             }}
           >
             <FormControl>
-              <FormLabel htmlFor="email">Email</FormLabel>
+              <FormLabel htmlFor="email">{t("login.email")}</FormLabel>
               <TextField
                 error={emailError}
                 helperText={emailErrorMessage}
                 id="email"
                 type="email"
                 name="email"
-                placeholder="your@email.com"
+                placeholder={t("login.email")}
                 autoComplete="email"
                 autoFocus
                 required
@@ -226,8 +226,9 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
                 disabled={isLoading}
               />
             </FormControl>
+
             <FormControl>
-              <FormLabel htmlFor="password">Password</FormLabel>
+              <FormLabel htmlFor="password">{t("login.password")}</FormLabel>
               <TextField
                 error={passwordError}
                 helperText={passwordErrorMessage}
@@ -245,6 +246,7 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
                 disabled={isLoading}
               />
             </FormControl>
+
             <FormControlLabel
               control={
                 <Checkbox
@@ -255,9 +257,11 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
                   disabled={isLoading}
                 />
               }
-              label="Remember me"
+              label={t("login.rememberMe")}
             />
+
             <ForgotPassword open={open} handleClose={handleClose} />
+
             <Button
               type="submit"
               fullWidth
@@ -277,29 +281,34 @@ export default function LoginPage(props: { disableCustomTheme?: boolean }) {
                       marginLeft: "-12px",
                     }}
                   />
-                  <span style={{ visibility: "hidden" }}>Sign in</span>
+                  <span style={{ visibility: "hidden" }}>
+                    {t("login.signInButton")}
+                  </span>
                 </>
               ) : (
-                "Sign in"
+                t("login.signInButton")
               )}
             </Button>
+
             <Link
               component="button"
               type="button"
               onClick={handleClickOpen}
               variant="body2"
               sx={{ alignSelf: "center" }}
-              hidden={true}
+              hidden
             >
-              Forgot your password?
+              {t("login.forgotPassword")}
             </Link>
           </Box>
-          <Divider>or</Divider>
+
+          <Divider>{t("login.dividerOr")}</Divider>
+
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Typography sx={{ textAlign: "center" }}>
-              Don&apos;t have an account?{" "}
+              {t("login.signUpPrompt")}{" "}
               <Link href="/signup" variant="body2" sx={{ alignSelf: "center" }}>
-                Sign up
+                {t("login.signUpLink")}
               </Link>
             </Typography>
           </Box>

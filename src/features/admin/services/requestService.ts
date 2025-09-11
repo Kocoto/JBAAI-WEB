@@ -1,75 +1,126 @@
 import apiClient from "../../../shared/services/api/apiClient";
-import { GetRequestResponse } from "../types/request.types";
+import {
+  GetRequestResponse,
+  Pagination,
+  Request,
+} from "../types/request.types";
 
 /**
- * Fetches pending upgrade requests with pagination
+ * Fetches upgrade requests with pagination
+ * CSR: mặc định lấy 20 record/lần để DataGrid tự phân trang ở client
+ * @param status - request status filter
  * @param page - Page number for pagination (default: 1)
- * @param limit - Number of items per page (default: 10)
- * @returns Promise containing the paginated request data
+ * @param limit - Number of items per page (default: 20)
  */
 const getRequestsByStatus = async (
   status: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 20
 ): Promise<GetRequestResponse> => {
   try {
-    // Construct the API endpoint URL with query parameters
     const endpoint = `/api/v1/upgrade-request/get-by-status/${status}`;
     const queryParams = `?page=${page}&limit=${limit}`;
     const fullUrl = `${endpoint}${queryParams}`;
 
-    // Make the API request
     const response = await apiClient.get(fullUrl);
 
-    // Log the response data for debugging
-    // console.log("Pending requests response:", response.data);
+    // 👇 Backend trả về { data, Pagination }
+    const { data, Pagination } = response.data as {
+      data: Request[];
+      Pagination?: Pagination;
+    };
 
-    // Return the response data
-    return response.data;
+    return {
+      data,
+      pagination: Pagination, // 👈 map sang camelCase
+    };
   } catch (error: any) {
-    // Log any errors that occur during the request
-    console.error(
-      "Error fetching pending requests:",
-      error.response.data.message
-    );
+    handleError("fetching requests by status", error);
     throw error;
   }
 };
 
+/**
+ * Assigns a seller to a request
+ */
 const acceptRequest = async (
   requestId: string
 ): Promise<GetRequestResponse> => {
   try {
     const endpoint = `/api/v1/upgrade-request/${requestId}/assign-seller`;
     const response = await apiClient.put(endpoint);
-    return response.data;
+
+    const { data, Pagination } = response.data as {
+      data: Request[];
+      Pagination?: Pagination;
+    };
+
+    return {
+      data,
+      pagination: Pagination,
+    };
   } catch (error: any) {
-    console.error("Error accepting request:", error.response.data.message);
+    handleError("accepting request", error);
     throw error;
   }
 };
 
+/**
+ * Fetches requests by seller id (status = reviewing)
+ */
 const getRequestsById = async (): Promise<GetRequestResponse> => {
   try {
     const endpoint = `/api/v1/upgrade-request/get-by-seller-id/reviewing`;
     const response = await apiClient.get(endpoint);
-    return response.data;
+
+    const { data, Pagination } = response.data as {
+      data: Request[];
+      Pagination?: Pagination;
+    };
+
+    return {
+      data,
+      pagination: Pagination,
+    };
   } catch (error: any) {
-    console.error("Error accepting request:", error.response.data.message);
+    handleError("fetching requests by ID", error);
     throw error;
   }
 };
 
-const approveRequest = async (requestId: string) => {
+/**
+ * Approves a request
+ */
+const approveRequest = async (
+  requestId: string
+): Promise<GetRequestResponse> => {
   try {
     const endpoint = `/api/v1/upgrade-request/${requestId}/approve`;
     const response = await apiClient.post(endpoint);
-    return response.data;
+
+    const { data, Pagination } = response.data as {
+      data: Request[];
+      Pagination?: Pagination;
+    };
+
+    return {
+      data,
+      pagination: Pagination,
+    };
   } catch (error: any) {
-    console.error("Error accepting request:", error.response.data.message);
+    handleError("approving request", error);
     throw error;
   }
 };
+
+/**
+ * Helper function to handle API errors
+ */
+function handleError(action: string, error: any) {
+  const message =
+    error?.response?.data?.message || error.message || "Unknown error";
+  console.error(`Error ${action}:`, message);
+}
 
 export const RequestService = {
   getRequestsByStatus,

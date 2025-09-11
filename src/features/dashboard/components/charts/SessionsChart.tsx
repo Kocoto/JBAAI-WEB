@@ -5,6 +5,7 @@ import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import { LineChart } from "@mui/x-charts/LineChart";
+import { useTranslation } from "react-i18next";
 
 function AreaGradient({ color, id }: { color: string; id: string }) {
   return (
@@ -19,9 +20,7 @@ function AreaGradient({ color, id }: { color: string; id: string }) {
 
 function getDaysInMonth(month: number, year: number) {
   const date = new Date(year, month, 0);
-  const monthName = date.toLocaleDateString("en-US", {
-    month: "short",
-  });
+  const monthName = date.toLocaleDateString("en-US", { month: "short" });
   const daysInMonth = date.getDate();
   const days = [];
   let i = 1;
@@ -34,6 +33,7 @@ function getDaysInMonth(month: number, year: number) {
 
 export default function SessionsChart() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const data = getDaysInMonth(4, 2024);
 
   const colorPalette = [
@@ -46,8 +46,9 @@ export default function SessionsChart() {
     <Card variant="outlined" sx={{ width: "100%" }}>
       <CardContent>
         <Typography component="h2" variant="subtitle2" gutterBottom>
-          Sessions
+          {t("dashboard.sessionsChart.title")}
         </Typography>
+
         <Stack sx={{ justifyContent: "space-between" }}>
           <Stack
             direction="row"
@@ -63,9 +64,10 @@ export default function SessionsChart() {
             <Chip size="small" color="success" label="+35%" />
           </Stack>
           <Typography variant="caption" sx={{ color: "text.secondary" }}>
-            Sessions per day for the last 30 days
+            {t("dashboard.sessionsChart.subtitle")}
           </Typography>
         </Stack>
+
         <LineChart
           colors={colorPalette}
           xAxis={[
@@ -80,7 +82,7 @@ export default function SessionsChart() {
           series={[
             {
               id: "direct",
-              label: "Direct",
+              label: t("dashboard.sessionsChart.series.direct"),
               showMark: false,
               curve: "linear",
               stack: "total",
@@ -94,7 +96,7 @@ export default function SessionsChart() {
             },
             {
               id: "referral",
-              label: "Referral",
+              label: t("dashboard.sessionsChart.series.referral"),
               showMark: false,
               curve: "linear",
               stack: "total",
@@ -108,7 +110,7 @@ export default function SessionsChart() {
             },
             {
               id: "organic",
-              label: "Organic",
+              label: t("dashboard.sessionsChart.series.organic"),
               showMark: false,
               curve: "linear",
               stack: "total",

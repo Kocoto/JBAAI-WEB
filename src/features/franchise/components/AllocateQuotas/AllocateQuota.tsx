@@ -27,6 +27,7 @@ import MailIcon from "@mui/icons-material/Mail";
 import StorageIcon from "@mui/icons-material/Storage";
 import DoneIcon from "@mui/icons-material/Done";
 import BlockIcon from "@mui/icons-material/Block";
+import { useTranslation } from "react-i18next";
 
 // ------------------ TYPES ------------------
 type QuotaDetail = {
@@ -61,7 +62,7 @@ const mockQuotaData: QuotaData = {
   activeQuotaDetails: [
     {
       ledgerId: "686b49edfadd97f3140308a8",
-      franchiseName: "Franchise A",
+      franchiseName: "franchise0_1",
       sourceCampaignId: "686b49edfadd97f3140308a5",
       totalAllocated: 123,
       availableQuota: 123,
@@ -70,7 +71,7 @@ const mockQuotaData: QuotaData = {
     },
     {
       ledgerId: "68886742f135515377837b66",
-      franchiseName: "Franchise B",
+      franchiseName: "franchise0_1",
       sourceCampaignId: "68886742f135515377837b62",
       totalAllocated: 1000,
       availableQuota: 1000,
@@ -85,7 +86,12 @@ const mockQuotaData: QuotaData = {
 };
 
 // ------------------ STAT CARD ------------------
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradient }) => (
+const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  icon,
+  gradient,
+}) => (
   <Paper
     sx={{
       p: 3,
@@ -125,10 +131,12 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, gradient }) => 
 
 // ------------------ MAIN COMPONENT ------------------
 const AllocateQuota: React.FC = () => {
+  const { t } = useTranslation();
   const [quotaData, setQuotaData] = useState<QuotaData | null>(null);
   const [form, setForm] = useState({
     franchiseName: "",
     campaignId: "",
+    ledgerId: "",
     currentQuota: "",
     allocateAmount: "",
     note: "",
@@ -158,28 +166,61 @@ const AllocateQuota: React.FC = () => {
     fetchQuota();
   }, []);
 
-  if (!quotaData) return <Typography>Đang tải dữ liệu...</Typography>;
+  if (!quotaData) return <Typography>{t("common.loading")}</Typography>;
 
   const handleFranchiseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const franchiseName = e.target.value;
+
     const campaign = quotaData.activeQuotaDetails.find(
       (item) => item.franchiseName === franchiseName
     );
-    setForm({
+
+    const updatedForm = {
       ...form,
       franchiseName,
       campaignId: campaign ? campaign.sourceCampaignId : "",
+      ledgerId: campaign ? campaign.ledgerId : "",
       currentQuota: campaign ? String(campaign.availableQuota) : "",
-    });
+    };
+
+    setForm(updatedForm);
+
+    // debug logs
+    console.log("Franchise selected:", franchiseName);
+    console.log("Campaign detail:", campaign);
+    console.log("Form patched:", updatedForm);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    console.log("Dữ liệu gửi:", form);
-    alert("Quota đã được cấp phát!");
+  const handleSubmit = async () => {
+    try {
+      if (!form.ledgerId || !form.allocateAmount || !form.campaignId) {
+        alert(t("franchise.quota.allocate.messages.missingFields"));
+        return;
+      }
+
+      const payload = {
+        childFranchiseUserId: form.ledgerId,
+        amountToAllocate: Number(form.allocateAmount),
+        sourceLedgerEntryId: form.campaignId,
+      };
+
+      console.log("Payload:", payload);
+
+      const res = await axios.post("/api/franchise/quota/allocate", payload);
+
+      alert(t("franchise.quota.allocate.messages.success"));
+      console.log("Response:", res.data);
+    } catch (err: any) {
+      console.error("Allocate quota error:", err);
+      alert(
+        err.response?.data?.message ||
+          t("franchise.quota.allocate.messages.error")
+      );
+    }
   };
 
   const handleSort = (property: keyof QuotaDetail) => {
@@ -196,8 +237,8 @@ const AllocateQuota: React.FC = () => {
       statusFilter === "all" ? true : item.status === statusFilter
     )
     .sort((a, b) => {
-      const valueA = a[orderBy];
-      const valueB = b[orderBy];
+      const valueA = a[orderBy] as any;
+      const valueB = b[orderBy] as any;
       if (valueA < valueB) return order === "asc" ? -1 : 1;
       if (valueA > valueB) return order === "asc" ? 1 : -1;
       return 0;
@@ -211,14 +252,14 @@ const AllocateQuota: React.FC = () => {
   return (
     <Paper sx={{ p: 3, width: "100%" }}>
       <Typography variant="h5" fontWeight="bold" gutterBottom>
-        Cấp phát Quota cho Franchise con
+        {t("franchise.quota.allocate.title")}
       </Typography>
 
-      {/* Box thống kê */}
+      {/* Stats */}
       <Grid container spacing={3} mb={4}>
         <Grid sx={{ xs: 12, md: 4 }}>
           <StatCard
-            title="Tổng quota hiện tại"
+            title={t("franchise.quota.allocate.stats.totalAllocated")}
             value={quotaData.totalActiveQuota}
             icon={<CheckCircleIcon className="stat-icon" />}
             gradient="linear-gradient(135deg, #6a11cb, #2575fc)"
@@ -226,7 +267,7 @@ const AllocateQuota: React.FC = () => {
         </Grid>
         <Grid sx={{ xs: 12, md: 4 }}>
           <StatCard
-            title="Tổng invitations"
+            title={t("franchise.quota.allocate.stats.totalInvitations")}
             value={quotaData.statistics.totalInvitations}
             icon={<MailIcon className="stat-icon" />}
             gradient="linear-gradient(135deg, #11998e, #38ef7d)"
@@ -234,7 +275,7 @@ const AllocateQuota: React.FC = () => {
         </Grid>
         <Grid sx={{ xs: 12, md: 4 }}>
           <StatCard
-            title="Quota còn lại"
+            title={t("franchise.quota.allocate.stats.remainingQuota")}
             value={quotaData.statistics.remainingQuota}
             icon={<StorageIcon className="stat-icon" />}
             gradient="linear-gradient(135deg, #ff512f, #dd2476)"
@@ -255,7 +296,7 @@ const AllocateQuota: React.FC = () => {
           <Grid sx={{ xs: 12 }}>
             <TextField
               select
-              label="Chọn Franchise"
+              label={t("franchise.quota.allocate.form.franchise")}
               name="franchiseName"
               value={form.franchiseName}
               onChange={handleFranchiseChange}
@@ -270,7 +311,7 @@ const AllocateQuota: React.FC = () => {
           </Grid>
           <Grid sx={{ xs: 12 }}>
             <TextField
-              label="Chiến dịch"
+              label={t("franchise.quota.allocate.form.sourceLedger")}
               name="campaignId"
               value={form.campaignId}
               onChange={handleChange}
@@ -280,7 +321,7 @@ const AllocateQuota: React.FC = () => {
           </Grid>
           <Grid sx={{ xs: 12 }}>
             <TextField
-              label="Quota hiện tại"
+              label={t("franchise.quota.allocate.form.currentQuota")}
               name="currentQuota"
               value={form.currentQuota}
               fullWidth
@@ -289,23 +330,12 @@ const AllocateQuota: React.FC = () => {
           </Grid>
           <Grid sx={{ xs: 12 }}>
             <TextField
-              label="Số quota cấp phát"
+              label={t("franchise.quota.allocate.form.allocateAmount")}
               name="allocateAmount"
               type="number"
               value={form.allocateAmount}
               onChange={handleChange}
               fullWidth
-            />
-          </Grid>
-          <Grid sx={{ xs: 12 }}>
-            <TextField
-              label="Ghi chú"
-              name="note"
-              value={form.note}
-              onChange={handleChange}
-              fullWidth
-              multiline
-              rows={3}
             />
           </Grid>
           <Grid sx={{ xs: 12 }}>
@@ -327,7 +357,7 @@ const AllocateQuota: React.FC = () => {
                 },
               }}
             >
-              🚀 Cấp phát Quota
+              🚀 {t("franchise.quota.allocate.form.submit")}
             </Button>
           </Grid>
         </Grid>
@@ -336,13 +366,13 @@ const AllocateQuota: React.FC = () => {
       {/* History */}
       <Box mt={4}>
         <Typography variant="h6" gutterBottom>
-          Lịch sử cấp phát
+          {t("franchise.quota.allocate.history.title")}
         </Typography>
 
         <Grid container spacing={2} mb={2}>
           <Grid sx={{ xs: 12, md: 6 }}>
             <TextField
-              label="Tìm kiếm theo tên Franchise"
+              label={t("franchise.quota.allocate.history.searchLabel")}
               variant="outlined"
               size="small"
               fullWidth
@@ -352,15 +382,19 @@ const AllocateQuota: React.FC = () => {
           </Grid>
           <Grid sx={{ xs: 12, md: 6 }}>
             <FormControl fullWidth size="small">
-              <InputLabel>Lọc trạng thái</InputLabel>
+              <InputLabel>
+                {t("franchise.quota.allocate.history.statusLabel")}
+              </InputLabel>
               <Select
                 value={statusFilter}
-                label="Lọc trạng thái"
+                label={t("franchise.quota.allocate.history.statusLabel")}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <MenuItem value="all">Tất cả</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="all">{t("common.all")}</MenuItem>
+                <MenuItem value="active">{t("common.status.active")}</MenuItem>
+                <MenuItem value="inactive">
+                  {t("common.status.inactive")}
+                </MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -371,11 +405,32 @@ const AllocateQuota: React.FC = () => {
             <TableHead>
               <TableRow>
                 {[
-                  { id: "franchiseName", label: "Franchise Name" },
-                  { id: "totalAllocated", label: "Total Allocated" },
-                  { id: "availableQuota", label: "Available Quota" },
-                  { id: "status", label: "Status" },
-                  { id: "createdAt", label: "Created At" },
+                  {
+                    id: "franchiseName",
+                    label: t(
+                      "franchise.quota.allocate.table.headers.franchiseName"
+                    ),
+                  },
+                  {
+                    id: "totalAllocated",
+                    label: t(
+                      "franchise.quota.allocate.table.headers.totalAllocated"
+                    ),
+                  },
+                  {
+                    id: "availableQuota",
+                    label: t(
+                      "franchise.quota.allocate.table.headers.availableQuota"
+                    ),
+                  },
+                  {
+                    id: "status",
+                    label: t("franchise.quota.allocate.table.headers.status"),
+                  },
+                  {
+                    id: "createdAt",
+                    label: t("common.createdAtHeader"),
+                  },
                 ].map((headCell) => (
                   <TableCell key={headCell.id}>
                     <TableSortLabel
@@ -399,8 +454,14 @@ const AllocateQuota: React.FC = () => {
                   <TableCell>{row.availableQuota}</TableCell>
                   <TableCell>
                     <Chip
-                      icon={row.status === "active" ? <DoneIcon /> : <BlockIcon />}
-                      label={row.status === "active" ? "Active" : "Inactive"}
+                      icon={
+                        row.status === "active" ? <DoneIcon /> : <BlockIcon />
+                      }
+                      label={
+                        row.status === "active"
+                          ? t("common.status.active")
+                          : t("common.status.inactive")
+                      }
                       color={row.status === "active" ? "success" : "error"}
                       variant="outlined"
                       sx={{
@@ -415,12 +476,10 @@ const AllocateQuota: React.FC = () => {
                               boxShadow: "0 0 0 0 rgba(46, 204, 113, 0.6)",
                             },
                             "70%": {
-                              boxShadow:
-                                "0 0 0 10px rgba(46, 204, 113, 0)",
+                              boxShadow: "0 0 0 10px rgba(46, 204, 113, 0)",
                             },
                             "100%": {
-                              boxShadow:
-                                "0 0 0 0 rgba(46, 204, 113, 0)",
+                              boxShadow: "0 0 0 0 rgba(46, 204, 113, 0)",
                             },
                           },
                         }),
@@ -436,7 +495,7 @@ const AllocateQuota: React.FC = () => {
               {paginatedHistory.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} align="center">
-                    Không tìm thấy kết quả
+                    {t("common.noResults")}
                   </TableCell>
                 </TableRow>
               )}

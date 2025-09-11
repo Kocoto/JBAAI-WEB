@@ -1,5 +1,3 @@
-// src/features/admin/hooks/useAdminRequest.ts
-
 import { useState, useEffect, useCallback } from "react";
 import { RequestService } from "../services/requestService";
 import { Request, ApiError } from "../types/request.types";
@@ -31,14 +29,12 @@ const initialListState: RequestListState = {
   loading: false,
   error: null,
   page: 1,
-  limit: 10,
+  limit: 20, // mặc định CSR: 20 items / page
   total: 0,
 };
 
 /**
  * Custom hook để quản lý nhiều danh sách request với các status khác nhau
- *
- * @returns Object chứa state và các functions để quản lý requests
  */
 export const useAdminRequest = () => {
   // State chính chứa tất cả các danh sách
@@ -56,8 +52,7 @@ export const useAdminRequest = () => {
    * Hàm fetch requests cho một status cụ thể
    */
   const fetchRequestsByStatus = useCallback(
-    async (status: RequestStatus, page: number = 1, limit: number = 10) => {
-      // Set loading state cho status cụ thể
+    async (status: RequestStatus, page: number = 1, limit: number = 20) => {
       setRequestsState((prev) => ({
         ...prev,
         [status]: {
@@ -74,9 +69,8 @@ export const useAdminRequest = () => {
           limit
         );
 
-        // Giả sử API trả về total count, nếu không thì tính bằng length
-        const total = response.data?.length || 0;
-        console.log(`Đây là response của ${status}, ${total}`, response.data);
+        // ✅ Lấy total từ API pagination.total
+        const total = response.pagination?.total ?? response.data?.length ?? 0;
 
         setRequestsState((prev) => ({
           ...prev,
@@ -89,7 +83,13 @@ export const useAdminRequest = () => {
             total,
           },
         }));
-        console.log(`Đây là state của ${status}`, requestsState);
+
+        console.log(
+          `STATE ${status} updated:`,
+          response.data,
+          "pagination:",
+          response.pagination
+        );
       } catch (error) {
         const apiError = error as ApiError;
         setRequestsState((prev) => ({
@@ -106,10 +106,9 @@ export const useAdminRequest = () => {
   );
 
   /**
-   * Hàm fetch tất cả 3 danh sách cùng lúc
+   * Hàm fetch tất cả danh sách cùng lúc
    */
   const fetchAllRequests = useCallback(async () => {
-    // Fetch song song để tối ưu performance
     await Promise.all([
       fetchRequestsByStatus("pending"),
       fetchRequestsByStatus("approved"),
@@ -149,7 +148,6 @@ export const useAdminRequest = () => {
    */
   const changeLimitForStatus = useCallback(
     async (status: RequestStatus, newLimit: number) => {
-      // Reset về trang 1 khi thay đổi limit
       await fetchRequestsByStatus(status, 1, newLimit);
     },
     [fetchRequestsByStatus]
@@ -162,10 +160,8 @@ export const useAdminRequest = () => {
     async (requestId: string) => {
       try {
         await RequestService.acceptRequest(requestId);
-        // Refresh pending list sau khi accept
         await refreshRequestList("pending");
         await refreshRequestList("reviewing");
-        // Có thể cần refresh các list khác tùy vào business logic
       } catch (error) {
         console.error("Error accepting request:", error);
         throw error;
@@ -181,7 +177,6 @@ export const useAdminRequest = () => {
     async (requestId: string) => {
       try {
         await RequestService.approveRequest(requestId);
-        // Refresh các list liên quan
         await refreshRequestList("reviewing");
         await refreshRequestList("approved");
       } catch (error) {
@@ -197,7 +192,6 @@ export const useAdminRequest = () => {
    */
   const getRequestById = useCallback(
     (requestId: string): Request | undefined => {
-      // Tìm trong tất cả các danh sách
       for (const status of [
         "pending",
         "approved",
@@ -225,30 +219,15 @@ export const useAdminRequest = () => {
   }, [isInitialized, fetchAllRequests]);
 
   useEffect(() => {
-    // useEffect này sẽ chạy mỗi khi `requestsState` thay đổi
-    console.log("STATE ĐÃ ĐƯỢC CẬP NHẬT:", requestsState);
-  }, [requestsState]); // Mảng phụ thuộc là requestsState
-  // /**
-  //  * Optional: Auto-refresh mỗi 30 giây
-  //  */
-  // useEffect(() => {
-  //   if (!isInitialized) return;
-
-  //   const interval = setInterval(() => {
-  //     fetchAllRequests();
-  //   }, 30000); // 30 seconds
-
-  //   return () => clearInterval(interval);
-  // }, [isInitialized, fetchAllRequests]);
+    console.log("STATE UPDATED:", requestsState);
+  }, [requestsState]);
 
   return {
-    // State cho từng danh sách
     pendingRequests: requestsState.pending,
     approvedRequests: requestsState.approved,
     rejectedRequests: requestsState.rejected,
     reviewingRequests: requestsState.reviewing,
 
-    // Functions để thao tác
     fetchAllRequests,
     refreshRequestList,
     changePageForStatus,
@@ -257,14 +236,12 @@ export const useAdminRequest = () => {
     approveRequest,
     getRequestById,
 
-    // Loading states
     isLoadingAny:
       requestsState.pending.loading ||
       requestsState.approved.loading ||
       requestsState.rejected.loading ||
       requestsState.reviewing.loading,
 
-    // Error states
     hasAnyError:
       !!requestsState.pending.error ||
       !!requestsState.approved.error ||

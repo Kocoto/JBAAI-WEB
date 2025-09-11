@@ -1,6 +1,5 @@
 // src/features/admin/components/campaigns/AdminCampaignForm.tsx
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -27,6 +26,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
+import "dayjs/locale/vi";
 
 // Icons
 import SaveIcon from "@mui/icons-material/Save";
@@ -51,6 +51,7 @@ import { useAdminCampaign } from "@/features/admin/hooks/useAdminCampaign";
 import { useAdminFranchise } from "@/features/admin/hooks/useAdminFranchise";
 import { CreateCampaignPayload } from "@/features/admin/types/campaign.types";
 import { useAdminPackage } from "../../hooks/useAdminPackage";
+import { useTranslation } from "react-i18next";
 
 interface AdminCampaignFormProps {
   onCancel?: () => void;
@@ -60,11 +61,10 @@ interface AdminCampaignFormProps {
 interface InfoChipProps {
   icon: React.ReactElement;
   label: string | number;
-  // Lấy chính xác kiểu 'color' từ định nghĩa của MUI Chip
   color?: ChipProps["color"];
 }
 
-// --- Component phụ: Hiển thị một "chip" thông tin ---
+// --- Info chip ---
 const InfoChip: React.FC<InfoChipProps> = ({
   icon,
   label,
@@ -76,10 +76,7 @@ const InfoChip: React.FC<InfoChipProps> = ({
     color={color}
     size="small"
     variant="outlined"
-    sx={{
-      borderWidth: 1.5,
-      fontWeight: "medium",
-    }}
+    sx={{ borderWidth: 1.5, fontWeight: "medium" }}
   />
 );
 
@@ -88,6 +85,13 @@ export default function AdminCampaignForm({
   onSuccess,
 }: AdminCampaignFormProps) {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+
+  // set dayjs locale theo ngôn ngữ
+  useEffect(() => {
+    dayjs.locale(i18n.language?.startsWith("vi") ? "vi" : "en");
+  }, [i18n.language]);
+
   const { createCampaign, isCreating } = useAdminCampaign();
   const { franchiseList, fetchFranchiseList, isLoading } = useAdminFranchise();
   const { packageList, fetchPackageList, isLoadingPackages } =
@@ -118,6 +122,7 @@ export default function AdminCampaignForm({
   useEffect(() => {
     fetchFranchiseList();
   }, [fetchFranchiseList]);
+
   // Handle text field changes
   const handleChange =
     (field: keyof CreateCampaignPayload) =>
@@ -130,7 +135,6 @@ export default function AdminCampaignForm({
             ? parseInt(value) || 0
             : value,
       }));
-      // Clear validation error for this field
       if (validationErrors[field]) {
         setValidationErrors((prev) => {
           const newErrors = { ...prev };
@@ -142,10 +146,7 @@ export default function AdminCampaignForm({
 
   // Handle select change
   const handleSelectChange = (event: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      franchiseOwnerId: event.target.value,
-    }));
+    setFormData((prev) => ({ ...prev, franchiseOwnerId: event.target.value }));
     if (validationErrors.franchiseOwnerId) {
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
@@ -157,10 +158,7 @@ export default function AdminCampaignForm({
 
   // Handle select change for package
   const handlePackageSelectChange = (event: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      packageId: event.target.value,
-    }));
+    setFormData((prev) => ({ ...prev, packageId: event.target.value }));
     if (validationErrors.packageId) {
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
@@ -173,41 +171,41 @@ export default function AdminCampaignForm({
   // Handle date changes
   const handleDateChange =
     (field: "startDate" | "endDate") => (value: Dayjs | null) => {
-      if (value) {
-        setFormData((prev) => ({
-          ...prev,
-          [field]: value.toISOString(),
-        }));
-      }
+      if (value)
+        setFormData((prev) => ({ ...prev, [field]: value.toISOString() }));
     };
 
-  // Validate form
+  // Validate form (i18n messages)
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-
     if (!formData.campaignName.trim()) {
-      errors.campaignName = "Tên chiến dịch là bắt buộc";
+      errors.campaignName = t(
+        "adminCampaignForm.validation.campaignNameRequired"
+      );
     }
-
+    if (!formData.packageId) {
+      errors.packageId = t("adminCampaignForm.validation.packageRequired");
+    }
     if (!formData.franchiseOwnerId) {
-      errors.franchiseOwnerId = "Vui lòng chọn franchise";
+      errors.franchiseOwnerId = t(
+        "adminCampaignForm.validation.franchiseRequired"
+      );
     }
-
     if (formData.totalAllocated <= 0) {
-      errors.totalAllocated = "Số lượng phân bổ phải lớn hơn 0";
+      errors.totalAllocated = t(
+        "adminCampaignForm.validation.totalAllocatedPositive"
+      );
     }
-
     if (formData.renewalRequirement < 0) {
-      errors.renewalRequirement = "Yêu cầu gia hạn không thể âm";
+      errors.renewalRequirement = t(
+        "adminCampaignForm.validation.renewalRequirementNonNegative"
+      );
     }
-
     const startDate = dayjs(formData.startDate);
     const endDate = dayjs(formData.endDate);
-
     if (endDate.isBefore(startDate)) {
-      errors.endDate = "Ngày kết thúc phải sau ngày bắt đầu";
+      errors.endDate = t("adminCampaignForm.validation.endDateAfterStart");
     }
-
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -216,34 +214,28 @@ export default function AdminCampaignForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       const campaign = await createCampaign(formData);
-      if (onSuccess) {
-        onSuccess(campaign);
-      }
-      // Navigate to campaign list or detail page
+      onSuccess?.(campaign);
       navigate("/admin/campaigns");
     } catch (err: any) {
-      setError(err.message || "Có lỗi xảy ra khi tạo chiến dịch");
+      setError(err?.message || t("adminCampaignForm.error.createFailed"));
     }
   };
 
   // Handle cancel
   const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    } else {
-      navigate("/admin/campaigns");
-    }
+    if (onCancel) onCancel();
+    else navigate("/admin/campaigns");
   };
 
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
+    <LocalizationProvider
+      dateAdapter={AdapterDayjs}
+      adapterLocale={i18n.language?.startsWith("vi") ? "vi" : "en"}
+    >
       <Paper
         elevation={0}
         sx={{
@@ -259,10 +251,10 @@ export default function AdminCampaignForm({
             sx={{ display: "flex", alignItems: "center", gap: 1 }}
           >
             <CampaignIcon color="primary" />
-            Tạo Chiến Dịch Mới
+            {t("adminCampaignForm.header.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Điền thông tin để tạo chiến dịch mới cho franchise
+            {t("adminCampaignForm.header.subtitle")}
           </Typography>
         </Box>
 
@@ -274,24 +266,20 @@ export default function AdminCampaignForm({
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <Grid
-            container
-            spacing={3}
-            sx={{
-              height: "100%",
-            }}
-          >
+        <form onSubmit={handleSubmit} noValidate>
+          <Grid container spacing={3} sx={{ height: "100%" }}>
             {/* Campaign Name */}
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
-                label="Tên chiến dịch"
+                label={t("adminCampaignForm.form.labels.campaignName")}
                 value={formData.campaignName}
                 onChange={handleChange("campaignName")}
                 error={!!validationErrors.campaignName}
                 helperText={validationErrors.campaignName}
-                placeholder="Nhập tên chiến dịch"
+                placeholder={t(
+                  "adminCampaignForm.form.placeholders.campaignName"
+                )}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -301,11 +289,7 @@ export default function AdminCampaignForm({
                   style: { height: "56px" },
                 }}
                 required
-                sx={{
-                  "& .MuiInputBase-root": {
-                    height: "56px",
-                  },
-                }}
+                sx={{ "& .MuiInputBase-root": { height: "56px" } }}
               />
             </Grid>
 
@@ -317,11 +301,13 @@ export default function AdminCampaignForm({
                 required
                 sx={{ "& .MuiInputBase-root": { height: "56px" } }}
               >
-                <InputLabel id="package-select-label">Package</InputLabel>
+                <InputLabel id="package-select-label">
+                  {t("adminCampaignForm.form.labels.package")}
+                </InputLabel>
                 <Select
                   labelId="package-select-label"
                   value={formData.packageId}
-                  label="Package"
+                  label={t("adminCampaignForm.form.labels.package")}
                   onChange={handlePackageSelectChange}
                   startAdornment={
                     <InputAdornment position="start">
@@ -331,8 +317,8 @@ export default function AdminCampaignForm({
                   MenuProps={{
                     PaperProps: {
                       sx: {
-                        maxHeight: 400, // Giới hạn chiều cao của dropdown
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.1)", // Thêm bóng đổ cho menu
+                        maxHeight: 400,
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                       },
                     },
                   }}
@@ -346,27 +332,27 @@ export default function AdminCampaignForm({
                         p={1}
                       >
                         <CircularProgress size={24} />
-                        <Typography>Đang tải danh sách gói...</Typography>
+                        <Typography>
+                          {t("adminCampaignForm.packages.loading")}
+                        </Typography>
                       </Stack>
                     </MenuItem>
                   ) : packageList.length === 0 ? (
-                    <MenuItem disabled>Không có package nào</MenuItem>
+                    <MenuItem disabled>
+                      {t("adminCampaignForm.packages.empty")}
+                    </MenuItem>
                   ) : (
                     packageList.map((pkg) => (
                       <MenuItem
+                        key={pkg._id}
                         value={pkg._id.toString()}
                         sx={{
-                          // Thêm padding và border-bottom để phân tách các item
                           py: 2,
                           borderBottom: "1px ",
-                          "&:last-child": {
-                            borderBottom: "none", // Bỏ border cho item cuối cùng
-                          },
-                          // Hiệu ứng khi hover
+                          "&:last-child": { borderBottom: "none" },
                           "&:hover": {
                             backgroundColor: "rgba(0, 123, 255, 0.05)",
                           },
-                          // Hiệu ứng khi được chọn
                           "&.Mui-selected": {
                             backgroundColor: "rgba(0, 123, 255, 0.1)",
                             fontWeight: "bold",
@@ -379,7 +365,6 @@ export default function AdminCampaignForm({
                           alignItems="center"
                           width="100%"
                         >
-                          {/* Phần thông tin bên trái */}
                           <Box>
                             <Typography
                               variant="subtitle1"
@@ -392,7 +377,10 @@ export default function AdminCampaignForm({
                             <Stack direction="row" spacing={1} flexWrap="wrap">
                               <InfoChip
                                 icon={<CalendarTodayIcon fontSize="small" />}
-                                label={`${pkg.duration} ngày`}
+                                label={t(
+                                  "adminCampaignForm.package.durationDays",
+                                  { count: pkg.duration }
+                                )}
                                 color="info"
                               />
                               <InfoChip
@@ -407,22 +395,20 @@ export default function AdminCampaignForm({
                               />
                             </Stack>
                           </Box>
-
-                          {/* Phần giá tiền bên phải */}
-                          {/* <Box textAlign="right" ml={2}>
-                            <Typography
-                              variant="h6"
-                              color="text.primary"
-                              fontWeight="600"
-                            >
-                              {formatCurrency(pkg.price)}
-                            </Typography>
-                          </Box> */}
                         </Stack>
                       </MenuItem>
                     ))
                   )}
                 </Select>
+                {validationErrors.packageId && (
+                  <Typography
+                    variant="caption"
+                    color="error"
+                    sx={{ mt: 0.5, ml: 2 }}
+                  >
+                    {validationErrors.packageId}
+                  </Typography>
+                )}
               </FormControl>
             </Grid>
 
@@ -434,11 +420,13 @@ export default function AdminCampaignForm({
                 required
                 sx={{ "& .MuiInputBase-root": { height: "56px" } }}
               >
-                <InputLabel id="franchise-select-label">Franchise</InputLabel>
+                <InputLabel id="franchise-select-label">
+                  {t("adminCampaignForm.form.labels.franchise")}
+                </InputLabel>
                 <Select
                   labelId="franchise-select-label"
                   value={formData.franchiseOwnerId}
-                  label="Franchise"
+                  label={t("adminCampaignForm.form.labels.franchise")}
                   onChange={handleSelectChange}
                   startAdornment={
                     <InputAdornment position="start">
@@ -463,14 +451,18 @@ export default function AdminCampaignForm({
                         p={1}
                       >
                         <CircularProgress size={24} />
-                        <Typography>Đang tải danh sách franchise...</Typography>
+                        <Typography>
+                          {t("adminCampaignForm.franchises.loading")}
+                        </Typography>
                       </Stack>
                     </MenuItem>
                   ) : franchiseList.length === 0 ? (
-                    <MenuItem disabled>Không có franchise nào</MenuItem>
+                    <MenuItem disabled>
+                      {t("adminCampaignForm.franchises.empty")}
+                    </MenuItem>
                   ) : (
                     franchiseList
-                      .filter((franchise) => franchise.userId) // ✅ chỉ lấy franchise có userId
+                      .filter((franchise) => franchise.userId)
                       .map((franchise) => (
                         <MenuItem
                           key={franchise._id}
@@ -494,7 +486,6 @@ export default function AdminCampaignForm({
                             alignItems="center"
                             width="100%"
                           >
-                            {/* Thông tin bên trái */}
                             <Box>
                               <Typography
                                 variant="subtitle1"
@@ -521,17 +512,20 @@ export default function AdminCampaignForm({
                                 />
                                 <InfoChip
                                   icon={<StarIcon fontSize="small" />}
-                                  label={`Level ${franchise.franchiseLevel}`}
+                                  label={t(
+                                    "adminCampaignForm.franchise.level",
+                                    {
+                                      level: franchise.franchiseLevel,
+                                    }
+                                  )}
                                   color="warning"
                                 />
                               </Stack>
                             </Box>
-
-                            {/* Status bên phải */}
                             <Box textAlign="right" ml={2}>
                               <InfoChip
                                 icon={<BusinessIcon fontSize="small" />}
-                                label="Franchise"
+                                label={t("adminCampaignForm.franchise.chip")}
                                 color="primary"
                               />
                             </Box>
@@ -557,13 +551,13 @@ export default function AdminCampaignForm({
               <TextField
                 fullWidth
                 type="number"
-                label="Số lượng phân bổ"
+                label={t("adminCampaignForm.form.labels.totalAllocated")}
                 value={formData.totalAllocated}
                 onChange={handleChange("totalAllocated")}
                 error={!!validationErrors.totalAllocated}
                 helperText={
                   validationErrors.totalAllocated ||
-                  "Tổng số lượng quota được phân bổ cho chiến dịch"
+                  t("adminCampaignForm.form.helpers.totalAllocated")
                 }
                 InputProps={{
                   startAdornment: (
@@ -580,22 +574,26 @@ export default function AdminCampaignForm({
             </Grid>
 
             {/* Renewal Requirement */}
-            <Grid sx={{ xs: 12, md: 6 }}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 type="number"
-                label="Tỷ lệ gia hạn (%)"
+                label={t("adminCampaignForm.form.labels.renewalRequirement")}
                 value={formData.renewalRequirement}
                 onChange={handleChange("renewalRequirement")}
                 error={!!validationErrors.renewalRequirement}
                 helperText={
                   validationErrors.renewalRequirement ||
-                  "Phầm trăm người dùng cần quay lại để gia hạn"
+                  t("adminCampaignForm.form.helpers.renewalRequirement")
                 }
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Tooltip title="Phầm trăm người dùng cần quay lại để franchise được gia hạn quota">
+                      <Tooltip
+                        title={t(
+                          "adminCampaignForm.form.tooltips.renewalRequirement"
+                        )}
+                      >
                         <IconButton size="small">
                           <InfoIcon fontSize="small" />
                         </IconButton>
@@ -616,7 +614,7 @@ export default function AdminCampaignForm({
             {/* Start Date */}
             <Grid size={{ xs: 12, md: 6 }}>
               <DatePicker
-                label="Ngày bắt đầu"
+                label={t("adminCampaignForm.form.labels.startDate")}
                 value={dayjs(formData.startDate)}
                 onChange={handleDateChange("startDate")}
                 minDate={dayjs()}
@@ -644,7 +642,7 @@ export default function AdminCampaignForm({
             {/* End Date */}
             <Grid size={{ xs: 12, md: 6 }}>
               <DatePicker
-                label="Ngày kết thúc"
+                label={t("adminCampaignForm.form.labels.endDate")}
                 value={dayjs(formData.endDate)}
                 onChange={handleDateChange("endDate")}
                 sx={{ "& .MuiInputBase-root": { height: "56px" } }}
@@ -672,8 +670,11 @@ export default function AdminCampaignForm({
               <TextField
                 fullWidth
                 multiline
-                label="Mô tả"
-                placeholder="Nhập mô tả chi tiết về chiến dịch..."
+                minRows={3}
+                label={t("adminCampaignForm.form.labels.description")}
+                placeholder={t(
+                  "adminCampaignForm.form.placeholders.description"
+                )}
                 value={formData.description}
                 onChange={handleChange("description")}
                 InputProps={{
@@ -694,14 +695,14 @@ export default function AdminCampaignForm({
 
             {/* Action Buttons */}
             <Grid size={{ xs: 12 }}>
-              <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Stack direction="row" spacing={2} justifyContent="end">
                 <Button
                   variant="outlined"
                   startIcon={<CancelIcon />}
                   onClick={handleCancel}
                   disabled={isCreating}
                 >
-                  Hủy
+                  {t("adminCampaignForm.buttons.cancel")}
                 </Button>
                 <Button
                   type="submit"
@@ -713,7 +714,7 @@ export default function AdminCampaignForm({
                   {isCreating ? (
                     <CircularProgress size={20} color="inherit" />
                   ) : (
-                    "Tạo chiến dịch"
+                    t("adminCampaignForm.buttons.create")
                   )}
                 </Button>
               </Stack>

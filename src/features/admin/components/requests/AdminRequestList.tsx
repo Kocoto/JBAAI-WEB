@@ -3,6 +3,9 @@
 // Core React import
 import React from "react";
 
+// i18n
+import { useTranslation } from "react-i18next";
+
 // Material UI Components
 import {
   Box,
@@ -54,52 +57,47 @@ import RequestPageIcon from "@mui/icons-material/RequestPage";
 import EmailIcon from "@mui/icons-material/Email";
 import PhoneIcon from "@mui/icons-material/Phone";
 
-// Status configuration với màu sắc và icon
-const statusConfig = {
+// Status visual config (màu & icon)
+const statusVisual = {
   pending: {
     color: "warning" as const,
     icon: <PendingIcon />,
-    label: "Đang chờ",
     bgColor: "#fff8e1",
     textColor: "#f57c00",
   },
   reviewing: {
     color: "info" as const,
     icon: <RateReviewIcon />,
-    label: "Đang xét duyệt",
     bgColor: "#e3f2fd",
     textColor: "#1976d2",
   },
   approved: {
     color: "success" as const,
     icon: <CheckCircleIcon />,
-    label: "Đã chấp thuận",
     bgColor: "#e8f5e9",
     textColor: "#388e3c",
   },
   rejected: {
     color: "error" as const,
     icon: <CancelIcon />,
-    label: "Đã từ chối",
     bgColor: "#ffebee",
     textColor: "#d32f2f",
   },
 };
 
-// Component cho status chip
+// Status chip đọc label từ i18n
 const StatusChip: React.FC<{ status: RequestStatus }> = ({ status }) => {
-  const config = statusConfig[status];
+  const { t } = useTranslation();
+  const visual = statusVisual[status];
   return (
     <Chip
       size="small"
-      label={config.label}
-      icon={config.icon}
+      label={t(`adminRequests.status.${status}`)}
+      icon={visual.icon}
       sx={{
-        bgcolor: config.bgColor,
-        color: config.textColor,
-        "& .MuiChip-icon": {
-          color: config.textColor,
-        },
+        bgcolor: visual.bgColor,
+        color: visual.textColor,
+        "& .MuiChip-icon": { color: visual.textColor },
         fontWeight: 600,
         borderRadius: "8px",
       }}
@@ -109,6 +107,9 @@ const StatusChip: React.FC<{ status: RequestStatus }> = ({ status }) => {
 
 export default function AdminRequestList() {
   const theme = useTheme();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("vi") ? "vi-VN" : "en-US";
+
   const {
     pendingRequests,
     approvedRequests,
@@ -126,7 +127,7 @@ export default function AdminRequestList() {
   const [filterRole, setFilterRole] = React.useState("all");
 
   const handleTabChange = (
-    event: React.SyntheticEvent,
+    _event: React.SyntheticEvent,
     newValue: RequestStatus
   ) => {
     setSelectedTab(newValue);
@@ -158,7 +159,7 @@ export default function AdminRequestList() {
     },
     {
       field: "fullname",
-      headerName: "Họ và tên",
+      headerName: t("adminRequests.columns.fullname"),
       flex: 1,
       minWidth: 180,
       renderCell: (params: GridRenderCellParams) => (
@@ -167,14 +168,14 @@ export default function AdminRequestList() {
             {params.value}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            ID: {params.row.id.slice(0, 8)}...
+            {t("adminRequests.columns.id")}: {params.row.id.slice(0, 8)}...
           </Typography>
         </Box>
       ),
     },
     {
       field: "email",
-      headerName: "Email",
+      headerName: t("adminRequests.columns.email"),
       flex: 1.2,
       minWidth: 200,
       renderCell: (params: GridRenderCellParams) => (
@@ -186,7 +187,7 @@ export default function AdminRequestList() {
     },
     {
       field: "phone",
-      headerName: "Số điện thoại",
+      headerName: t("adminRequests.columns.phone"),
       flex: 1,
       minWidth: 150,
       renderCell: (params: GridRenderCellParams) => (
@@ -198,12 +199,16 @@ export default function AdminRequestList() {
     },
     {
       field: "role",
-      headerName: "Vai trò yêu cầu",
+      headerName: t("adminRequests.columns.requestedRole"),
       flex: 0.8,
       minWidth: 120,
       renderCell: (params: GridRenderCellParams) => (
         <Chip
-          label={params.value === "franchise" ? "Franchise" : "User"}
+          label={
+            params.value === "franchise"
+              ? t("adminRequests.roles.franchise")
+              : t("adminRequests.roles.user")
+          }
           size="small"
           variant="outlined"
           color={params.value === "franchise" ? "primary" : "default"}
@@ -212,25 +217,25 @@ export default function AdminRequestList() {
     },
     {
       field: "createdAt",
-      headerName: "Ngày tạo",
+      headerName: t("adminRequests.columns.createdAt"),
       flex: 0.8,
       minWidth: 120,
       renderCell: (params: GridRenderCellParams) => (
         <Typography variant="body2" color="text.secondary">
-          {new Date(params.value).toLocaleDateString("vi-VN")}
+          {new Date(params.value).toLocaleDateString(locale)}
         </Typography>
       ),
     },
     {
       field: "actions",
-      headerName: "Thao tác",
+      headerName: t("adminRequests.columns.actions"),
       flex: 1,
       minWidth: 200,
       sortable: false,
       renderCell: (params: GridRenderCellParams) => {
         if (selectedTab === "pending") {
           return (
-            <Tooltip title="Chấp nhận yêu cầu">
+            <Tooltip title={t("adminRequests.tooltips.acceptRequest")}>
               <Button
                 variant="contained"
                 size="small"
@@ -242,7 +247,7 @@ export default function AdminRequestList() {
                   fontWeight: 600,
                 }}
               >
-                Chấp nhận
+                {t("adminRequests.buttons.accept")}
               </Button>
             </Tooltip>
           );
@@ -250,7 +255,7 @@ export default function AdminRequestList() {
         if (selectedTab === "reviewing") {
           return (
             <Stack direction="row" spacing={1}>
-              <Tooltip title="Phê duyệt">
+              <Tooltip title={t("adminRequests.tooltips.approve")}>
                 <Button
                   variant="contained"
                   color="success"
@@ -263,10 +268,10 @@ export default function AdminRequestList() {
                     fontWeight: 600,
                   }}
                 >
-                  Phê duyệt
+                  {t("adminRequests.buttons.approve")}
                 </Button>
               </Tooltip>
-              <Tooltip title="Từ chối">
+              <Tooltip title={t("adminRequests.tooltips.reject")}>
                 <IconButton
                   color="error"
                   size="small"
@@ -290,26 +295,26 @@ export default function AdminRequestList() {
 
   const tabContent = {
     pending: {
-      title: "Yêu cầu đang chờ",
+      title: t("adminRequests.tabs.pending.title"),
       state: pendingRequests,
-      emptyMessage: "Không có yêu cầu nào đang chờ xử lý",
+      emptyMessage: t("adminRequests.empty.pending"),
     },
     reviewing: {
-      title: "Yêu cầu đang xét duyệt",
+      title: t("adminRequests.tabs.reviewing.title"),
       state: reviewingRequests,
-      emptyMessage: "Không có yêu cầu nào đang xét duyệt",
+      emptyMessage: t("adminRequests.empty.reviewing"),
     },
     approved: {
-      title: "Yêu cầu đã được chấp thuận",
+      title: t("adminRequests.tabs.approved.title"),
       state: approvedRequests,
-      emptyMessage: "Chưa có yêu cầu nào được chấp thuận",
+      emptyMessage: t("adminRequests.empty.approved"),
     },
     rejected: {
-      title: "Yêu cầu đã bị từ chối",
+      title: t("adminRequests.tabs.rejected.title"),
       state: rejectedRequests,
-      emptyMessage: "Chưa có yêu cầu nào bị từ chối",
+      emptyMessage: t("adminRequests.empty.rejected"),
     },
-  };
+  } as const;
 
   const currentContent = tabContent[selectedTab];
 
@@ -346,10 +351,10 @@ export default function AdminRequestList() {
             </Box>
             <Box>
               <Typography variant="h4" fontWeight={700}>
-                Quản lý Yêu cầu Nâng cấp
+                {t("adminRequests.header.title")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Xem xét và phê duyệt các yêu cầu nâng cấp tài khoản
+                {t("adminRequests.header.subtitle")}
               </Typography>
             </Box>
           </Stack>
@@ -374,7 +379,7 @@ export default function AdminRequestList() {
           >
             <TextField
               size="small"
-              placeholder="Tìm kiếm theo tên, email, SĐT..."
+              placeholder={t("adminRequests.filters.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
@@ -388,27 +393,38 @@ export default function AdminRequestList() {
             />
 
             <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Lọc theo vai trò</InputLabel>
+              <InputLabel>
+                {t("adminRequests.filters.roleFilterLabel")}
+              </InputLabel>
               <Select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                label="Lọc theo vai trò"
+                label={t("adminRequests.filters.roleFilterLabel")}
               >
-                <MenuItem value="all">Tất cả</MenuItem>
-                <MenuItem value="user">User</MenuItem>
-                <MenuItem value="franchise">Franchise</MenuItem>
+                <MenuItem value="all">
+                  {t("adminRequests.filters.roles.all")}
+                </MenuItem>
+                <MenuItem value="user">
+                  {t("adminRequests.roles.user")}
+                </MenuItem>
+                <MenuItem value="franchise">
+                  {t("adminRequests.roles.franchise")}
+                </MenuItem>
               </Select>
             </FormControl>
 
             <Box sx={{ flexGrow: 1 }} />
 
             <Stack direction="row" spacing={1}>
-              <Tooltip title="Làm mới">
+              <Tooltip title={t("adminRequests.actions.refresh")}>
                 <IconButton onClick={handleRefresh} disabled={isLoadingAny}>
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Xuất báo cáo" sx={{ display: "none" }}>
+              <Tooltip
+                title={t("adminRequests.actions.export")}
+                sx={{ display: "none" }}
+              >
                 <IconButton>
                   <DownloadIcon />
                 </IconButton>
@@ -449,26 +465,43 @@ export default function AdminRequestList() {
                 },
               }}
             >
-              {Object.entries(statusConfig).map(([status, config]) => (
-                <Tab
-                  key={status}
-                  label={
-                    <Stack direction="row" spacing={1.5} alignItems="center">
-                      {config.icon}
-                      <span>{config.label}</span>
-                      <Badge
-                        badgeContent={
-                          tabContent[status as RequestStatus].state.total
-                        }
-                        color={config.color}
-                        max={99}
-                        sx={{ paddingLeft: 1 }}
-                      />
-                    </Stack>
-                  }
-                  value={status}
-                />
-              ))}
+              {(
+                [
+                  "pending",
+                  "reviewing",
+                  "approved",
+                  "rejected",
+                ] as RequestStatus[]
+              ).map((status) => {
+                const visual = statusVisual[status];
+                return (
+                  <Tab
+                    key={status}
+                    label={
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        {visual.icon}
+                        <span>{t(`adminRequests.status.${status}`)}</span>
+                        <Badge
+                          badgeContent={
+                            (
+                              {
+                                pending: pendingRequests.total,
+                                reviewing: reviewingRequests.total,
+                                approved: approvedRequests.total,
+                                rejected: rejectedRequests.total,
+                              } as Record<RequestStatus, number>
+                            )[status]
+                          }
+                          color={visual.color}
+                          max={99}
+                          sx={{ paddingLeft: 1 }}
+                        />
+                      </Stack>
+                    }
+                    value={status}
+                  />
+                );
+              })}
             </Tabs>
           </Box>
 
@@ -507,17 +540,17 @@ export default function AdminRequestList() {
                     mb: 3,
                   }}
                 >
-                  {statusConfig[selectedTab].icon}
+                  {statusVisual[selectedTab].icon}
                 </Box>
                 <Typography variant="h6" gutterBottom>
                   {searchTerm
-                    ? "Không tìm thấy kết quả phù hợp"
+                    ? t("adminRequests.empty.noResultsTitle")
                     : currentContent.emptyMessage}
                 </Typography>
                 <Typography variant="body2">
                   {searchTerm
-                    ? "Thử tìm kiếm với từ khóa khác"
-                    : "Các yêu cầu mới sẽ xuất hiện ở đây"}
+                    ? t("adminRequests.empty.noResultsHint")
+                    : t("adminRequests.empty.placeholderHint")}
                 </Typography>
               </Box>
             ) : (

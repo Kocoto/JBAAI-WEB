@@ -14,7 +14,8 @@ import { useTheme } from "@mui/material/styles";
 import { SxProps } from "@mui/system";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import { useAdminCampaign } from "../../hooks/useAdminCampaign";
-import { viVN } from "@mui/x-data-grid/locales";
+import { viVN, enUS } from "@mui/x-data-grid/locales";
+import { useTranslation } from "react-i18next";
 
 interface CampaignDataGridProps {
   columns: GridColDef[];
@@ -26,9 +27,13 @@ interface CampaignDataGridProps {
 export default function CampaignDataGrid(props: CampaignDataGridProps) {
   const theme = useTheme();
   const { isLoading } = useAdminCampaign();
+  const { t, i18n } = useTranslation();
   const { columns, rows, loading, sx } = props;
+
   const height = 600;
   const autoHeight = false;
+
+  const gridLocale = i18n.language?.startsWith("vi") ? viVN : enUS;
 
   const enhancedColumns: GridColDef[] = columns.map((col) => ({
     ...col,
@@ -37,6 +42,8 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
     disableColumnMenu: false,
     sortable: col.sortable !== false,
   }));
+
+  const loadingEffective = isLoading || loading;
 
   // Custom Loading Component
   const CustomLoadingOverlay = () => (
@@ -50,51 +57,49 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
         <LinearProgress color="primary" />
       </Box>
       <Typography variant="body2" color="text.secondary">
-        Đang tải dữ liệu chiến dịch...
+        {t("campaignDataGrid.loading")}
       </Typography>
     </Stack>
   );
 
   // Custom No Rows Component
-  const CustomNoRowsOverlay = () => {
-    return (
-      <Stack
-        alignItems="center"
-        justifyContent="center"
-        height="100%"
-        spacing={2}
+  const CustomNoRowsOverlay = () => (
+    <Stack
+      alignItems="center"
+      justifyContent="center"
+      height="100%"
+      spacing={2}
+    >
+      <Box
+        sx={{
+          width: 120,
+          height: 120,
+          borderRadius: "50%",
+          bgcolor: alpha(theme.palette.primary.main, 0.1),
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        <Box
+        <CampaignIcon
           sx={{
-            width: 120,
-            height: 120,
-            borderRadius: "50%",
-            bgcolor: alpha(theme.palette.primary.main, 0.1),
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            fontSize: 48,
+            color: theme.palette.primary.main,
+            opacity: 0.5,
           }}
-        >
-          <CampaignIcon
-            sx={{
-              fontSize: 48,
-              color: theme.palette.primary.main,
-              opacity: 0.5,
-            }}
-          />
-        </Box>
-        <Typography variant="h6" color="text.secondary">
-          Không có dữ liệu chiến dịch
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Dữ liệu sẽ xuất hiện ở đây khi có chiến dịch
-        </Typography>
-      </Stack>
-    );
-  };
+        />
+      </Box>
+      <Typography variant="h6" color="text.secondary">
+        {t("campaignDataGrid.empty.title")}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {t("campaignDataGrid.empty.subtitle")}
+      </Typography>
+    </Stack>
+  );
 
   return (
-    <Fade in={!loading} timeout={700}>
+    <Fade in={!loadingEffective} timeout={700}>
       <Paper
         elevation={3}
         sx={{
@@ -119,8 +124,8 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
           }
           disableRowSelectionOnClick
           disableColumnResize
-          loading={isLoading}
-          localeText={viVN.components.MuiDataGrid.defaultProps.localeText}
+          loading={loadingEffective}
+          localeText={gridLocale.components.MuiDataGrid.defaultProps.localeText}
           density="comfortable"
           slots={{
             loadingOverlay: CustomLoadingOverlay,
@@ -129,10 +134,7 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
           slotProps={{
             filterPanel: {
               filterFormProps: {
-                logicOperatorInputProps: {
-                  variant: "outlined",
-                  size: "small",
-                },
+                logicOperatorInputProps: { variant: "outlined", size: "small" },
                 columnInputProps: {
                   variant: "outlined",
                   size: "small",
@@ -144,10 +146,7 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
                   sx: { mt: "auto" },
                 },
                 valueInputProps: {
-                  InputComponentProps: {
-                    variant: "outlined",
-                    size: "small",
-                  },
+                  InputComponentProps: { variant: "outlined", size: "small" },
                 },
               },
             },
@@ -157,9 +156,7 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
               backgroundColor: alpha(theme.palette.primary.main, 0.04),
               borderBottom: `2px solid ${theme.palette.divider}`,
               "& .MuiDataGrid-columnHeader": {
-                "&:focus": {
-                  outline: "none",
-                },
+                "&:focus": { outline: "none" },
                 "&:focus-within": {
                   outline: `2px solid ${theme.palette.primary.main}`,
                   outlineOffset: -2,
@@ -172,17 +169,13 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
             "& .MuiDataGrid-columnHeaderTitle": {
               fontWeight: 600,
               fontSize: "0.875rem",
-              // color: theme.palette.text.primary,
               textTransform: "uppercase",
               letterSpacing: "0.5px",
             },
             "& .MuiDataGrid-columnSeparator": {
               color: theme.palette.divider,
-              "&:hover": {
-                color: theme.palette.primary.main,
-              },
+              "&:hover": { color: theme.palette.primary.main },
             },
-
             "& .MuiDataGrid-cell": {
               borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
               fontSize: "0.875rem",
@@ -190,9 +183,7 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
               alignItems: "center",
               justifyContent: "center",
               padding: "12px 16px",
-              "&:focus": {
-                outline: "none",
-              },
+              "&:focus": { outline: "none" },
               "&:focus-within": {
                 outline: `2px solid ${theme.palette.primary.main}`,
                 outlineOffset: -2,
@@ -216,7 +207,6 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
                   backgroundColor: alpha(theme.palette.primary.main, 0.12),
                 },
               },
-              // Alternating row colors
               "&:nth-of-type(even)": {
                 backgroundColor: alpha(theme.palette.grey[100], 0.5),
                 ...theme.applyStyles("dark", {
@@ -228,25 +218,20 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
                 overflow: "visible",
                 lineHeight: "1.5",
               },
-            }, // Footer styling
+            },
             "& .MuiDataGrid-footerContainer": {
               borderTop: `2px solid ${theme.palette.divider}`,
               backgroundColor: alpha(theme.palette.primary.main, 0.02),
             },
             "& .MuiTablePagination-root": {
-              "& .MuiTablePagination-selectLabel": {
-                fontWeight: 500,
-              },
+              "& .MuiTablePagination-selectLabel": { fontWeight: 500 },
               "& .MuiTablePagination-displayedRows": {
                 fontWeight: 500,
                 color: theme.palette.text.secondary,
               },
-            }, // Scrollbar styling
+            },
             "& .MuiDataGrid-virtualScroller": {
-              "&::-webkit-scrollbar": {
-                width: 8,
-                height: 8,
-              },
+              "&::-webkit-scrollbar": { width: 8, height: 8 },
               "&::-webkit-scrollbar-track": {
                 background: alpha(theme.palette.grey[300], 0.3),
                 borderRadius: 4,
@@ -254,44 +239,28 @@ export default function CampaignDataGrid(props: CampaignDataGridProps) {
               "&::-webkit-scrollbar-thumb": {
                 background: theme.palette.grey[400],
                 borderRadius: 4,
-                "&:hover": {
-                  background: theme.palette.grey[500],
-                },
+                "&:hover": { background: theme.palette.grey[500] },
               },
             },
-            // Loading overlay
             "& .MuiDataGrid-overlay": {
               backgroundColor: alpha(theme.palette.background.default, 0.9),
               backdropFilter: "blur(4px)",
             },
-            // Sort icon
-            "& .MuiDataGrid-sortIcon": {
-              color: theme.palette.primary.main,
-            }, // Menu icon
-            "& .MuiDataGrid-menuIcon": {
-              "& .MuiSvgIcon-root": {
-                color: theme.palette.text.secondary,
-              },
+            "& .MuiDataGrid-sortIcon": { color: theme.palette.primary.main },
+            "& .MuiDataGrid-menuIcon .MuiSvgIcon-root": {
+              color: theme.palette.text.secondary,
             },
-            // Checkbox styling
             "& .MuiCheckbox-root": {
               color: theme.palette.text.secondary,
-              "&.Mui-checked": {
-                color: theme.palette.primary.main,
-              },
+              "&.Mui-checked": { color: theme.palette.primary.main },
             },
-            // Density
-            "&.MuiDataGrid-root--densityCompact": {
-              "& .MuiDataGrid-cell": {
-                paddingTop: 4,
-                paddingBottom: 4,
-              },
+            "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": {
+              paddingTop: 4,
+              paddingBottom: 4,
             },
-            "&.MuiDataGrid-root--densityStandard": {
-              "& .MuiDataGrid-cell": {
-                paddingTop: 8,
-                paddingBottom: 8,
-              },
+            "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
+              paddingTop: 8,
+              paddingBottom: 8,
             },
           }}
         />
