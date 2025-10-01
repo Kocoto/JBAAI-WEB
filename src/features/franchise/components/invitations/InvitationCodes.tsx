@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   Fade,
-  Grid,
   Grow,
   Paper,
   Stack,
@@ -14,6 +13,7 @@ import {
   Tooltip,
   Divider,
   Button,
+  Grid,
 } from "@mui/material";
 import LocalActivityIcon from "@mui/icons-material/LocalActivity";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -26,53 +26,36 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import DownloadIcon from "@mui/icons-material/Download";
 import ErrorIcon from "@mui/icons-material/Error";
 import { useTheme } from "@mui/material";
-import { useFranchise } from "../../hooks/useFranchise";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-/* ====== Flags / constants ====== */
-
-// Bật nút "Kích hoạt" trong component này hay không.
-// Mặc định false theo yêu cầu "API chỉ gọi cho 1/3 tháng".
-const ENABLE_ACTIVATE_BUTTON = false;
-
-// CodeType chuẩn backend cung cấp cho mã chuẩn 1/3 tháng
-const STANDARD_TYPES: Record<1 | 3, string> = {
-  1: "USER_TRIAL_STANDARD_ONE_MONTH",
-  3: "USER_TRIAL_STANDARD_THREE_MONTHS",
-};
+import { useFranchise } from "../../hooks/useFranchise";
+import type { InvitationCode } from "../../types/franchise.type";
 
 const CARD_MIN_HEIGHT = 420;
 
-const formatDate = (dateString: string) =>
-  new Date(dateString).toLocaleDateString("vi-VN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-/* ====== Component ====== */
 export default function InvitationCodes() {
   const theme = useTheme();
   const { t } = useTranslation();
 
-  // lấy state & action từ hook
-  const {
-    invitationCodes,
-    fetchInvitationCodes,
-    activeCode, // vẫn lấy từ hook để có thể bật lại nút Kích hoạt khi cần
-  } = useFranchise();
+  const { invitationCodes, fetchInvitationCodes, fetchFranchiseDetails, activeCode } =
+    useFranchise();
 
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  // Hàng 2 chỉ hiện sau khi bấm nút
-  const [show1m, setShow1m] = useState(false);
-  const [show3m, setShow3m] = useState(false);
-  const [creating1m, setCreating1m] = useState(false);
-  const [creating3m, setCreating3m] = useState(false);
-  const [activating, setActivating] = useState(false);
+  useEffect(() => {
+    const loadData = async () => {
+      const res = await fetchInvitationCodes();
+      await fetchFranchiseDetails();
+
+      // 🔎 Debug log response từ hook
+      console.groupCollapsed("🎯 InvitationCodes.tsx useEffect");
+      console.log("invitationCodes state:", invitationCodes);
+      console.log("Raw API data:", res);
+      console.groupEnd();
+    };
+    loadData();
+  }, [fetchInvitationCodes, fetchFranchiseDetails]);
 
   const handleCopyCode = async (code?: string) => {
     if (!code) return;
@@ -85,80 +68,98 @@ export default function InvitationCodes() {
     }
   };
 
-  // Hai card hàng 1: chỉ hiển thị dữ liệu đã có (API kích hoạt có thể ở nơi khác)
-  const userTrialCode = useMemo(
-    () =>
-      invitationCodes?.data?.find?.((c: any) => c?.codeType === "USER_TRIAL"),
-    [invitationCodes?.data]
-  );
-  const franchiseJoinCode = useMemo(
-    () =>
-      invitationCodes?.data?.find?.((c: any) => c?.codeType === "JOIN_SYSTEM"),
-    [invitationCodes?.data]
-  );
+  const handleActiveCode = async () => {
+    const result = await activeCode();
+    if (result?.success) fetchInvitationCodes();
+  };
 
-  // Hai card hàng 2: chọn theo codeType chuẩn mới
-  const oneMonthCode = useMemo(
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "N/A";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "N/A";
+    return d.toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const pickNewestPrefActive = (
+    arr: InvitationCode[] | undefined,
+    pred: (c: InvitationCode) => boolean
+  ) => {
+    if (!arr?.length) return undefined;
+    return arr
+      .filter(pred)
+      .sort((a, b) => {
+        if (a.status === "active" && b.status !== "active") return -1;
+        if (a.status !== "active" && b.status === "active") return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      })[0];
+  };
+
+  const code1m = useMemo(
     () =>
-      invitationCodes?.data?.find?.(
-        (c: any) => c?.codeType === STANDARD_TYPES[1]
+      pickNewestPrefActive(
+        invitationCodes?.data,
+        (c) => c.codeType === "USER_TRIAL_STANDARD_ONE_MONTH"
       ),
     [invitationCodes?.data]
   );
-  const threeMonthCode = useMemo(
+
+  const code3m = useMemo(
     () =>
-      invitationCodes?.data?.find?.(
-        (c: any) => c?.codeType === STANDARD_TYPES[3]
+      pickNewestPrefActive(
+        invitationCodes?.data,
+        (c) => c.codeType === "USER_TRIAL_STANDARD_THREE_MONTHS"
       ),
     [invitationCodes?.data]
   );
 
-  // Optional: kích hoạt từ đây (tắt mặc định)
-  const handleActivateClick = async () => {
-    if (!ENABLE_ACTIVATE_BUTTON) return;
-    try {
-      setActivating(true);
-      const result = await activeCode();
-      if (result?.success) {
-        await fetchInvitationCodes();
-      }
-    } catch (e) {
-      console.error("Activate code failed", e);
-    } finally {
-      setActivating(false);
+  const codeLegacy = useMemo(
+    () => pickNewestPrefActive(invitationCodes?.data, (c) => c.codeType === "USER_TRIAL"),
+    [invitationCodes?.data]
+  );
+
+  const codeFranchise = useMemo(
+    () =>
+      pickNewestPrefActive(invitationCodes?.data, (c) => c.codeType === "FRANCHISE_HIERARCHY"),
+    [invitationCodes?.data]
+  );
+
+  const codeTypeLabel = (ct?: InvitationCode["codeType"]) => {
+    switch (ct) {
+      case "USER_TRIAL_STANDARD_ONE_MONTH":
+        return t("franchise.invitations.codeType.userTrial1m", { defaultValue: "Dùng thử 1 tháng" });
+      case "USER_TRIAL_STANDARD_THREE_MONTHS":
+        return t("franchise.invitations.codeType.userTrial3m", { defaultValue: "Dùng thử 3 tháng" });
+      case "USER_TRIAL":
+        return t("franchise.invitations.codeType.userTrial", { defaultValue: "Dùng thử (cũ)" });
+      case "FRANCHISE_HIERARCHY":
+        return t("franchise.invitations.codeType.franchiseHierarchy", { defaultValue: "Mã nhánh hệ thống" });
+      default:
+        return "—";
     }
   };
 
-  // Gọi API chỉ cho 1/3 tháng (backend tự sinh code)
-  const createDurationCode = async (months: 1 | 3) => {
-    const setCreating = months === 1 ? setCreating1m : setCreating3m;
-    setCreating(true);
-    try {
-      const res = await fetch(`/api/v1/franchise/code/create-standard`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codeType: STANDARD_TYPES[months] }),
-      });
+  const InvitationCodeCard = ({
+    invitationCode,
+    title,
+    icon,
+    color,
+  }: {
+    invitationCode?: InvitationCode;
+    title: string;
+    icon: React.ReactNode;
+    color: string;
+  }) => {
+    const code = invitationCode?.code ?? "N/A";
+    const status = (invitationCode?.status as string) ?? "inactive";
 
-      if (!res.ok) {
-        const err = await res.text().catch(() => "");
-        throw new Error(`Create failed: ${res.status} ${err}`);
-      }
-
-      // refresh list để hiển thị code mới
-      await fetchInvitationCodes();
-      months === 1 ? setShow1m(true) : setShow3m(true);
-    } catch (e) {
-      console.error("Create standard code failed", e);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  // Card UI – equal height & fit khung
-  const InvitationCodeCard = ({ invitationCode, title, icon, color }: any) => {
-    const statusActive =
-      (invitationCode?.status ?? "").toString().toLowerCase() === "active";
+    // 🔎 Debug mỗi card
+    console.log("📌 Rendering card:", title, invitationCode);
 
     return (
       <Card
@@ -169,10 +170,10 @@ export default function InvitationCodes() {
           minHeight: CARD_MIN_HEIGHT,
           display: "flex",
           flexDirection: "column",
-          background: `linear-gradient(135deg, ${alpha(
+          background: `linear-gradient(135deg, ${alpha(color, 0.05)} 0%, ${alpha(
             color,
-            0.05
-          )} 0%, ${alpha(color, 0.02)} 100%)`,
+            0.02
+          )} 100%)`,
           border: `1px solid ${alpha(color, 0.2)}`,
           transition: "all 0.3s ease",
           "&:hover": {
@@ -183,7 +184,6 @@ export default function InvitationCodes() {
         }}
       >
         <CardContent sx={{ p: 3, flex: 1 }}>
-          {/* Header */}
           <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
             <Box
               sx={{
@@ -201,12 +201,11 @@ export default function InvitationCodes() {
                 {title}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {invitationCode?.codeType ?? ""}
+                {codeTypeLabel(invitationCode?.codeType)}
               </Typography>
             </Box>
           </Stack>
 
-          {/* Code + copy */}
           <Box
             sx={{
               p: 2,
@@ -228,45 +227,27 @@ export default function InvitationCodes() {
                   wordBreak: "break-all",
                 }}
               >
-                {invitationCode?.code || "N/A"}
+                {code}
               </Typography>
-              <Tooltip
-                title={
-                  copiedCode === invitationCode?.code
-                    ? t("common.copied")
-                    : t("common.copy")
-                }
-              >
+              <Tooltip title={copiedCode === code ? t("common.copied") : t("common.copy")}>
                 <IconButton
                   onClick={() => handleCopyCode(invitationCode?.code)}
                   sx={{
-                    color:
-                      copiedCode === invitationCode?.code
-                        ? "success.main"
-                        : color,
+                    color: copiedCode === code ? "success.main" : color,
                     "&:hover": { bgcolor: alpha(color, 0.1) },
                   }}
                 >
-                  {copiedCode === invitationCode?.code ? (
-                    <CheckCircleIcon />
-                  ) : (
-                    <ContentCopyIcon />
-                  )}
+                  {copiedCode === code ? <CheckCircleIcon /> : <ContentCopyIcon />}
                 </IconButton>
               </Tooltip>
             </Stack>
           </Box>
 
-          {/* Status */}
           <Box sx={{ mb: 2 }}>
             <Chip
-              icon={statusActive ? <CheckCircleIcon /> : <ErrorIcon />}
-              label={
-                statusActive
-                  ? t("common.status.active")
-                  : t("common.status.inactive")
-              }
-              color={statusActive ? "success" : "error"}
+              icon={status === "active" ? <CheckCircleIcon /> : <ErrorIcon />}
+              label={status === "active" ? t("common.status.active") : t("common.status.inactive")}
+              color={status === "active" ? "success" : "error"}
               variant="filled"
               sx={{ fontWeight: 600 }}
             />
@@ -274,7 +255,6 @@ export default function InvitationCodes() {
 
           <Divider sx={{ my: 2 }} />
 
-          {/* Stats */}
           <Stack spacing={2}>
             <Typography variant="subtitle2" fontWeight={600} color={color}>
               {t("franchise.invitations.stats.title")}
@@ -291,7 +271,7 @@ export default function InvitationCodes() {
                   }}
                 >
                   <Typography variant="h4" fontWeight={700} color="info.main">
-                    {invitationCode?.statistics?.actualUsageCount || 0}
+                    {invitationCode?.statistics?.actualUsageCount ?? 0}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {t("franchise.invitations.stats.usage")}
@@ -307,12 +287,8 @@ export default function InvitationCodes() {
                     bgcolor: alpha(theme.palette.warning.main, 0.05),
                   }}
                 >
-                  <Typography
-                    variant="h4"
-                    fontWeight={700}
-                    color="warning.main"
-                  >
-                    {invitationCode?.statistics?.totalCumulativeUses || 0}
+                  <Typography variant="h4" fontWeight={700} color="warning.main">
+                    {invitationCode?.statistics?.totalCumulativeUses ?? 0}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {t("franchise.invitations.stats.total")}
@@ -321,19 +297,14 @@ export default function InvitationCodes() {
               </Grid>
             </Grid>
 
-            {/* Dates */}
             <Stack spacing={1.5}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <CalendarTodayIcon
-                  sx={{ fontSize: 16, color: "text.secondary" }}
-                />
+                <CalendarTodayIcon sx={{ fontSize: 16, color: "text.secondary" }} />
                 <Typography variant="body2" color="text.secondary">
                   {t("common.createdAt")}
                 </Typography>
                 <Typography variant="body2" fontWeight={500}>
-                  {invitationCode?.createdAt
-                    ? formatDate(invitationCode.createdAt)
-                    : "N/A"}
+                  {formatDate(invitationCode?.createdAt)}
                 </Typography>
               </Box>
 
@@ -343,9 +314,7 @@ export default function InvitationCodes() {
                   {t("common.updatedAt")}
                 </Typography>
                 <Typography variant="body2" fontWeight={500}>
-                  {invitationCode?.updatedAt
-                    ? formatDate(invitationCode.updatedAt)
-                    : "N/A"}
+                  {formatDate(invitationCode?.updatedAt)}
                 </Typography>
               </Box>
             </Stack>
@@ -357,7 +326,6 @@ export default function InvitationCodes() {
 
   return (
     <Box sx={{ width: "100%" }}>
-      {/* Header */}
       <Fade in timeout={600}>
         <Box>
           <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
@@ -374,9 +342,7 @@ export default function InvitationCodes() {
                 border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
               }}
             >
-              <LocalActivityIcon
-                sx={{ color: theme.palette.primary.main, fontSize: 36 }}
-              />
+              <LocalActivityIcon sx={{ color: theme.palette.primary.main, fontSize: 36 }} />
             </Box>
             <Box>
               <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
@@ -390,7 +356,6 @@ export default function InvitationCodes() {
         </Box>
       </Fade>
 
-      {/* Action bar – có lại nút Kích hoạt (tắt hành vi gọi API mặc định) */}
       <Grow in timeout={800}>
         <Stack
           direction={{ xs: "column", md: "row" }}
@@ -418,68 +383,20 @@ export default function InvitationCodes() {
                 textTransform: "none",
                 fontWeight: 600,
                 boxShadow: 2,
-                opacity: ENABLE_ACTIVATE_BUTTON ? 1 : 0.6,
-                pointerEvents: ENABLE_ACTIVATE_BUTTON ? "auto" : "none",
               }}
-              disabled={activating}
-              onClick={handleActivateClick}
+              onClick={handleActiveCode}
             >
-              {activating
-                ? t("franchise.invitations.activate.loading", {
-                    defaultValue: "Đang kích hoạt...",
-                  })
-                : t("franchise.invitations.activate.btn", {
-                    defaultValue: "Kích hoạt",
-                  })}
-            </Button>
-
-            <Button
-              variant="contained"
-              color="info"
-              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
-              disabled={creating1m}
-              onClick={() => createDurationCode(1)}
-            >
-              {creating1m
-                ? t("franchise.invitations.create.oneMonthLoading", {
-                    defaultValue: "Đang tạo mã 1 tháng...",
-                  })
-                : t("franchise.invitations.create.oneMonth", {
-                    defaultValue: "Tạo mã 1 tháng (chuẩn)",
-                  })}
-            </Button>
-
-            <Button
-              variant="contained"
-              color="secondary"
-              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
-              disabled={creating3m}
-              onClick={() => createDurationCode(3)}
-            >
-              {creating3m
-                ? t("franchise.invitations.create.threeMonthsLoading", {
-                    defaultValue: "Đang tạo mã 3 tháng...",
-                  })
-                : t("franchise.invitations.create.threeMonths", {
-                    defaultValue: "Tạo mã 3 tháng (chuẩn)",
-                  })}
+              {t("franchise.invitations.activate.btn")}
             </Button>
           </Stack>
         </Stack>
       </Grow>
 
-      {/* Cards */}
       <Grow in={!invitationCodes.loading} timeout={800}>
         <Box>
-          {/* HÀNG 1: 2 bảng kích hoạt – CHỈ hiển thị dữ liệu (không gọi API tạo ở đây) */}
           <Paper
             elevation={0}
-            sx={{
-              p: 3,
-              mb: 3,
-              borderRadius: 3,
-              border: `1px solid ${theme.palette.divider}`,
-            }}
+            sx={{ p: 3, mb: 3, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}
           >
             <Box
               sx={{
@@ -490,78 +407,52 @@ export default function InvitationCodes() {
               }}
             >
               <InvitationCodeCard
-                invitationCode={userTrialCode}
-                title={t("franchise.invitations.cards.userTrial")}
-                icon={
-                  <PersonIcon
-                    sx={{ color: theme.palette.info.main, fontSize: 28 }}
-                  />
-                }
-                color={theme.palette.info.main}
+                invitationCode={code1m}
+                title={t("franchise.invitations.cards.oneMonth", { defaultValue: "Mã mời 1 tháng" })}
+                icon={<CalendarTodayIcon sx={{ color: theme.palette.warning.main, fontSize: 28 }} />}
+                color={theme.palette.warning.main}
               />
               <InvitationCodeCard
-                invitationCode={franchiseJoinCode}
-                title={t("franchise.invitations.cards.franchise")}
-                icon={
-                  <BusinessIcon
-                    sx={{ color: theme.palette.success.main, fontSize: 28 }}
-                  />
-                }
-                color={theme.palette.success.main}
+                invitationCode={code3m}
+                title={t("franchise.invitations.cards.threeMonths", {
+                  defaultValue: "Mã mời 3 tháng",
+                })}
+                icon={<UpdateIcon sx={{ color: theme.palette.error.main, fontSize: 28 }} />}
+                color={theme.palette.error.main}
               />
             </Box>
           </Paper>
 
-          {/* HÀNG 2: chỉ render sau khi bấm nút – GỌI API ở đây */}
-          {(show1m || show3m) && (
-            <Paper
-              elevation={0}
+          <Paper
+            elevation={0}
+            sx={{ p: 3, mb: 3, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}
+          >
+            <Box
               sx={{
-                p: 3,
-                mb: 3,
-                borderRadius: 3,
-                border: `1px solid ${theme.palette.divider}`,
+                display: "grid",
+                gap: 3,
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                alignItems: "stretch",
               }}
             >
-              <Box
-                sx={{
-                  display: "grid",
-                  gap: 3,
-                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                  alignItems: "stretch",
-                }}
-              >
-                {show1m && (
-                  <InvitationCodeCard
-                    invitationCode={oneMonthCode}
-                    title={t("franchise.invitations.cards.oneMonth", {
-                      defaultValue: "Mã mời 1 tháng",
-                    })}
-                    icon={
-                      <CalendarTodayIcon
-                        sx={{ color: theme.palette.warning.main, fontSize: 28 }}
-                      />
-                    }
-                    color={theme.palette.warning.main}
-                  />
-                )}
-                {show3m && (
-                  <InvitationCodeCard
-                    invitationCode={threeMonthCode}
-                    title={t("franchise.invitations.cards.threeMonths", {
-                      defaultValue: "Mã mời 3 tháng",
-                    })}
-                    icon={
-                      <UpdateIcon
-                        sx={{ color: theme.palette.error.main, fontSize: 28 }}
-                      />
-                    }
-                    color={theme.palette.error.main}
-                  />
-                )}
-              </Box>
-            </Paper>
-          )}
+              <InvitationCodeCard
+                invitationCode={codeLegacy}
+                title={t("franchise.invitations.cards.userTrialLegacy", {
+                  defaultValue: "Mã dùng thử (cũ)",
+                })}
+                icon={<PersonIcon sx={{ color: theme.palette.info.main, fontSize: 28 }} />}
+                color={theme.palette.info.main}
+              />
+              <InvitationCodeCard
+                invitationCode={codeFranchise}
+                title={t("franchise.invitations.cards.franchise", {
+                  defaultValue: "Mã nhánh hệ thống",
+                })}
+                icon={<BusinessIcon sx={{ color: theme.palette.success.main, fontSize: 28 }} />}
+                color={theme.palette.success.main}
+              />
+            </Box>
+          </Paper>
         </Box>
       </Grow>
     </Box>

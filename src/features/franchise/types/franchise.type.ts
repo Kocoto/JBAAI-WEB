@@ -97,9 +97,13 @@ export interface FranchiseStatistics {
 export interface InvitationCode {
   _id: string;
   code: string;
-  codeType: "USER_TRIAL" | "FRANCHISE_HIERARCHY";
-  createdByUserId: string;
-  status: "active" | "used" | "expired";
+  codeType:
+    | "USER_TRIAL"
+    | "FRANCHISE_HIERARCHY"
+    | "USER_TRIAL_STANDARD_ONE_MONTH"
+    | "USER_TRIAL_STANDARD_THREE_MONTHS"; // <-- THÊM 2 ENUM MỚI
+  createdByUserId?: string; // nếu có
+  status: "active" | "used" | "expired" | "inactive"; // thêm "inactive" vì payload có
   statistics: {
     actualUsageCount: number;
     lastInvitedUser: string | null;
@@ -109,7 +113,10 @@ export interface InvitationCode {
   currentLedgerInfo: any | null;
   createdAt: string;
   updatedAt: string;
+  expiresAt?: string; // nếu sau này có
+  endDate?: string;   // nếu sau này có
 }
+
 
 /**
  * Child franchise for hierarchy
