@@ -365,7 +365,7 @@ class FranchiseService {
   ): Promise<ApiResponse<{ valid: boolean; message: string }>> {
     try {
       const response = await apiClient.post(
-        `${this.basePath}/validate-invitation`,
+        `${this.basePath}/api/v1/admin/invitation-code/create`,
         {
           code,
         }

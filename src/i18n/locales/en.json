@@ -523,13 +523,37 @@
     }
   },
   "common": {
-    "loading": "Loading data...",
-    "noResults": "No results found",
-    "all": "All",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "refresh": "Refresh",
+    "export": "Export",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
     "status": {
       "active": "Active",
       "inactive": "Inactive"
-    },
-    "createdAtHeader": "Created At"
+    }
+  },
+  "franchise": {
+    "invitations": {
+      "title": "Invitation Codes",
+      "subtitle": "Manage and track your system's invitation codes",
+      "cards": {
+        "userTrial": "User Trial Code",
+        "franchise": "Franchise Invitation Code"
+      },
+      "codeType": {
+        "userTrial": "Free trial",
+        "joinSystem": "Join the system"
+      },
+      "stats": {
+        "title": "Usage statistics",
+        "usage": "Times used",
+        "total": "Total cumulative"
+      },
+      "activate": {
+        "btn": "Activate invitation"
+      }
+    }
   }
 }

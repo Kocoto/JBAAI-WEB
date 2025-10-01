@@ -548,14 +548,41 @@
       }
     }
   },
+
   "common": {
-    "loading": "Đang tải dữ liệu...",
-    "noResults": "Không tìm thấy kết quả",
-    "all": "Tất cả",
+    "copy": "Sao chép",
+    "copied": "Đã sao chép!",
+    "refresh": "Làm mới",
+    "export": "Xuất báo cáo",
+    "createdAt": "Ngày tạo",
+    "updatedAt": "Cập nhật",
     "status": {
       "active": "Hoạt động",
       "inactive": "Không hoạt động"
-    },
-    "createdAtHeader": "Ngày tạo"
+    }
+  },
+  "franchise": {
+    "invitations": {
+      "title": "Quản lý Mã Mời",
+      "subtitle": "Quản lý và theo dõi các mã mời của hệ thống",
+      "cards": {
+        "userTrial": "Mã Mời Dùng Thử",
+        "franchise": "Mã Mời Franchise"
+      },
+      "codeType": {
+        "userTrial": "Dùng thử miễn phí",
+        "joinSystem": "Tham gia hệ thống"
+      },
+      "stats": {
+        "title": "Thống kê sử dụng",
+        "usage": "Lần sử dụng",
+        "total": "Tổng tích lũy"
+      },
+      "activate": {
+        "btn": "Kích hoạt mã mời",
+        "btn1": "Kích hoạt mã mời 1 tháng",
+        "btn2": "Kích hoạt mã mời 3 tháng"
+      }
+    }
   }
 }

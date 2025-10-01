@@ -20,7 +20,8 @@ const clearTokens = () => {
 };
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://jbaai-y7mb.onrender.com",
+  baseURL:
+    import.meta.env.VITE_API_BASE_URL || "https://jbaai-y7mb.onrender.com",
   // import.meta.env.VITE_API_BASE_URL || "https://jbaai-y7mb.onrender.com",
   headers: {
     "Content-Type": "application/json",
