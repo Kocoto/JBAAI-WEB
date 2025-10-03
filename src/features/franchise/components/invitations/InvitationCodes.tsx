@@ -261,7 +261,7 @@ export default function InvitationCodes() {
             </Typography>
 
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid sx={{xs:6}}>
                 <Box
                   sx={{
                     textAlign: "center",
@@ -278,7 +278,7 @@ export default function InvitationCodes() {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={6}>
+              <Grid sx={{xs:6}}>
                 <Box
                   sx={{
                     textAlign: "center",
@@ -438,7 +438,7 @@ export default function InvitationCodes() {
               <InvitationCodeCard
                 invitationCode={codeLegacy}
                 title={t("franchise.invitations.cards.userTrialLegacy", {
-                  defaultValue: "Mã dùng thử (cũ)",
+                  defaultValue: "Mã dùng thử (cũ)"
                 })}
                 icon={<PersonIcon sx={{ color: theme.palette.info.main, fontSize: 28 }} />}
                 color={theme.palette.info.main}
