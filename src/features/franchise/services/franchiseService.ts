@@ -1,9 +1,6 @@
-// franchiseService.ts
-
+// src/services/franchiseService.ts
 import apiClient from "@/shared/services/api/apiClient";
 import {
-  FranchiseDetails,
-  QuotaInfo,
   FranchiseStatistics,
   InvitationCode,
   UserTrialQuotaLedger,
@@ -14,379 +11,261 @@ import {
   HierarchyPerformance,
   QuotaUtilization,
   ApiResponse,
-  PaginatedResponse,
   ChildFranchise,
   ApiDetailResponse,
+  QuotaInfo,
 } from "../types/franchise.type";
 
-/**
- * Service class for handling all franchise-related API calls
- */
 class FranchiseService {
   private readonly basePath = "/api/v1/franchise";
 
-  /**
-   * Get current franchise details
-   * @returns Promise<ApiResponse<FranchiseDetails>>
-   */
+  private readonly STANDARD_CODE_TYPE_IDS = {
+    one_month: "683d1e58d70c0d6366e3d716",
+    three_months: "68cbc381bd30e2a1315d2709",
+    one_year: "683d2295d70c0d6366e3d741",
+  } as const;
+
+  private log(method: string, url: string, body?: unknown) {
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[FranchiseService] ${method} ${url}`, body ?? "");
+    }
+  }
+
   async getMyFranchiseDetails(): Promise<ApiResponse<ApiDetailResponse>> {
-    try {
-      const response = await apiClient.get(`${this.basePath}/me/details`);
-      console.log("sssssssssssss: ", response);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching franchise details:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/me/details`;
+    this.log("GET", url);
+    const response = await apiClient.get(url);
+    return response.data;
   }
 
-  /**
-   * Get current franchise quota information
-   * @returns Promise<ApiResponse<QuotaInfo>>
-   */
   async getMyQuota(): Promise<ApiResponse<QuotaInfo>> {
-    try {
-      const response = await apiClient.get(`${this.basePath}/me/quota`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching quota:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/me/quota?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Get current franchise statistics
-   * @returns Promise<ApiResponse<FranchiseStatistics>>
-   */
   async getMyStatistics(): Promise<ApiResponse<FranchiseStatistics>> {
-    try {
-      const response = await apiClient.get(`${this.basePath}/me/statistics`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching statistics:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/me/statistics?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Get invitation codes for current franchise
-   * @returns Promise<ApiResponse<InvitationCode[]>>
-   */
   async getMyInvitationCodes(): Promise<ApiResponse<InvitationCode[]>> {
-    try {
-      const response = await apiClient.get(
-        `${this.basePath}/me/invitation-codes`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching invitation codes:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/me/invitation-codes?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Get user trial quota ledger
-   * @param status - Filter by status (active, inactive, expired)
-   * @param rootCampaignId - Filter by campaign ID
-   * @returns Promise<ApiResponse<UserTrialQuotaLedger[]>>
-   */
   async getMyUserTrialQuotaLedger(
     status?: "active" | "inactive" | "expired",
     rootCampaignId?: string
   ): Promise<ApiResponse<UserTrialQuotaLedger[]>> {
-    try {
-      const params = new URLSearchParams();
-      if (status) params.append("status", status);
-      if (rootCampaignId) params.append("rootCampaignId", rootCampaignId);
-
-      const queryString = params.toString();
-      const endpoint = queryString
-        ? `${this.basePath}/me/user-trial-quota-ledger?${queryString}`
-        : `${this.basePath}/me/user-trial-quota-ledger`;
-
-      const response = await apiClient.get(endpoint);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching quota ledger:", error);
-      throw error;
-    }
+    const params = new URLSearchParams();
+    if (status) params.append("status", status);
+    if (rootCampaignId) params.append("rootCampaignId", rootCampaignId);
+    const qs = params.toString();
+    const url = qs
+      ? `${this.basePath}/me/user-trial-quota-ledger?${qs}&ts=${Date.now()}`
+      : `${this.basePath}/me/user-trial-quota-ledger?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Allocate quota to child franchise
-   * @param payload - Allocation details
-   * @returns Promise<ApiResponse<AllocationHistory>>
-   */
   async allocateQuotaToChild(
     payload: AllocateQuotaPayload
   ): Promise<ApiResponse<AllocationHistory>> {
-    try {
-      const response = await apiClient.post(
-        `${this.basePath}/manage-children-quota/allocate`,
-        payload
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error allocating quota:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/manage-children-quota/allocate`;
+    this.log("POST", url, payload);
+    const response = await apiClient.post(url, payload);
+    return response.data;
   }
 
-  /**
-   * Revoke quota allocation from child
-   * @param ledgerEntryId - The ledger entry ID to revoke
-   * @returns Promise<ApiResponse<{ message: string }>>
-   */
   async revokeQuotaFromChild(
     ledgerEntryId: string
   ): Promise<ApiResponse<{ message: string }>> {
-    try {
-      const response = await apiClient.put(
-        `${this.basePath}/manage-children-quota/revoke-allocation/${ledgerEntryId}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error revoking quota:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/manage-children-quota/revoke-allocation/${ledgerEntryId}`;
+    this.log("PUT", url);
+    const response = await apiClient.put(url);
+    return response.data;
   }
 
-  /**
-   * Get allocation history for a specific child
-   * @param childFranchiseUserId - Child franchise user ID
-   * @returns Promise<ApiResponse<AllocationHistory[]>>
-   */
   async getChildAllocationHistory(
     childFranchiseUserId: string
   ): Promise<ApiResponse<AllocationHistory[]>> {
-    try {
-      const response = await apiClient.get(
-        `${this.basePath}/manage-children-quota/allocation-history/child/${childFranchiseUserId}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching allocation history:", error);
-      throw error;
-    }
+    const url = `${
+      this.basePath
+    }/manage-children-quota/allocation-history/child/${childFranchiseUserId}?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Get my trial performance
-   * @returns Promise<ApiResponse<TrialPerformance>>
-   */
   async getMyTrialPerformance(): Promise<ApiResponse<TrialPerformance>> {
-    try {
-      const response = await apiClient.get(
-        `${this.basePath}/reports/my-trial-performance`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching trial performance:", error);
-      throw error;
-    }
+    const url = `${
+      this.basePath
+    }/reports/my-trial-performance?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Get children trial performance summary
-   * @returns Promise<ApiResponse<ChildPerformanceSummary[]>>
-   */
   async getChildrenTrialPerformanceSummary(): Promise<
     ApiResponse<ChildPerformanceSummary[]>
   > {
-    try {
-      const response = await apiClient.get(
-        `${this.basePath}/reports/children-trial-performance-summary`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching children performance summary:", error);
-      throw error;
-    }
+    const url = `${
+      this.basePath
+    }/reports/children-trial-performance-summary?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Get single child trial performance
-   * @param childFranchiseUserId - Child franchise user ID
-   * @returns Promise<ApiResponse<TrialPerformance>>
-   */
   async getChildTrialPerformance(
     childFranchiseUserId: string
   ): Promise<ApiResponse<TrialPerformance>> {
-    try {
-      const response = await apiClient.get(
-        `${this.basePath}/reports/child-trial-performance/${childFranchiseUserId}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching child performance:", error);
-      throw error;
-    }
+    const url = `${
+      this.basePath
+    }/reports/child-trial-performance/${childFranchiseUserId}?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Get full hierarchy performance
-   * @param campaignId - Optional campaign ID filter
-   * @returns Promise<ApiResponse<HierarchyPerformance>>
-   */
   async getFullHierarchyPerformance(
     campaignId?: string
   ): Promise<ApiResponse<HierarchyPerformance>> {
-    try {
-      const endpoint = campaignId
-        ? `${this.basePath}/reports/full-hierarchy-performance/${campaignId}`
-        : `${this.basePath}/reports/full-hierarchy-performance`;
-
-      const response = await apiClient.get(endpoint);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching hierarchy performance:", error);
-      throw error;
-    }
+    const url = campaignId
+      ? `${
+          this.basePath
+        }/reports/full-hierarchy-performance/${campaignId}?ts=${Date.now()}`
+      : `${this.basePath}/reports/full-hierarchy-performance?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Get quota utilization report
-   * @returns Promise<ApiResponse<QuotaUtilization>>
-   */
   async getQuotaUtilization(): Promise<ApiResponse<QuotaUtilization>> {
-    try {
-      const response = await apiClient.get(
-        `${this.basePath}/reports/quota-utilization`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching quota utilization:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/reports/quota-utilization?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Get child franchises (direct children)
-   * @returns Promise<ApiResponse<ChildFranchise[]>>
-   */
   async getChildFranchises(): Promise<ApiResponse<ChildFranchise[]>> {
-    try {
-      const response = await apiClient.get(`${this.basePath}/me/children`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching child franchises:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/me/children?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Search franchises in hierarchy
-   * @param searchTerm - Search term (name, email, phone)
-   * @returns Promise<ApiResponse<ChildFranchise[]>>
-   */
   async searchFranchisesInHierarchy(
     searchTerm: string
   ): Promise<ApiResponse<ChildFranchise[]>> {
-    try {
-      const response = await apiClient.get(
-        `${this.basePath}/me/search-hierarchy?q=${encodeURIComponent(
-          searchTerm
-        )}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error searching franchises:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/me/search-hierarchy?q=${encodeURIComponent(
+      searchTerm
+    )}&ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Generate new invitation code
-   * @param campaignId - Campaign ID for the invitation
-   * @returns Promise<ApiResponse<InvitationCode>>
-   */
+  /** Legacy: bằng campaignId */
   async generateInvitationCode(
     campaignId: string
   ): Promise<ApiResponse<InvitationCode>> {
-    try {
-      const response = await apiClient.post(
-        `${this.basePath}/me/generate-invitation`,
-        {
-          campaignId,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error generating invitation code:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/me/generate-invitation`;
+    const payload = { campaignId };
+    this.log("POST", url, payload);
+    const response = await apiClient.post(url, payload);
+    return response.data;
   }
 
-  /**
-   * Get franchise hierarchy tree
-   * @returns Promise<ApiResponse<ChildFranchise>>
-   */
+  /** NEW: create-standard trả MẢNG InvitationCode */
+  async createStandardCode(
+    type: "one_month" | "three_months" | "one_year"
+  ): Promise<ApiResponse<InvitationCode[]>> {
+    const codeTypeId = this.STANDARD_CODE_TYPE_IDS[type];
+    const url = `${this.basePath}/code/create-standard`;
+    const payload = { codeTypeId };
+    this.log("POST", url, payload);
+    const response = await apiClient.post(url, payload);
+    return response.data; // data: InvitationCode[]
+  }
+
+  async createStandardCodeById(
+    codeTypeId: string
+  ): Promise<ApiResponse<InvitationCode[]>> {
+    const url = `${this.basePath}/code/create-standard`;
+    const payload = { codeTypeId };
+    this.log("POST", url, payload);
+    const response = await apiClient.post(url, payload);
+    return response.data;
+  }
+
   async getMyHierarchyTree(): Promise<ApiResponse<ChildFranchise>> {
-    try {
-      const response = await apiClient.get(
-        `${this.basePath}/me/hierarchy-tree`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching hierarchy tree:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/me/hierarchy-tree?ts=${Date.now()}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return response.data;
   }
 
-  /**
-   * Export franchise data to Excel
-   * @param type - Export type (performance, quota, hierarchy)
-   * @returns Promise<Blob>
-   */
   async exportToExcel(
     type: "performance" | "quota" | "hierarchy"
   ): Promise<Blob> {
-    try {
-      const response = await apiClient.get(
-        `${this.basePath}/reports/export/${type}`,
-        {
-          responseType: "blob",
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error exporting data:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/reports/export/${type}`;
+    this.log("GET", url);
+    const response = await apiClient.get(url, { responseType: "blob" });
+    return response.data;
   }
 
-  /**
-   * Validate invitation code
-   * @param code - Invitation code to validate
-   * @returns Promise<ApiResponse<{ valid: boolean; message: string }>>
-   */
+  /** validate (nếu BE có) */
   async validateInvitationCode(
     code: string
   ): Promise<ApiResponse<{ valid: boolean; message: string }>> {
-    try {
-      const response = await apiClient.post(
-        `${this.basePath}/api/v1/admin/invitation-code/create`,
-        {
-          code,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error validating invitation code:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/code/validate`;
+    const payload = { code };
+    this.log("POST", url, payload);
+    const response = await apiClient.post(url, payload);
+    return response.data;
   }
 
   async activeCode() {
-    try {
-      const response = await apiClient.post(`${this.basePath}/code/active`);
-      return response.data;
-    } catch (error) {
-      console.error("Error active code:", error);
-      throw error;
-    }
+    const url = `${this.basePath}/code/active`;
+    this.log("POST", url);
+    const response = await apiClient.post(url);
+    return response.data;
   }
 }
 
-// Export singleton instance
 export const franchiseService = new FranchiseService();
+export type StandardCodeType = keyof FranchiseService["STANDARD_CODE_TYPE_IDS"];

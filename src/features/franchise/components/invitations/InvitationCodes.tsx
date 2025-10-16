@@ -1,61 +1,187 @@
+// src/pages/InvitationCodes.tsx
 import {
   alpha,
   Box,
-  Card,
-  CardContent,
-  Fade,
-  Grow,
   Paper,
   Stack,
   Typography,
-  Chip,
   IconButton,
   Tooltip,
-  Divider,
   Button,
-  Grid,
+  Chip,
+  TextField,
+  InputAdornment,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  TableContainer,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  CircularProgress,
+  Divider,
+  Pagination,
 } from "@mui/material";
-import LocalActivityIcon from "@mui/icons-material/LocalActivity";
+import SearchIcon from "@mui/icons-material/Search";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import PersonIcon from "@mui/icons-material/Person";
-import BusinessIcon from "@mui/icons-material/Business";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import UpdateIcon from "@mui/icons-material/Update";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorIcon from "@mui/icons-material/Error";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import DownloadIcon from "@mui/icons-material/Download";
-import ErrorIcon from "@mui/icons-material/Error";
+import LocalActivityIcon from "@mui/icons-material/LocalActivity";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import UpdateIcon from "@mui/icons-material/Update";
+import PersonIcon from "@mui/icons-material/Person";
+import BusinessIcon from "@mui/icons-material/Business";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useTheme } from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useFranchise } from "../../hooks/useFranchise";
 import type { InvitationCode } from "../../types/franchise.type";
 
-const CARD_MIN_HEIGHT = 420;
+// --- BE mới: packageId mapping ---
+const STANDARD_IDS = {
+  one_month: "683d1e58d70c0d6366e3d716",
+  three_months: "68cbc381bd30e2a1315d2709",
+  one_year: "683d2295d70c0d6366e3d741",
+} as const;
+
+// --- BE cũ: codeType keys ---
+const LEGACY_KEYS = {
+  user_trial: "USER_TRIAL",
+  franchise_hierarchy: "FRANCHISE_HIERARCHY",
+} as const;
+
+// Nhãn hiển thị cho nhóm
+const LABEL_BY_KEY: Record<string, string> = {
+  [STANDARD_IDS.one_month]: "Dùng thử 1 tháng",
+  [STANDARD_IDS.three_months]: "Dùng thử 3 tháng",
+  [STANDARD_IDS.one_year]: "Dùng thử 1 năm",
+  [LEGACY_KEYS.user_trial]: "Dùng thử (cũ)",
+  [LEGACY_KEYS.franchise_hierarchy]: "Mã nhánh hệ thống",
+  UNKNOWN: "Không xác định",
+};
+
+// ---- helpers: đọc packageId đa biến thể & codeType legacy ----
+const extractPackageId = (row: any): string | undefined => {
+  return (
+    row?.packageId ||
+    row?.packageID ||
+    row?.package_id ||
+    row?.package?._id ||
+    row?.package?.id ||
+    row?.codePackageId ||
+    row?.standardPackageId ||
+    row?.planId ||
+    row?.pricingPackageId ||
+    undefined
+  );
+};
+
+const extractLegacyCodeType = (row: any): string | undefined => {
+  const ct = row?.codeType;
+  if (!ct) return undefined;
+  if (typeof ct === "string") return ct;
+  return ct?.key || ct?.name || undefined;
+};
+
+// ✅ key phân loại hiệu dụng: ưu tiên packageId (1/3/12m), sau đó codeType legacy (userTrial / franchiseHierarchy)
+const getEffectiveTypeKey = (row?: InvitationCode | string): string => {
+  if (!row) return "UNKNOWN";
+  if (typeof row === "string") return row;
+
+  const pid = extractPackageId(row);
+  if (pid === STANDARD_IDS.one_month) return STANDARD_IDS.one_month;
+  if (pid === STANDARD_IDS.three_months) return STANDARD_IDS.three_months;
+  if (pid === STANDARD_IDS.one_year) return STANDARD_IDS.one_year;
+
+  const legacy = extractLegacyCodeType(row);
+  if (legacy === LEGACY_KEYS.user_trial) return LEGACY_KEYS.user_trial;
+  if (legacy === LEGACY_KEYS.franchise_hierarchy)
+    return LEGACY_KEYS.franchise_hierarchy;
+
+  return "UNKNOWN";
+};
+
+const STATUS_COLORS: Record<string, "success" | "error" | "default"> = {
+  active: "success",
+  inactive: "error",
+  expired: "default",
+  used: "default",
+};
 
 export default function InvitationCodes() {
   const theme = useTheme();
   const { t } = useTranslation();
 
-  const { invitationCodes, fetchInvitationCodes, fetchFranchiseDetails, activeCode } =
-    useFranchise();
+  const {
+    invitationCodes,
+    fetchInvitationCodes,
+    fetchFranchiseDetails,
+    activeCode,
+    createStandardOneMonth,
+    createStandardThreeMonths,
+    createStandardOneYear,
+  } = useFranchise();
 
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+
+  const [sortBy, setSortBy] = useState<keyof InvitationCode>("createdAt");
+  const [sortDesc, setSortDesc] = useState(true);
+
+  const [collapsedGroups, setCollapsedGroups] = useState<
+    Record<string, boolean>
+  >({});
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
-    const loadData = async () => {
-      const res = await fetchInvitationCodes();
+    (async () => {
+      await fetchInvitationCodes();
       await fetchFranchiseDetails();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      // 🔎 Debug log response từ hook
-      console.groupCollapsed("🎯 InvitationCodes.tsx useEffect");
-      console.log("invitationCodes state:", invitationCodes);
-      console.log("Raw API data:", res);
+  // 🔎 DEBUG: in ra các dòng "UNKNOWN" để dò field từ BE
+  useEffect(() => {
+    const unknowns = (invitationCodes?.data || []).filter(
+      (r: any) => getEffectiveTypeKey(r) === "UNKNOWN"
+    );
+    if (unknowns.length) {
+      console.groupCollapsed("🔎 UNKNOWN type items (showing up to 5)");
+      unknowns.slice(0, 5).forEach((r: any) => {
+        console.log({
+          _id: r._id,
+          code: r.code,
+          // các biến thể packageId
+          packageId: r.packageId,
+          packageID: r.packageID,
+          package_id: r.package_id,
+          "package._id": r?.package?._id,
+          "package.id": r?.package?.id,
+          codePackageId: r.codePackageId,
+          standardPackageId: r.standardPackageId,
+          planId: r.planId,
+          pricingPackageId: r.pricingPackageId,
+          // legacy
+          codeType: r.codeType,
+          createdAt: r.createdAt,
+          updatedAt: r.updatedAt,
+        });
+      });
       console.groupEnd();
-    };
-    loadData();
-  }, [fetchInvitationCodes, fetchFranchiseDetails]);
+    }
+  }, [invitationCodes?.data]);
 
   const handleCopyCode = async (code?: string) => {
     if (!code) return;
@@ -86,375 +212,743 @@ export default function InvitationCodes() {
     });
   };
 
-  const pickNewestPrefActive = (
-    arr: InvitationCode[] | undefined,
-    pred: (c: InvitationCode) => boolean
-  ) => {
-    if (!arr?.length) return undefined;
-    return arr
-      .filter(pred)
-      .sort((a, b) => {
-        if (a.status === "active" && b.status !== "active") return -1;
-        if (a.status !== "active" && b.status === "active") return 1;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      })[0];
-  };
-
-  const code1m = useMemo(
-    () =>
-      pickNewestPrefActive(
-        invitationCodes?.data,
-        (c) => c.codeType === "USER_TRIAL_STANDARD_ONE_MONTH"
-      ),
-    [invitationCodes?.data]
-  );
-
-  const code3m = useMemo(
-    () =>
-      pickNewestPrefActive(
-        invitationCodes?.data,
-        (c) => c.codeType === "USER_TRIAL_STANDARD_THREE_MONTHS"
-      ),
-    [invitationCodes?.data]
-  );
-
-  const codeLegacy = useMemo(
-    () => pickNewestPrefActive(invitationCodes?.data, (c) => c.codeType === "USER_TRIAL"),
-    [invitationCodes?.data]
-  );
-
-  const codeFranchise = useMemo(
-    () =>
-      pickNewestPrefActive(invitationCodes?.data, (c) => c.codeType === "FRANCHISE_HIERARCHY"),
-    [invitationCodes?.data]
-  );
-
-  const codeTypeLabel = (ct?: InvitationCode["codeType"]) => {
-    switch (ct) {
-      case "USER_TRIAL_STANDARD_ONE_MONTH":
-        return t("franchise.invitations.codeType.userTrial1m", { defaultValue: "Dùng thử 1 tháng" });
-      case "USER_TRIAL_STANDARD_THREE_MONTHS":
-        return t("franchise.invitations.codeType.userTrial3m", { defaultValue: "Dùng thử 3 tháng" });
-      case "USER_TRIAL":
-        return t("franchise.invitations.codeType.userTrial", { defaultValue: "Dùng thử (cũ)" });
-      case "FRANCHISE_HIERARCHY":
-        return t("franchise.invitations.codeType.franchiseHierarchy", { defaultValue: "Mã nhánh hệ thống" });
+  const codeTypeIcon = (key?: string) => {
+    switch (key) {
+      case STANDARD_IDS.one_month:
+        return (
+          <CalendarTodayIcon
+            sx={{ fontSize: 18, color: theme.palette.warning.main }}
+          />
+        );
+      case STANDARD_IDS.three_months:
+        return (
+          <UpdateIcon sx={{ fontSize: 18, color: theme.palette.error.main }} />
+        );
+      case STANDARD_IDS.one_year:
+        return (
+          <BusinessIcon
+            sx={{ fontSize: 18, color: theme.palette.success.main }}
+          />
+        );
+      case LEGACY_KEYS.user_trial:
+        return (
+          <PersonIcon sx={{ fontSize: 18, color: theme.palette.info.main }} />
+        );
+      case LEGACY_KEYS.franchise_hierarchy:
+        return (
+          <BusinessIcon
+            sx={{ fontSize: 18, color: theme.palette.success.main }}
+          />
+        );
       default:
-        return "—";
+        return <LocalActivityIcon sx={{ fontSize: 18 }} />;
     }
   };
 
-  const InvitationCodeCard = ({
-    invitationCode,
-    title,
-    icon,
-    color,
-  }: {
-    invitationCode?: InvitationCode;
-    title: string;
-    icon: React.ReactNode;
-    color: string;
-  }) => {
-    const code = invitationCode?.code ?? "N/A";
-    const status = (invitationCode?.status as string) ?? "inactive";
+  // ---- Derived data / filters ----
+  const rows = useMemo(() => invitationCodes?.data ?? [], [invitationCodes]);
 
-    // 🔎 Debug mỗi card
-    console.log("📌 Rendering card:", title, invitationCode);
+  const typeCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    rows.forEach((r) => {
+      const key = getEffectiveTypeKey(r);
+      map.set(key, (map.get(key) || 0) + 1);
+    });
+    return map;
+  }, [rows]);
 
-    return (
-      <Card
-        variant="outlined"
-        sx={{
-          width: "100%",
-          height: "100%",
-          minHeight: CARD_MIN_HEIGHT,
-          display: "flex",
-          flexDirection: "column",
-          background: `linear-gradient(135deg, ${alpha(color, 0.05)} 0%, ${alpha(
-            color,
-            0.02
-          )} 100%)`,
-          border: `1px solid ${alpha(color, 0.2)}`,
-          transition: "all 0.3s ease",
-          "&:hover": {
-            transform: "translateY(-4px)",
-            boxShadow: `0 8px 25px ${alpha(color, 0.15)}`,
-            border: `1px solid ${alpha(color, 0.3)}`,
-          },
-        }}
-      >
-        <CardContent sx={{ p: 3, flex: 1 }}>
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                bgcolor: alpha(color, 0.1),
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {icon}
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h6" fontWeight={700} sx={{ color: color }}>
-                {title}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {codeTypeLabel(invitationCode?.codeType)}
-              </Typography>
-            </Box>
-          </Stack>
+  const allTypesForFilter = useMemo(() => {
+    const keys = Array.from(typeCounts.keys());
+    const priority = [
+      STANDARD_IDS.one_month,
+      STANDARD_IDS.three_months,
+      STANDARD_IDS.one_year,
+      LEGACY_KEYS.user_trial,
+      LEGACY_KEYS.franchise_hierarchy,
+    ];
+    const prSet = new Set(priority);
+    const pr = keys.filter((k) => prSet.has(k));
+    const rest = keys
+      .filter((k) => !prSet.has(k))
+      .sort((a, b) => {
+        const la = LABEL_BY_KEY[a] ?? "Không xác định";
+        const lb = LABEL_BY_KEY[b] ?? "Không xác định";
+        return la.localeCompare(lb, "vi");
+      });
+    return [...pr, ...rest];
+  }, [typeCounts]);
 
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              bgcolor: alpha(color, 0.08),
-              border: `1px solid ${alpha(color, 0.2)}`,
-              mb: 3,
-            }}
-          >
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Typography
-                variant="h5"
-                component="div"
-                sx={{
-                  fontWeight: 700,
-                  fontFamily: "monospace",
-                  color: color,
-                  flex: 1,
-                  wordBreak: "break-all",
-                }}
-              >
-                {code}
-              </Typography>
-              <Tooltip title={copiedCode === code ? t("common.copied") : t("common.copy")}>
-                <IconButton
-                  onClick={() => handleCopyCode(invitationCode?.code)}
-                  sx={{
-                    color: copiedCode === code ? "success.main" : color,
-                    "&:hover": { bgcolor: alpha(color, 0.1) },
-                  }}
-                >
-                  {copiedCode === code ? <CheckCircleIcon /> : <ContentCopyIcon />}
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Box>
+  const filteredSortedRows = useMemo(() => {
+    let out = rows.slice();
 
-          <Box sx={{ mb: 2 }}>
-            <Chip
-              icon={status === "active" ? <CheckCircleIcon /> : <ErrorIcon />}
-              label={status === "active" ? t("common.status.active") : t("common.status.inactive")}
-              color={status === "active" ? "success" : "error"}
-              variant="filled"
-              sx={{ fontWeight: 600 }}
-            />
-          </Box>
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      out = out.filter((r) => {
+        const typeLabel =
+          LABEL_BY_KEY[getEffectiveTypeKey(r)] ?? "Không xác định";
+        return (
+          r.code?.toLowerCase().includes(q) ||
+          typeLabel.toLowerCase().includes(q) ||
+          (r.status || "").toLowerCase().includes(q)
+        );
+      });
+    }
 
-          <Divider sx={{ my: 2 }} />
+    if (statusFilter !== "all") {
+      out = out.filter((r) => (r.status || "").toLowerCase() === statusFilter);
+    }
 
-          <Stack spacing={2}>
-            <Typography variant="subtitle2" fontWeight={600} color={color}>
-              {t("franchise.invitations.stats.title")}
-            </Typography>
+    if (typeFilter !== "all") {
+      out = out.filter((r) => getEffectiveTypeKey(r) === typeFilter);
+    }
 
-            <Grid container spacing={2}>
-              <Grid sx={{xs:6}}>
-                <Box
-                  sx={{
-                    textAlign: "center",
-                    p: 1.5,
-                    borderRadius: 1,
-                    bgcolor: alpha(theme.palette.info.main, 0.05),
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={700} color="info.main">
-                    {invitationCode?.statistics?.actualUsageCount ?? 0}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {t("franchise.invitations.stats.usage")}
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid sx={{xs:6}}>
-                <Box
-                  sx={{
-                    textAlign: "center",
-                    p: 1.5,
-                    borderRadius: 1,
-                    bgcolor: alpha(theme.palette.warning.main, 0.05),
-                  }}
-                >
-                  <Typography variant="h4" fontWeight={700} color="warning.main">
-                    {invitationCode?.statistics?.totalCumulativeUses ?? 0}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {t("franchise.invitations.stats.total")}
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
+    out.sort((a: any, b: any) => {
+      const av = a[sortBy];
+      const bv = b[sortBy];
+      let cmp = 0;
 
-            <Stack spacing={1.5}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <CalendarTodayIcon sx={{ fontSize: 16, color: "text.secondary" }} />
-                <Typography variant="body2" color="text.secondary">
-                  {t("common.createdAt")}
-                </Typography>
-                <Typography variant="body2" fontWeight={500}>
-                  {formatDate(invitationCode?.createdAt)}
-                </Typography>
-              </Box>
+      if (sortBy === "createdAt" || sortBy === "updatedAt") {
+        cmp = new Date(av || 0).getTime() - new Date(bv || 0).getTime();
+      } else if (sortBy === "status" || sortBy === "code") {
+        cmp = String(av || "").localeCompare(String(bv || ""), "vi");
+      } else {
+        const na = Number(av ?? 0);
+        const nb = Number(bv ?? 0);
+        cmp = na - nb;
+      }
 
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <UpdateIcon sx={{ fontSize: 16, color: "text.secondary" }} />
-                <Typography variant="body2" color="text.secondary">
-                  {t("common.updatedAt")}
-                </Typography>
-                <Typography variant="body2" fontWeight={500}>
-                  {formatDate(invitationCode?.updatedAt)}
-                </Typography>
-              </Box>
-            </Stack>
-          </Stack>
-        </CardContent>
-      </Card>
-    );
+      return sortDesc ? -cmp : cmp;
+    });
+
+    return out;
+  }, [rows, search, statusFilter, typeFilter, sortBy, sortDesc]);
+
+  // --------- Group by type (header phụ) ----------
+  type Group = { key: string; label: string; items: InvitationCode[] };
+
+  const allGroups = useMemo<Group[]>(() => {
+    const map = new Map<string, InvitationCode[]>();
+    filteredSortedRows.forEach((r) => {
+      const k = getEffectiveTypeKey(r);
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(r);
+    });
+
+    const orderIndex = new Map<string, number>();
+    filteredSortedRows.forEach((r, i) => orderIndex.set(r._id as string, i));
+
+    const groups: Group[] = Array.from(map.entries()).map(([key, items]) => ({
+      key,
+      label: LABEL_BY_KEY[key] ?? "Không xác định",
+      items: items.sort(
+        (a, b) => orderIndex.get(a._id!)! - orderIndex.get(b._id!)!
+      ),
+    }));
+
+    const order: Record<string, number> = {
+      [STANDARD_IDS.one_month]: 1,
+      [STANDARD_IDS.three_months]: 2,
+      [STANDARD_IDS.one_year]: 3,
+      [LEGACY_KEYS.user_trial]: 4,
+      [LEGACY_KEYS.franchise_hierarchy]: 5,
+      UNKNOWN: 999,
+    };
+    groups.sort((a, b) => {
+      const oa = order[a.key] ?? 998;
+      const ob = order[b.key] ?? 998;
+      if (oa !== ob) return oa - ob;
+      return a.label.localeCompare(b.label, "vi");
+    });
+
+    return groups;
+  }, [filteredSortedRows]);
+
+  // --------- Pagination theo groups (không xé lẻ) ----------
+  const groupPages = useMemo(() => {
+    const pages: Group[][] = [];
+    let current: Group[] = [];
+    let budget = rowsPerPage;
+
+    const flush = () => {
+      if (current.length) {
+        pages.push(current);
+        current = [];
+        budget = rowsPerPage;
+      }
+    };
+
+    for (const g of allGroups) {
+      const size = g.items.length;
+
+      if (size <= budget) {
+        current.push(g);
+        budget -= size;
+      } else {
+        if (size <= rowsPerPage) {
+          flush();
+          current.push(g);
+          budget = rowsPerPage - size;
+        } else {
+          flush();
+          pages.push([g]); // group lớn đứng 1 trang riêng
+        }
+      }
+    }
+    flush();
+    return pages;
+  }, [allGroups, rowsPerPage]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [search, statusFilter, typeFilter, rowsPerPage, sortBy, sortDesc]);
+
+  const currentPageGroups = groupPages[page] || [];
+
+  const handleSort = (key: keyof InvitationCode) => {
+    if (sortBy === key) setSortDesc((s) => !s);
+    else {
+      setSortBy(key);
+      setSortDesc(true);
+    }
+  };
+
+  const toggleGroup = (key: string) =>
+    setCollapsedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const codeTypeLabelByRow = (row?: InvitationCode) => {
+    if (!row) return "—";
+    const key = getEffectiveTypeKey(row);
+    return LABEL_BY_KEY[key] ?? "Không xác định";
   };
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Fade in timeout={600}>
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                background: `linear-gradient(135deg, ${alpha(
-                  theme.palette.primary.main,
-                  0.1
-                )} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-                display: "flex",
-                alignItems: "center",
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-              }}
-            >
-              <LocalActivityIcon sx={{ color: theme.palette.primary.main, fontSize: 36 }} />
-            </Box>
-            <Box>
-              <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
-                {t("franchise.invitations.title")}
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {t("franchise.invitations.subtitle")}
-              </Typography>
-            </Box>
-          </Stack>
+      {/* Header */}
+      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: 3,
+            background: `linear-gradient(135deg, ${alpha(
+              theme.palette.primary.main,
+              0.1
+            )} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+            display: "flex",
+            alignItems: "center",
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+          }}
+        >
+          <LocalActivityIcon
+            sx={{ color: theme.palette.primary.main, fontSize: 36 }}
+          />
         </Box>
-      </Fade>
+        <Box>
+          <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
+            {t("franchise.invitations.title", { defaultValue: "Mã mời" })}
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            {t("franchise.invitations.subtitle", {
+              defaultValue:
+                "Nhóm theo packageId (1/3/12 tháng) & codeType (cũ)",
+            })}
+          </Typography>
+        </Box>
+      </Stack>
 
-      <Grow in timeout={800}>
+      {/* Toolbar */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mb: 2,
+          borderRadius: 2,
+          border: `1px solid ${theme.palette.divider}`,
+        }}
+      >
         <Stack
           direction={{ xs: "column", md: "row" }}
           spacing={2}
           alignItems={{ md: "center" }}
-          sx={{ justifyContent: "flex-end", mb: 2 }}
+          justifyContent="space-between"
         >
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-            <Tooltip title={t("common.refresh")}>
+            <TextField
+              size="small"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("common.search", { defaultValue: "Tìm kiếm..." })}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>
+                {t("common.status.label", { defaultValue: "Trạng thái" })}
+              </InputLabel>
+              <Select
+                label={t("common.status.label", { defaultValue: "Trạng thái" })}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">
+                  {t("common.all", { defaultValue: "Tất cả" })}
+                </MenuItem>
+                <MenuItem value="active">
+                  {t("common.status.active", {
+                    defaultValue: "Đang hoạt động",
+                  })}
+                </MenuItem>
+                <MenuItem value="inactive">
+                  {t("common.status.inactive", {
+                    defaultValue: "Không hoạt động",
+                  })}
+                </MenuItem>
+                <MenuItem value="expired">
+                  {t("common.status.expired", { defaultValue: "Hết hạn" })}
+                </MenuItem>
+                <MenuItem value="used">
+                  {t("common.status.used", { defaultValue: "Đã dùng" })}
+                </MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel>
+                {t("franchise.invitations.type", { defaultValue: "Loại mã" })}
+              </InputLabel>
+              <Select
+                label={t("franchise.invitations.type", {
+                  defaultValue: "Loại mã",
+                })}
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+              >
+                <MenuItem value="all">
+                  {t("common.all", { defaultValue: "Tất cả" })}
+                </MenuItem>
+                {Array.from(typeCounts.keys()).map((tp) => (
+                  <MenuItem key={tp} value={tp}>
+                    {LABEL_BY_KEY[tp] ?? "Không xác định"}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
+          <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+            <Tooltip title={t("common.refresh", { defaultValue: "Làm mới" })}>
               <IconButton onClick={fetchInvitationCodes}>
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
 
-            <Tooltip title={t("common.export")} sx={{ display: "none" }}>
-              <IconButton>
-                <DownloadIcon />
-              </IconButton>
-            </Tooltip>
+            {/* Tạo nhanh 1m/3m/1y */}
+            <Button
+              variant="outlined"
+              sx={{ textTransform: "none" }}
+              onClick={createStandardOneMonth}
+            >
+              Tạo 1 tháng
+            </Button>
+            <Button
+              variant="outlined"
+              sx={{ textTransform: "none" }}
+              onClick={createStandardThreeMonths}
+            >
+              Tạo 3 tháng
+            </Button>
+            <Button
+              variant="outlined"
+              sx={{ textTransform: "none" }}
+              onClick={createStandardOneYear}
+            >
+              Tạo 1 năm
+            </Button>
 
+            <Tooltip
+              title={t("common.export", { defaultValue: "Xuất dữ liệu" })}
+            >
+              <span>
+                <IconButton disabled>
+                  <DownloadIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
             <Button
               variant="contained"
-              sx={{
-                borderRadius: 2,
-                textTransform: "none",
-                fontWeight: 600,
-                boxShadow: 2,
-              }}
+              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
               onClick={handleActiveCode}
             >
-              {t("franchise.invitations.activate.btn")}
+              {t("franchise.invitations.activate.btn", {
+                defaultValue: "Kích hoạt mã mới",
+              })}
             </Button>
           </Stack>
         </Stack>
-      </Grow>
 
-      <Grow in={!invitationCodes.loading} timeout={800}>
-        <Box>
-          <Paper
-            elevation={0}
-            sx={{ p: 3, mb: 3, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}
-          >
+        <Divider sx={{ my: 2 }} />
+        <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+          {Array.from(typeCounts.keys()).map((tp) => (
+            <Chip
+              key={tp}
+              icon={codeTypeIcon(tp)}
+              label={`${LABEL_BY_KEY[tp] ?? "Không xác định"} • ${
+                typeCounts.get(tp) ?? 0
+              }`}
+              onClick={() => setTypeFilter(tp)}
+              variant={typeFilter === tp ? "filled" : "outlined"}
+              color={typeFilter === tp ? "primary" : "default"}
+              sx={{ mr: 0.5 }}
+            />
+          ))}
+          {!!rows.length && (
+            <Chip
+              label={`${t("common.all", { defaultValue: "Tất cả" })} • ${
+                rows.length
+              }`}
+              onClick={() => setTypeFilter("all")}
+              variant={typeFilter === "all" ? "filled" : "outlined"}
+              color={typeFilter === "all" ? "primary" : "default"}
+            />
+          )}
+        </Stack>
+      </Paper>
+
+      {/* Table */}
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 2,
+          border: `1px solid ${theme.palette.divider}`,
+          overflow: "hidden",
+        }}
+      >
+        {invitationCodes?.loading ? (
+          <Box sx={{ p: 6, display: "flex", justifyContent: "center" }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            <TableContainer sx={{ maxHeight: 680 }}>
+              <Table
+                stickyHeader
+                size="small"
+                aria-label="invitation-codes-table"
+              >
+                <TableHead>
+                  <TableRow>
+                    <TableCell
+                      onClick={() => handleSort("code")}
+                      sx={{ cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                      {t("franchise.invitations.table.code", {
+                        defaultValue: "Mã",
+                      })}
+                      {sortBy === "code" ? (sortDesc ? " ↓" : " ↑") : ""}
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 220 }}>
+                      {t("franchise.invitations.table.type", {
+                        defaultValue: "Loại mã",
+                      })}
+                    </TableCell>
+                    <TableCell
+                      onClick={() => handleSort("status")}
+                      sx={{ cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                      {t("franchise.invitations.table.status", {
+                        defaultValue: "Trạng thái",
+                      })}
+                      {sortBy === "status" ? (sortDesc ? " ↓" : " ↑") : ""}
+                    </TableCell>
+                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                      {t("franchise.invitations.stats.usage", {
+                        defaultValue: "Lượt dùng thực tế",
+                      })}
+                    </TableCell>
+                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                      {t("franchise.invitations.stats.total", {
+                        defaultValue: "Tổng tích luỹ",
+                      })}
+                    </TableCell>
+                    <TableCell
+                      onClick={() => handleSort("createdAt")}
+                      sx={{ cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                      {t("common.createdAt", { defaultValue: "Tạo lúc" })}
+                      {sortBy === "createdAt" ? (sortDesc ? " ↓" : " ↑") : ""}
+                    </TableCell>
+                    <TableCell
+                      onClick={() => handleSort("updatedAt")}
+                      sx={{ cursor: "pointer", whiteSpace: "nowrap" }}
+                    >
+                      {t("common.updatedAt", { defaultValue: "Cập nhật" })}
+                      {sortBy === "updatedAt" ? (sortDesc ? " ↓" : " ↑") : ""}
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 120 }}>
+                      {t("common.actions", { defaultValue: "Thao tác" })}
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {filteredSortedRows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                        <Typography color="text.secondary">
+                          {t("common.noData", {
+                            defaultValue: "Không có dữ liệu",
+                          })}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+
+                  {filteredSortedRows.length > 0 &&
+                    (() => {
+                      const pageGroups = groupPages[page] || [];
+                      return pageGroups.map((g) => {
+                        const isCollapsed = !!collapsedGroups[g.key];
+                        return (
+                          <Fragment key={`grp-${g.key}`}>
+                            {/* Group header */}
+                            <TableRow
+                              sx={{
+                                backgroundColor: alpha(
+                                  theme.palette.primary.main,
+                                  0.06
+                                ),
+                                position: "sticky",
+                                top: 56,
+                                zIndex: 1,
+                              }}
+                            >
+                              <TableCell colSpan={8} sx={{ py: 1 }}>
+                                <Stack
+                                  direction="row"
+                                  alignItems="center"
+                                  spacing={1.5}
+                                  justifyContent="space-between"
+                                >
+                                  <Stack
+                                    direction="row"
+                                    spacing={1.5}
+                                    alignItems="center"
+                                  >
+                                    {codeTypeIcon(g.key)}
+                                    <Typography fontWeight={700}>
+                                      {g.label} • {g.items.length}
+                                    </Typography>
+                                  </Stack>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => toggleGroup(g.key)}
+                                  >
+                                    {isCollapsed ? (
+                                      <ExpandMoreIcon />
+                                    ) : (
+                                      <ExpandLessIcon />
+                                    )}
+                                  </IconButton>
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+
+                            {!isCollapsed &&
+                              g.items.map((r) => {
+                                const status = (r.status || "").toLowerCase();
+                                const color =
+                                  STATUS_COLORS[status] || "default";
+                                const usage =
+                                  r.statistics?.actualUsageCount ?? 0;
+                                const total =
+                                  r.totalCumulativeUses ??
+                                  r.statistics?.totalCumulativeUses ??
+                                  0;
+
+                                return (
+                                  <TableRow hover key={r._id}>
+                                    <TableCell
+                                      sx={{
+                                        fontFamily: "monospace",
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      <Stack
+                                        direction="row"
+                                        alignItems="center"
+                                        spacing={1}
+                                      >
+                                        <Typography component="span">
+                                          {r.code}
+                                        </Typography>
+                                        <Tooltip
+                                          title={
+                                            copiedCode === r.code
+                                              ? t("common.copied", {
+                                                  defaultValue: "Đã sao chép",
+                                                })
+                                              : t("common.copy", {
+                                                  defaultValue: "Sao chép",
+                                                })
+                                          }
+                                        >
+                                          <IconButton
+                                            size="small"
+                                            onClick={() =>
+                                              handleCopyCode(r.code)
+                                            }
+                                            sx={{
+                                              color:
+                                                copiedCode === r.code
+                                                  ? theme.palette.success.main
+                                                  : theme.palette.text
+                                                      .secondary,
+                                            }}
+                                          >
+                                            <ContentCopyIcon fontSize="inherit" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Stack>
+                                    </TableCell>
+
+                                    <TableCell>
+                                      <Stack
+                                        direction="row"
+                                        spacing={1}
+                                        alignItems="center"
+                                      >
+                                        {codeTypeIcon(getEffectiveTypeKey(r))}
+                                        <Typography>
+                                          {codeTypeLabelByRow(r)}
+                                        </Typography>
+                                      </Stack>
+                                    </TableCell>
+
+                                    <TableCell>
+                                      <Chip
+                                        size="small"
+                                        icon={
+                                          status === "active" ? (
+                                            <CheckCircleIcon />
+                                          ) : (
+                                            <ErrorIcon />
+                                          )
+                                        }
+                                        label={
+                                          status === "active"
+                                            ? t("common.status.active", {
+                                                defaultValue: "Đang hoạt động",
+                                              })
+                                            : status === "inactive"
+                                            ? t("common.status.inactive", {
+                                                defaultValue: "Không hoạt động",
+                                              })
+                                            : status === "expired"
+                                            ? t("common.status.expired", {
+                                                defaultValue: "Hết hạn",
+                                              })
+                                            : t("common.status.used", {
+                                                defaultValue: "Đã dùng",
+                                              })
+                                        }
+                                        color={color}
+                                        variant={
+                                          color === "default"
+                                            ? "outlined"
+                                            : "filled"
+                                        }
+                                      />
+                                    </TableCell>
+
+                                    <TableCell align="right">{usage}</TableCell>
+                                    <TableCell align="right">{total}</TableCell>
+                                    <TableCell>
+                                      {formatDate(r.createdAt)}
+                                    </TableCell>
+                                    <TableCell>
+                                      {formatDate(r.updatedAt)}
+                                    </TableCell>
+
+                                    <TableCell>
+                                      <Tooltip
+                                        title={t("common.copy", {
+                                          defaultValue: "Sao chép",
+                                        })}
+                                      >
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleCopyCode(r.code)}
+                                        >
+                                          <ContentCopyIcon fontSize="inherit" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                          </Fragment>
+                        );
+                      });
+                    })()}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* Footer */}
             <Box
               sx={{
-                display: "grid",
-                gap: 3,
-                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                alignItems: "stretch",
+                px: 2,
+                py: 1.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderTop: `1px solid ${theme.palette.divider}`,
               }}
             >
-              <InvitationCodeCard
-                invitationCode={code1m}
-                title={t("franchise.invitations.cards.oneMonth", { defaultValue: "Mã mời 1 tháng" })}
-                icon={<CalendarTodayIcon sx={{ color: theme.palette.warning.main, fontSize: 28 }} />}
-                color={theme.palette.warning.main}
-              />
-              <InvitationCodeCard
-                invitationCode={code3m}
-                title={t("franchise.invitations.cards.threeMonths", {
-                  defaultValue: "Mã mời 3 tháng",
-                })}
-                icon={<UpdateIcon sx={{ color: theme.palette.error.main, fontSize: 28 }} />}
-                color={theme.palette.error.main}
-              />
-            </Box>
-          </Paper>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Typography variant="body2" color="text.secondary">
+                  {t("common.total", { defaultValue: "Tổng" })}:{" "}
+                  <b>{filteredSortedRows.length}</b>
+                </Typography>
+                <FormControl size="small">
+                  <InputLabel id="rpp-label">
+                    {t("common.rowsPerPage", { defaultValue: "Số dòng/trang" })}
+                  </InputLabel>
+                  <Select
+                    labelId="rpp-label"
+                    label={t("common.rowsPerPage", {
+                      defaultValue: "Số dòng/trang",
+                    })}
+                    value={rowsPerPage}
+                    onChange={(e) => setRowsPerPage(Number(e.target.value))}
+                    sx={{ minWidth: 140 }}
+                  >
+                    {[10, 25, 50, 100].map((n) => (
+                      <MenuItem key={n} value={n}>
+                        {n}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Stack>
 
-          <Paper
-            elevation={0}
-            sx={{ p: 3, mb: 3, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}
-          >
-            <Box
-              sx={{
-                display: "grid",
-                gap: 3,
-                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                alignItems: "stretch",
-              }}
-            >
-              <InvitationCodeCard
-                invitationCode={codeLegacy}
-                title={t("franchise.invitations.cards.userTrialLegacy", {
-                  defaultValue: "Mã dùng thử (cũ)"
-                })}
-                icon={<PersonIcon sx={{ color: theme.palette.info.main, fontSize: 28 }} />}
-                color={theme.palette.info.main}
-              />
-              <InvitationCodeCard
-                invitationCode={codeFranchise}
-                title={t("franchise.invitations.cards.franchise", {
-                  defaultValue: "Mã nhánh hệ thống",
-                })}
-                icon={<BusinessIcon sx={{ color: theme.palette.success.main, fontSize: 28 }} />}
-                color={theme.palette.success.main}
+              <Pagination
+                count={Math.max(groupPages.length, 1)}
+                page={Math.min(page + 1, Math.max(groupPages.length, 1))}
+                onChange={(_, p1) => setPage(p1 - 1)}
+                color="primary"
+                shape="rounded"
+                siblingCount={1}
+                boundaryCount={1}
               />
             </Box>
-          </Paper>
-        </Box>
-      </Grow>
+          </>
+        )}
+      </Paper>
     </Box>
   );
 }

@@ -1,8 +1,5 @@
-// franchise.types.ts
+// src/types/franchise.type.ts
 
-/**
- * Base User interface for franchise
- */
 export interface FranchiseUser {
   _id: string;
   username: string;
@@ -24,9 +21,6 @@ export interface FranchiseUser {
   franchiseName?: string;
 }
 
-/**
- * User trial quota ledger entry
- */
 export interface UserTrialQuotaLedger {
   _id: string;
   sourceCampaignId?: string;
@@ -42,9 +36,6 @@ export interface UserTrialQuotaLedger {
   originalCampaignEndDate?: string;
 }
 
-/**
- * Franchise entity with details
- */
 export interface FranchiseDetails {
   _id: string;
   userId: string | FranchiseUser;
@@ -57,9 +48,6 @@ export interface FranchiseDetails {
   updatedAt: string;
 }
 
-/**
- * Quota information
- */
 export interface QuotaInfo {
   totalActiveQuota: number;
   quotaByLedger: Array<{
@@ -74,9 +62,6 @@ export interface QuotaInfo {
   }>;
 }
 
-/**
- * Statistics information
- */
 export interface FranchiseStatistics {
   totalChildren: number;
   activeChildren: number;
@@ -91,36 +76,64 @@ export interface FranchiseStatistics {
   };
 }
 
-/**
- * Invitation code
- */
+/** Invitation code — hợp nhất BE mới & cũ */
 export interface InvitationCode {
   _id: string;
   code: string;
-  codeType:
+
+  /** BE mới: định danh gói 1m/3m/1y */
+  packageId?: string;
+
+  /** BE cũ: xác định 2 nhóm còn lại */
+  codeType?:
     | "USER_TRIAL"
     | "FRANCHISE_HIERARCHY"
     | "USER_TRIAL_STANDARD_ONE_MONTH"
-    | "USER_TRIAL_STANDARD_THREE_MONTHS"; // <-- THÊM 2 ENUM MỚI
-  createdByUserId?: string; // nếu có
-  status: "active" | "used" | "expired" | "inactive"; // thêm "inactive" vì payload có
-  statistics: {
-    actualUsageCount: number;
-    lastInvitedUser: string | null;
-    lastUsedDate: string | null;
-    totalCumulativeUses: number;
+    | "USER_TRIAL_STANDARD_THREE_MONTHS"
+    | "USER_TRIAL_STANDARD_ONE_YEAR"
+    | "RANDOM"
+    | { _id?: string; key?: string; name?: string }
+    | string;
+
+  status: "active" | "used" | "expired" | "inactive" | string;
+
+  /** BE mới có thể đưa usage lên top-level */
+  totalCumulativeUses?: number;
+
+  /** Giữ cho BE cũ */
+  statistics?: {
+    actualUsageCount?: number;
+    lastInvitedUser?: string | null;
+    lastUsedDate?: string | null;
+    totalCumulativeUses?: number;
   };
-  currentLedgerInfo: any | null;
+
+  currentLedgerInfo?: {
+    originalCampaignEndDate?: string;
+    endDate?: string;
+  } | null;
+
+  userId?: string;
   createdAt: string;
   updatedAt: string;
-  expiresAt?: string; // nếu sau này có
-  endDate?: string;   // nếu sau này có
+
+  expiresAt?: string;
+  endDate?: string;
+
+  campaign?: {
+    codeTypeId?: string;
+    codeType?: { _id?: string; key?: string; name?: string } | string;
+    endDate?: string;
+  };
+
+  /** BE đôi khi gắn gói ở đây */
+  package?: { _id?: string; id?: string; name?: string } | null;
+  codePackageId?: string;
+  standardPackageId?: string;
+  planId?: string;
+  pricingPackageId?: string;
 }
 
-
-/**
- * Child franchise for hierarchy
- */
 export interface ChildFranchise {
   _id: string;
   userId: string;
@@ -133,18 +146,12 @@ export interface ChildFranchise {
   children?: ChildFranchise[];
 }
 
-/**
- * Allocation request payload
- */
 export interface AllocateQuotaPayload {
   childFranchiseUserId: string;
   amountToAllocate: number;
   sourceLedgerEntryId: string;
 }
 
-/**
- * Allocation history entry
- */
 export interface AllocationHistory {
   _id: string;
   fromUserId: string;
@@ -157,9 +164,6 @@ export interface AllocationHistory {
   revokedAt?: string;
 }
 
-/**
- * Trial performance metrics
- */
 export interface TrialPerformance {
   totalInvited: number;
   totalActivated: number;
@@ -172,7 +176,6 @@ export interface TrialPerformance {
     monthly: PerformanceMetric[];
   };
 }
-
 interface PerformanceMetric {
   date: string;
   invited: number;
@@ -180,9 +183,6 @@ interface PerformanceMetric {
   converted: number;
 }
 
-/**
- * Child performance summary
- */
 export interface ChildPerformanceSummary {
   childFranchiseUserId: string;
   franchiseName: string;
@@ -196,9 +196,6 @@ export interface ChildPerformanceSummary {
   };
 }
 
-/**
- * Full hierarchy performance
- */
 export interface HierarchyPerformance {
   franchiseId: string;
   franchiseName: string;
@@ -214,9 +211,6 @@ export interface HierarchyPerformance {
   };
 }
 
-/**
- * Quota utilization report
- */
 export interface QuotaUtilization {
   totalAllocated: number;
   totalConsumed: number;
@@ -240,27 +234,16 @@ export interface QuotaUtilization {
   }>;
 }
 
-/**
- * API Response wrapper
- */
 export interface ApiResponse<T> {
   data: T;
   message?: string;
   error?: ApiError;
 }
-
-/**
- * API Error
- */
 export interface ApiError {
   message: string;
   statusCode: number;
   error?: string;
 }
-
-/**
- * Pagination metadata
- */
 export interface Pagination {
   currentPage: number;
   hasNextPage: boolean;
@@ -268,18 +251,11 @@ export interface Pagination {
   total: number;
   totalPages: number;
 }
-
-/**
- * List response with pagination
- */
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: Pagination;
 }
 
-/**
- * API Detail Response
- */
 export interface ApiDetailResponse {
   success: boolean;
   message: string;

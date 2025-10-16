@@ -1,10 +1,8 @@
-// useFranchise.ts
-
+// src/hooks/useFranchise.ts
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { franchiseService } from "../services/franchiseService";
 import {
-  FranchiseDetails,
   QuotaInfo,
   FranchiseStatistics,
   InvitationCode,
@@ -20,239 +18,142 @@ import {
   ApiDetailResponse,
 } from "../types/franchise.type";
 
-/**
- * State interface for franchise details
- */
 interface FranchiseDetailsState {
   data: ApiDetailResponse | null;
   loading: boolean;
   error: ApiError | null;
 }
-
-/**
- * State interface for quota info
- */
 interface QuotaState {
   data: QuotaInfo | null;
   loading: boolean;
   error: ApiError | null;
 }
-
-/**
- * State interface for statistics
- */
 interface StatisticsState {
   data: FranchiseStatistics | null;
   loading: boolean;
   error: ApiError | null;
 }
-
-/**
- * State interface for invitation codes
- */
 interface InvitationCodesState {
   data: InvitationCode[];
   loading: boolean;
   error: ApiError | null;
 }
-
-/**
- * State interface for quota ledger
- */
 interface QuotaLedgerState {
   data: UserTrialQuotaLedger[];
   loading: boolean;
   error: ApiError | null;
 }
-
-/**
- * State interface for child franchises
- */
 interface ChildFranchisesState {
   data: ChildFranchise[];
   loading: boolean;
   error: ApiError | null;
 }
-
-/**
- * State interface for performance metrics
- */
 interface PerformanceState<T> {
   data: T | null;
   loading: boolean;
   error: ApiError | null;
 }
 
-/**
- * Custom hook for managing franchise operations
- */
 export const useFranchise = () => {
   const navigate = useNavigate();
 
-  // State management
   const [franchiseDetails, setFranchiseDetails] =
     useState<FranchiseDetailsState>({
       data: null,
       loading: false,
       error: null,
     });
-
   const [quota, setQuota] = useState<QuotaState>({
     data: null,
     loading: false,
     error: null,
   });
-
   const [statistics, setStatistics] = useState<StatisticsState>({
     data: null,
     loading: false,
     error: null,
   });
-
   const [invitationCodes, setInvitationCodes] = useState<InvitationCodesState>({
     data: [],
     loading: false,
     error: null,
   });
-
   const [quotaLedger, setQuotaLedger] = useState<QuotaLedgerState>({
     data: [],
     loading: false,
     error: null,
   });
-
   const [childFranchises, setChildFranchises] = useState<ChildFranchisesState>({
     data: [],
     loading: false,
     error: null,
   });
-
   const [myPerformance, setMyPerformance] = useState<
     PerformanceState<TrialPerformance>
-  >({
-    data: null,
-    loading: false,
-    error: null,
-  });
-
+  >({ data: null, loading: false, error: null });
   const [childrenPerformance, setChildrenPerformance] = useState<
     PerformanceState<ChildPerformanceSummary[]>
-  >({
-    data: null,
-    loading: false,
-    error: null,
-  });
-
+  >({ data: null, loading: false, error: null });
   const [hierarchyPerformance, setHierarchyPerformance] = useState<
     PerformanceState<HierarchyPerformance>
-  >({
-    data: null,
-    loading: false,
-    error: null,
-  });
-
+  >({ data: null, loading: false, error: null });
   const [quotaUtilization, setQuotaUtilization] = useState<
     PerformanceState<QuotaUtilization>
-  >({
-    data: null,
-    loading: false,
-    error: null,
-  });
-
+  >({ data: null, loading: false, error: null });
   const [isInitialized, setIsInitialized] = useState(false);
 
-  /**
-   * Fetch franchise details
-   */
   const fetchFranchiseDetails = useCallback(async () => {
     setFranchiseDetails((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response = await franchiseService.getMyFranchiseDetails();
-      console.log("aaaaaaaa: ", response);
-      setFranchiseDetails({
-        data: response.data,
-        loading: false,
-        error: null,
-      });
+      setFranchiseDetails({ data: response.data, loading: false, error: null });
     } catch (error) {
-      const apiError = error as ApiError;
       setFranchiseDetails({
         data: null,
         loading: false,
-        error: apiError,
+        error: error as ApiError,
       });
     }
   }, []);
 
-  /**
-   * Fetch quota information
-   */
   const fetchQuota = useCallback(async () => {
     setQuota((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response = await franchiseService.getMyQuota();
-      setQuota({
-        data: response.data,
-        loading: false,
-        error: null,
-      });
+      setQuota({ data: response.data, loading: false, error: null });
     } catch (error) {
-      const apiError = error as ApiError;
-      setQuota({
-        data: null,
-        loading: false,
-        error: apiError,
-      });
+      setQuota({ data: null, loading: false, error: error as ApiError });
     }
   }, []);
 
-  /**
-   * Fetch statistics
-   */
   const fetchStatistics = useCallback(async () => {
     setStatistics((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response = await franchiseService.getMyStatistics();
-      setStatistics({
-        data: response.data,
-        loading: false,
-        error: null,
-      });
+      setStatistics({ data: response.data, loading: false, error: null });
     } catch (error) {
-      const apiError = error as ApiError;
-      setStatistics({
-        data: null,
-        loading: false,
-        error: apiError,
-      });
+      setStatistics({ data: null, loading: false, error: error as ApiError });
     }
   }, []);
 
-  /**
-   * Fetch invitation codes
-   */
   const fetchInvitationCodes = useCallback(async () => {
     setInvitationCodes((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response = await franchiseService.getMyInvitationCodes();
       setInvitationCodes({
-        data: response.data,
+        data: response.data ?? [],
         loading: false,
         error: null,
       });
     } catch (error) {
-      const apiError = error as ApiError;
       setInvitationCodes({
         data: [],
         loading: false,
-        error: apiError,
+        error: error as ApiError,
       });
     }
   }, []);
 
-  /**
-   * Fetch quota ledger
-   */
   const fetchQuotaLedger = useCallback(
     async (status?: "active" | "inactive" | "expired", campaignId?: string) => {
       setQuotaLedger((prev) => ({ ...prev, loading: true, error: null }));
@@ -261,128 +162,42 @@ export const useFranchise = () => {
           status,
           campaignId
         );
-        setQuotaLedger({
-          data: response.data,
-          loading: false,
-          error: null,
-        });
+        setQuotaLedger({ data: response.data, loading: false, error: null });
       } catch (error) {
-        const apiError = error as ApiError;
-        setQuotaLedger({
-          data: [],
-          loading: false,
-          error: apiError,
-        });
+        setQuotaLedger({ data: [], loading: false, error: error as ApiError });
       }
     },
     []
   );
 
-  /**
-   * Fetch child franchises
-   */
   const fetchChildFranchises = useCallback(async () => {
     setChildFranchises((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response = await franchiseService.getChildFranchises();
-      setChildFranchises({
-        data: response.data,
-        loading: false,
-        error: null,
-      });
+      setChildFranchises({ data: response.data, loading: false, error: null });
     } catch (error) {
-      const apiError = error as ApiError;
       setChildFranchises({
         data: [],
         loading: false,
-        error: apiError,
+        error: error as ApiError,
       });
     }
   }, []);
 
-  /**
-   * Allocate quota to child
-   */
-  const allocateQuota = useCallback(
-    async (payload: AllocateQuotaPayload) => {
-      try {
-        const response = await franchiseService.allocateQuotaToChild(payload);
-        // Refresh quota and ledger after allocation
-        await Promise.all([fetchQuota(), fetchQuotaLedger()]);
-        return { success: true, data: response.data };
-      } catch (error) {
-        const apiError = error as ApiError;
-        return { success: false, error: apiError };
-      }
-    },
-    [fetchQuota, fetchQuotaLedger]
-  );
-
-  /**
-   * Revoke quota from child
-   */
-  const revokeQuota = useCallback(
-    async (ledgerEntryId: string) => {
-      try {
-        const response = await franchiseService.revokeQuotaFromChild(
-          ledgerEntryId
-        );
-        // Refresh quota and ledger after revocation
-        await Promise.all([fetchQuota(), fetchQuotaLedger()]);
-        return { success: true, message: response.data.message };
-      } catch (error) {
-        const apiError = error as ApiError;
-        return { success: false, error: apiError };
-      }
-    },
-    [fetchQuota, fetchQuotaLedger]
-  );
-
-  /**
-   * Generate invitation code
-   */
-  const generateInvitationCode = useCallback(
-    async (campaignId: string) => {
-      try {
-        const response = await franchiseService.generateInvitationCode(
-          campaignId
-        );
-        // Refresh invitation codes list
-        await fetchInvitationCodes();
-        return { success: true, data: response.data };
-      } catch (error) {
-        const apiError = error as ApiError;
-        return { success: false, error: apiError };
-      }
-    },
-    [fetchInvitationCodes]
-  );
-
-  /**
-   * Fetch my trial performance
-   */
   const fetchMyPerformance = useCallback(async () => {
     setMyPerformance((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response = await franchiseService.getMyTrialPerformance();
-      setMyPerformance({
-        data: response.data,
-        loading: false,
-        error: null,
-      });
+      setMyPerformance({ data: response.data, loading: false, error: null });
     } catch (error) {
-      const apiError = error as ApiError;
       setMyPerformance({
         data: null,
         loading: false,
-        error: apiError,
+        error: error as ApiError,
       });
     }
   }, []);
 
-  /**
-   * Fetch children performance summary
-   */
   const fetchChildrenPerformance = useCallback(async () => {
     setChildrenPerformance((prev) => ({ ...prev, loading: true, error: null }));
     try {
@@ -394,18 +209,14 @@ export const useFranchise = () => {
         error: null,
       });
     } catch (error) {
-      const apiError = error as ApiError;
       setChildrenPerformance({
         data: null,
         loading: false,
-        error: apiError,
+        error: error as ApiError,
       });
     }
   }, []);
 
-  /**
-   * Fetch single child performance
-   */
   const fetchChildPerformance = useCallback(async (childUserId: string) => {
     try {
       const response = await franchiseService.getChildTrialPerformance(
@@ -413,14 +224,10 @@ export const useFranchise = () => {
       );
       return { success: true, data: response.data };
     } catch (error) {
-      const apiError = error as ApiError;
-      return { success: false, error: apiError };
+      return { success: false, error: error as ApiError };
     }
   }, []);
 
-  /**
-   * Fetch hierarchy performance
-   */
   const fetchHierarchyPerformance = useCallback(async (campaignId?: string) => {
     setHierarchyPerformance((prev) => ({
       ...prev,
@@ -437,82 +244,116 @@ export const useFranchise = () => {
         error: null,
       });
     } catch (error) {
-      const apiError = error as ApiError;
       setHierarchyPerformance({
         data: null,
         loading: false,
-        error: apiError,
+        error: error as ApiError,
       });
     }
   }, []);
 
-  /**
-   * Fetch quota utilization
-   */
   const fetchQuotaUtilization = useCallback(async () => {
     setQuotaUtilization((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response = await franchiseService.getQuotaUtilization();
-      setQuotaUtilization({
-        data: response.data,
-        loading: false,
-        error: null,
-      });
+      setQuotaUtilization({ data: response.data, loading: false, error: null });
     } catch (error) {
-      const apiError = error as ApiError;
       setQuotaUtilization({
         data: null,
         loading: false,
-        error: apiError,
+        error: error as ApiError,
       });
     }
   }, []);
 
-  /**
-   * Search franchises in hierarchy
-   */
-  const searchFranchises = useCallback(async (searchTerm: string) => {
-    try {
-      const response = await franchiseService.searchFranchisesInHierarchy(
-        searchTerm
-      );
-      return { success: true, data: response.data };
-    } catch (error) {
-      const apiError = error as ApiError;
-      return { success: false, error: apiError };
-    }
-  }, []);
-
-  /**
-   * Export data to Excel
-   */
-  const exportToExcel = useCallback(
-    async (type: "performance" | "quota" | "hierarchy") => {
+  // Actions
+  const allocateQuota = useCallback(
+    async (payload: AllocateQuotaPayload) => {
       try {
-        const blob = await franchiseService.exportToExcel(type);
-        // Create download link
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `franchise-${type}-${
-          new Date().toISOString().split("T")[0]
-        }.xlsx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        return { success: true };
+        const response = await franchiseService.allocateQuotaToChild(payload);
+        await Promise.all([fetchQuota(), fetchQuotaLedger()]);
+        return { success: true, data: response.data as AllocationHistory };
       } catch (error) {
-        const apiError = error as ApiError;
-        return { success: false, error: apiError };
+        return { success: false, error: error as ApiError };
       }
     },
-    []
+    [fetchQuota, fetchQuotaLedger]
   );
 
-  /**
-   * Validate invitation code
-   */
+  const revokeQuota = useCallback(
+    async (ledgerEntryId: string) => {
+      try {
+        const response = await franchiseService.revokeQuotaFromChild(
+          ledgerEntryId
+        );
+        await Promise.all([fetchQuota(), fetchQuotaLedger()]);
+        return { success: true, message: response.data.message };
+      } catch (error) {
+        return { success: false, error: error as ApiError };
+      }
+    },
+    [fetchQuota, fetchQuotaLedger]
+  );
+
+  const generateInvitationCode = useCallback(
+    async (campaignId: string) => {
+      try {
+        const response = await franchiseService.generateInvitationCode(
+          campaignId
+        );
+        await fetchInvitationCodes();
+        return { success: true, data: response.data };
+      } catch (error) {
+        return { success: false, error: error as ApiError };
+      }
+    },
+    [fetchInvitationCodes]
+  );
+
+  // NEW: create-standard (trả mảng)
+  const createStandardOneMonth = useCallback(async () => {
+    try {
+      const res = await franchiseService.createStandardCode("one_month");
+      await fetchInvitationCodes();
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: error as ApiError };
+    }
+  }, [fetchInvitationCodes]);
+
+  const createStandardThreeMonths = useCallback(async () => {
+    try {
+      const res = await franchiseService.createStandardCode("three_months");
+      await fetchInvitationCodes();
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: error as ApiError };
+    }
+  }, [fetchInvitationCodes]);
+
+  const createStandardOneYear = useCallback(async () => {
+    try {
+      const res = await franchiseService.createStandardCode("one_year");
+      await fetchInvitationCodes();
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: error as ApiError };
+    }
+  }, [fetchInvitationCodes]);
+
+  const createStandardById = useCallback(
+    async (codeTypeId: string) => {
+      try {
+        const res = await franchiseService.createStandardCodeById(codeTypeId);
+        await fetchInvitationCodes();
+        return { success: true, data: res.data };
+      } catch (error) {
+        return { success: false, error: error as ApiError };
+      }
+    },
+    [fetchInvitationCodes]
+  );
+
   const validateInvitationCode = useCallback(async (code: string) => {
     try {
       const response = await franchiseService.validateInvitationCode(code);
@@ -522,42 +363,37 @@ export const useFranchise = () => {
         message: response.data.message,
       };
     } catch (error) {
-      const apiError = error as ApiError;
-      return { success: false, error: apiError };
+      return { success: false, error: error as ApiError };
     }
   }, []);
 
   const activeCode = useCallback(async () => {
     try {
       const response = await franchiseService.activeCode();
-      return {
-        success: true,
-        message: response.data.message,
-      };
+      await fetchInvitationCodes();
+      return { success: true, message: response.data.message };
     } catch (error) {
-      const apiError = error as ApiError;
-      return { success: false, error: apiError };
+      return { success: false, error: error as ApiError };
     }
-  }, []);
+  }, [fetchInvitationCodes]);
 
-  /**
-   * Initialize all data on mount
-   */
   const initializeData = useCallback(async () => {
     if (isInitialized) return;
-
     setIsInitialized(true);
-    // Fetch essential data in parallel
     await Promise.all([
       fetchFranchiseDetails(),
       fetchQuota(),
       fetchStatistics(),
+      fetchInvitationCodes(),
     ]);
-  }, [isInitialized, fetchFranchiseDetails, fetchQuota, fetchStatistics]);
+  }, [
+    isInitialized,
+    fetchFranchiseDetails,
+    fetchQuota,
+    fetchStatistics,
+    fetchInvitationCodes,
+  ]);
 
-  /**
-   * Refresh all data
-   */
   const refreshAllData = useCallback(async () => {
     await Promise.all([
       fetchFranchiseDetails(),
@@ -576,7 +412,6 @@ export const useFranchise = () => {
     fetchChildFranchises,
   ]);
 
-  // Initialize data on component mount
   useEffect(() => {
     initializeData();
   }, [initializeData]);
@@ -594,7 +429,7 @@ export const useFranchise = () => {
     hierarchyPerformance,
     quotaUtilization,
 
-    // Data fetching functions
+    // Fetchers
     fetchFranchiseDetails,
     fetchQuota,
     fetchStatistics,
@@ -607,16 +442,18 @@ export const useFranchise = () => {
     fetchHierarchyPerformance,
     fetchQuotaUtilization,
 
-    // Action functions
+    // Actions
     allocateQuota,
     revokeQuota,
-    generateInvitationCode,
-    searchFranchises,
-    exportToExcel,
+    generateInvitationCode, // legacy
+    createStandardOneMonth,
+    createStandardThreeMonths,
+    createStandardOneYear,
+    createStandardById,
     validateInvitationCode,
     activeCode,
 
-    // Utility functions
+    // Utils
     refreshAllData,
   };
 };
