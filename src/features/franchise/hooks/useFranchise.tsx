@@ -1,4 +1,3 @@
-// src/hooks/useFranchise.ts
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { franchiseService } from "../services/franchiseService";
@@ -53,6 +52,15 @@ interface PerformanceState<T> {
   loading: boolean;
   error: ApiError | null;
 }
+
+const hasToken = () =>
+  !!(
+    localStorage.getItem("accessToken") ||
+    localStorage.getItem("token") ||
+    localStorage.getItem("authToken") ||
+    localStorage.getItem("franchise_token") ||
+    localStorage.getItem("jwt")
+  );
 
 export const useFranchise = () => {
   const navigate = useNavigate();
@@ -310,41 +318,55 @@ export const useFranchise = () => {
     [fetchInvitationCodes]
   );
 
-  // NEW: create-standard (trả mảng)
-  const createStandardOneMonth = useCallback(async () => {
-    try {
-      const res = await franchiseService.createStandardCode("one_month");
-      await fetchInvitationCodes();
-      return { success: true, data: res.data };
-    } catch (error) {
-      return { success: false, error: error as ApiError };
-    }
-  }, [fetchInvitationCodes]);
+  const createStandardOneMonth = useCallback(
+    async (qty = 1) => {
+      try {
+        const res = await franchiseService.createStandardCode("one_month", qty);
+        await fetchInvitationCodes();
+        return { success: true, data: res.data };
+      } catch (error) {
+        return { success: false, error: error as ApiError };
+      }
+    },
+    [fetchInvitationCodes]
+  );
 
-  const createStandardThreeMonths = useCallback(async () => {
-    try {
-      const res = await franchiseService.createStandardCode("three_months");
-      await fetchInvitationCodes();
-      return { success: true, data: res.data };
-    } catch (error) {
-      return { success: false, error: error as ApiError };
-    }
-  }, [fetchInvitationCodes]);
+  const createStandardThreeMonths = useCallback(
+    async (qty = 1) => {
+      try {
+        const res = await franchiseService.createStandardCode(
+          "three_months",
+          qty
+        );
+        await fetchInvitationCodes();
+        return { success: true, data: res.data };
+      } catch (error) {
+        return { success: false, error: error as ApiError };
+      }
+    },
+    [fetchInvitationCodes]
+  );
 
-  const createStandardOneYear = useCallback(async () => {
-    try {
-      const res = await franchiseService.createStandardCode("one_year");
-      await fetchInvitationCodes();
-      return { success: true, data: res.data };
-    } catch (error) {
-      return { success: false, error: error as ApiError };
-    }
-  }, [fetchInvitationCodes]);
+  const createStandardOneYear = useCallback(
+    async (qty = 1) => {
+      try {
+        const res = await franchiseService.createStandardCode("one_year", qty);
+        await fetchInvitationCodes();
+        return { success: true, data: res.data };
+      } catch (error) {
+        return { success: false, error: error as ApiError };
+      }
+    },
+    [fetchInvitationCodes]
+  );
 
   const createStandardById = useCallback(
-    async (codeTypeId: string) => {
+    async (codeTypeId: string, qty = 1) => {
       try {
-        const res = await franchiseService.createStandardCodeById(codeTypeId);
+        const res = await franchiseService.createStandardCodeById(
+          codeTypeId,
+          qty
+        );
         await fetchInvitationCodes();
         return { success: true, data: res.data };
       } catch (error) {
@@ -379,6 +401,7 @@ export const useFranchise = () => {
 
   const initializeData = useCallback(async () => {
     if (isInitialized) return;
+    if (!hasToken()) return;
     setIsInitialized(true);
     await Promise.all([
       fetchFranchiseDetails(),
@@ -445,7 +468,7 @@ export const useFranchise = () => {
     // Actions
     allocateQuota,
     revokeQuota,
-    generateInvitationCode, // legacy
+    generateInvitationCode,
     createStandardOneMonth,
     createStandardThreeMonths,
     createStandardOneYear,

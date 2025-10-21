@@ -1,4 +1,3 @@
-// src/services/franchiseService.ts
 import apiClient from "@/shared/services/api/apiClient";
 import {
   FranchiseStatistics,
@@ -19,6 +18,7 @@ import {
 class FranchiseService {
   private readonly basePath = "/api/v1/franchise";
 
+  // Tham chiếu (nếu cần), nhưng tạo mã đang dùng codeType string
   private readonly STANDARD_CODE_TYPE_IDS = {
     one_month: "683d1e58d70c0d6366e3d716",
     three_months: "68cbc381bd30e2a1315d2709",
@@ -26,10 +26,13 @@ class FranchiseService {
   } as const;
 
   private log(method: string, url: string, body?: unknown) {
-    if (process.env.NODE_ENV !== "production") {
+    if (import.meta.env.MODE !== "production") {
+      // eslint-disable-next-line no-console
       console.log(`[FranchiseService] ${method} ${url}`, body ?? "");
     }
   }
+
+  // =============== FRANCHISE INFO ===============
 
   async getMyFranchiseDetails(): Promise<ApiResponse<ApiDetailResponse>> {
     const url = `${this.basePath}/me/details`;
@@ -56,14 +59,68 @@ class FranchiseService {
     return response.data;
   }
 
+  // =============== INVITATION CODES ===============
+
+  /** GET giống Postman: /api/v1/invitation-code */
   async getMyInvitationCodes(): Promise<ApiResponse<InvitationCode[]>> {
-    const url = `${this.basePath}/me/invitation-codes?ts=${Date.now()}`;
+    const url = `/api/v1/invitation-code?ts=${Date.now()}`;
     this.log("GET", url);
-    const response = await apiClient.get(url, {
+    const res = await apiClient.get(url, {
       headers: { "Cache-Control": "no-cache" },
     });
-    return response.data;
+
+    // Chuẩn hóa response { success, data: [...] } -> { data: [...] }
+    const body = res.data as any;
+    const list: InvitationCode[] = Array.isArray(body?.data)
+      ? body.data
+      : Array.isArray(body)
+      ? body
+      : [];
+    return { data: list };
   }
+
+  /**
+   * POST tạo mã: body { codeType: "one_month" | "three_months" | "one_year", numberInvitationCodes: "2" }
+   * Trả { success, data: InvitationCode[] }
+   */
+  async createStandardCode(
+    type: "one_month" | "three_months" | "one_year",
+    qty = 1
+  ): Promise<{ success?: boolean; data: InvitationCode[] }> {
+    const url = `${this.basePath}/code/create-standard`;
+    const payload = {
+      codeType: type,
+      numberInvitationCodes: String(Math.max(1, Math.min(1000, qty))),
+    };
+    this.log("POST", url, payload);
+    const response = await apiClient.post(url, payload);
+    const body = response.data as any;
+    return {
+      success: !!body?.success,
+      data: Array.isArray(body?.data) ? body.data : [],
+    };
+  }
+
+  /** Dùng khi cần truyền id thay vì codeType; vẫn giữ để tương thích */
+  async createStandardCodeById(
+    codeTypeId: string,
+    qty = 1
+  ): Promise<{ success?: boolean; data: InvitationCode[] }> {
+    const url = `${this.basePath}/code/create-standard`;
+    const payload = {
+      codeTypeId,
+      numberInvitationCodes: String(Math.max(1, Math.min(1000, qty))),
+    };
+    this.log("POST", url, payload);
+    const response = await apiClient.post(url, payload);
+    const body = response.data as any;
+    return {
+      success: !!body?.success,
+      data: Array.isArray(body?.data) ? body.data : [],
+    };
+  }
+
+  // =============== OTHERS (giữ nguyên flow cũ) ===============
 
   async getMyUserTrialQuotaLedger(
     status?: "active" | "inactive" | "expired",
@@ -197,34 +254,12 @@ class FranchiseService {
     return response.data;
   }
 
-  /** Legacy: bằng campaignId */
+  // Legacy
   async generateInvitationCode(
     campaignId: string
   ): Promise<ApiResponse<InvitationCode>> {
     const url = `${this.basePath}/me/generate-invitation`;
     const payload = { campaignId };
-    this.log("POST", url, payload);
-    const response = await apiClient.post(url, payload);
-    return response.data;
-  }
-
-  /** NEW: create-standard trả MẢNG InvitationCode */
-  async createStandardCode(
-    type: "one_month" | "three_months" | "one_year"
-  ): Promise<ApiResponse<InvitationCode[]>> {
-    const codeTypeId = this.STANDARD_CODE_TYPE_IDS[type];
-    const url = `${this.basePath}/code/create-standard`;
-    const payload = { codeTypeId };
-    this.log("POST", url, payload);
-    const response = await apiClient.post(url, payload);
-    return response.data; // data: InvitationCode[]
-  }
-
-  async createStandardCodeById(
-    codeTypeId: string
-  ): Promise<ApiResponse<InvitationCode[]>> {
-    const url = `${this.basePath}/code/create-standard`;
-    const payload = { codeTypeId };
     this.log("POST", url, payload);
     const response = await apiClient.post(url, payload);
     return response.data;
@@ -248,7 +283,6 @@ class FranchiseService {
     return response.data;
   }
 
-  /** validate (nếu BE có) */
   async validateInvitationCode(
     code: string
   ): Promise<ApiResponse<{ valid: boolean; message: string }>> {

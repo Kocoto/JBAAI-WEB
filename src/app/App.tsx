@@ -18,6 +18,7 @@ import DashboardPage from "../features/dashboard/pages/DashboardPage";
 import AdminFranchise from "@/features/admin/pages/AdminFranchise";
 import AdminCreateCampaign from "@/features/admin/pages/AdminCreateCampaign";
 import FranchiseInvitationCodes from "@/features/franchise/pages/FranchiseInvitationCodes";
+import FranchiseInvitationTrials from "@/features/franchise/pages/FranchiseInvitationTrials";
 import FranchiseAllocateQuota from "@/features/franchise/pages/FranchiseAllocateQuota";
 import FranchiseMyQuota from "@/features/franchise/pages/FranchiseMyQuota";
 import FranchiseHistoriesOfQuota from "@/features/franchise/pages/FranchiseHistoriesOfQuota";
@@ -164,6 +165,16 @@ function App() {
           <ProtectedRoute>
             <RoleBasedRoute allowedRoles={["franchise"]}>
               <FranchiseInvitationCodes />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/franchise/invitations/trials"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["franchise"]}>
+              <FranchiseInvitationTrials />
             </RoleBasedRoute>
           </ProtectedRoute>
         }
