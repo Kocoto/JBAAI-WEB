@@ -332,7 +332,7 @@ export default function InvitationCodes() {
               Quản lý mã mời
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Chia nhóm theo <b>packageId</b>: 1 tháng • 3 tháng • 1 năm
+              Theo thời hạn : 1 tháng • 3 tháng • 1 năm
             </Typography>
           </Box>
 
@@ -599,11 +599,7 @@ export default function InvitationCodes() {
                 inputMode="numeric"
                 onChange={(e) => handleQtyInput(e.target.value)}
                 error={!isQtyValid && createDlg.qtyText !== ""}
-                helperText={
-                  !isQtyValid && createDlg.qtyText !== ""
-                    ? "Vui lòng nhập số 1–1000"
-                    : "Giới hạn 1–1000"
-                }
+                helperText={!isQtyValid && createDlg.qtyText !== ""}
               />
               <Alert severity="info" variant="outlined">
                 Bạn sắp tạo <b>{parsedQty}</b> mã cho{" "}

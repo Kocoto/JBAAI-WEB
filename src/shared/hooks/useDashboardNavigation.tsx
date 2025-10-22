@@ -291,7 +291,7 @@ export const useDashboardNavigation = () => {
               },
               {
                 id: "invitation-trials",
-                label: "Danh sách mã mời dùng thử",
+                label: "Danh sách mã mời",
                 // labelKey: "nav.franchise.invitations.trials",
                 path: "/franchise/invitations/trials",
                 icon: <LocalActivityIcon fontSize="small" />,
@@ -314,7 +314,7 @@ export const useDashboardNavigation = () => {
                 path: "/franchise/performance/my-performance",
                 icon: <BarChartIcon fontSize="small" />,
               },
-              { 
+              {
                 id: "children-performance",
                 label: "Hiệu suất Franchise con",
                 labelKey: "nav.franchise.performance.children",
