@@ -335,7 +335,7 @@ export default function InvitationTrials() {
 
         <Stack direction="row" spacing={1} sx={{ ml: "auto" }}>
           <Tooltip title={t("common.refresh")}>
-            <IconButton onClick={fetchInvitationCodes}>
+            <IconButton onClick={() => fetchInvitationCodes()}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>

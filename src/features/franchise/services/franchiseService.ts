@@ -254,6 +254,22 @@ class FranchiseService {
     const response = await apiClient.post(url);
     return response.data;
   }
+
+  /** ✅ THÊM: Allocate quota vào endpoint /api/v1/franchise/me/quota */
+  async allocateQuota(
+    payload: AllocateQuotaPayload,
+    extraHeaders?: Record<string, string>
+  ): Promise<ApiResponse<any>> {
+    const url = `${this.basePath}/me/quota`;
+    this.log("POST", url, payload);
+    const response = await apiClient.post(url, payload, {
+      headers: {
+        "Cache-Control": "no-cache",
+        ...(extraHeaders || {}),
+      },
+    });
+    return response.data;
+  }
 }
 
 export const franchiseService = new FranchiseService();

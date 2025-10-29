@@ -1,3 +1,4 @@
+// src/features/franchise/components/franchiseList.tsx
 import {
   Typography,
   useTheme,
@@ -17,7 +18,7 @@ import { useState } from "react";
 import { AllocateQuotaPayload } from "../types/franchise.type";
 
 export default function AllocateQuota() {
-  const theme = useTheme();
+  const theme = useTheme(); // 👈 THÊM DÒNG NÀY
   const { allocateQuota } = useFranchise();
 
   const [formData, setFormData] = useState<AllocateQuotaPayload>({
@@ -58,9 +59,9 @@ export default function AllocateQuota() {
     },
   ];
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    allocateQuota(formData);
+    await allocateQuota(formData);
   };
 
   const CustomNoRowsOverlay = () => (
@@ -176,9 +177,7 @@ export default function AllocateQuota() {
             pageSizeOptions={[10, 20, 50]}
             disableColumnResize
             density="comfortable"
-            slots={{
-              noRowsOverlay: CustomNoRowsOverlay,
-            }}
+            slots={{ noRowsOverlay: CustomNoRowsOverlay }}
             sx={{
               "& .MuiDataGrid-columnHeaders": {
                 backgroundColor: alpha(theme.palette.primary.main, 0.04),
@@ -204,10 +203,7 @@ export default function AllocateQuota() {
               },
               "& .MuiDataGrid-virtualScroller": {
                 scrollbarWidth: "thin",
-                "&::-webkit-scrollbar": {
-                  width: 6,
-                  height: 6,
-                },
+                "&::-webkit-scrollbar": { width: 6, height: 6 },
                 "&::-webkit-scrollbar-thumb": {
                   backgroundColor: alpha(theme.palette.primary.main, 0.3),
                   borderRadius: 3,

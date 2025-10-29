@@ -109,6 +109,22 @@ export const useFranchise = () => {
     }
   }, []);
 
+  /** ✅ THÊM: Allocate quota vào endpoint /api/v1/franchise/me/quota */
+  const allocateQuota = useCallback(async (payload: AllocateQuotaPayload) => {
+    const token =
+      localStorage.getItem("franchise_token") ||
+      localStorage.getItem("accessToken") ||
+      "";
+    try {
+      const res = await franchiseService.allocateQuota(payload, {
+        Authorization: `Bearer ${token}`,
+      });
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { success: false, error: error as ApiError };
+    }
+  }, []);
+
   useEffect(() => {
     fetchInvitationCodes(1, 10);
   }, [fetchInvitationCodes]);
@@ -120,5 +136,7 @@ export const useFranchise = () => {
     // tương thích các màn cũ
     fetchFranchiseDetails,
     activeCode,
+    // ✅ trả về thêm allocateQuota
+    allocateQuota,
   };
 };
