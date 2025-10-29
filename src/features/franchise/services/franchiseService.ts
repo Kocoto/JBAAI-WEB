@@ -18,7 +18,6 @@ import {
 class FranchiseService {
   private readonly basePath = "/api/v1/franchise";
 
-  // Tham chiếu (nếu cần), nhưng tạo mã đang dùng codeType string
   private readonly STANDARD_CODE_TYPE_IDS = {
     one_month: "683d1e58d70c0d6366e3d716",
     three_months: "68cbc381bd30e2a1315d2709",
@@ -27,13 +26,11 @@ class FranchiseService {
 
   private log(method: string, url: string, body?: unknown) {
     if (import.meta.env.MODE !== "production") {
-      // eslint-disable-next-line no-console
       console.log(`[FranchiseService] ${method} ${url}`, body ?? "");
     }
   }
 
-  // =============== FRANCHISE INFO ===============
-
+  // ==================== FRANCHISE INFO ====================
   async getMyFranchiseDetails(): Promise<ApiResponse<ApiDetailResponse>> {
     const url = `${this.basePath}/me/details`;
     this.log("GET", url);
@@ -59,33 +56,70 @@ class FranchiseService {
     return response.data;
   }
 
-  // =============== INVITATION CODES ===============
+  // ==================== INVITATION CODES ====================
 
-  /** GET giống Postman: /api/v1/invitation-code */
-  async getMyInvitationCodes(): Promise<ApiResponse<InvitationCode[]>> {
-    const url = `/api/v1/invitation-code?ts=${Date.now()}`;
+  /**
+   * Lấy danh sách mã mời như Postman:
+   * GET /api/v1/franchise/me/invitation-codes
+   * - Trả về mảng InvitationCode (có statistics, currentLedgerInfo,...)
+   * - Giữ nguyên chữ ký (page, limit, extraHeaders, packageId) để không phá chỗ khác,
+   *   nhưng endpoint này KHÔNG dùng page/limit header.
+   */
+  async getMyInvitationCodes(
+    page = 1,
+    limit = 10,
+    extraHeaders?: Record<string, string>,
+    packageId?: string
+  ): Promise<{
+    data: InvitationCode[];
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+  }> {
+    const qs = new URLSearchParams();
+    if (packageId) qs.set("packageId", packageId);
+    qs.set("ts", String(Date.now()));
+
+    const url = `${this.basePath}/me/invitation-codes${
+      qs.toString() ? `?${qs.toString()}` : ""
+    }`;
     this.log("GET", url);
+
     const res = await apiClient.get(url, {
-      headers: { "Cache-Control": "no-cache" },
+      headers: {
+        "Cache-Control": "no-cache",
+        ...(extraHeaders || {}),
+      },
     });
 
-    // Chuẩn hóa response { success, data: [...] } -> { data: [...] }
     const body = res.data as any;
+
+    // Hỗ trợ cả 2 kiểu bao dữ liệu (một số BE trả {data: []}, số khác {data:{data:[]}})
     const list: InvitationCode[] = Array.isArray(body?.data)
       ? body.data
-      : Array.isArray(body)
-      ? body
+      : Array.isArray(body?.data?.data)
+      ? body.data.data
       : [];
-    return { data: list };
+
+    return {
+      data: list,
+      // endpoint này thường không phân trang -> fallback số liệu cơ bản
+      total: body?.data?.totalDocs ?? list.length,
+      page: body?.data?.page ?? page,
+      limit,
+      totalPages: body?.data?.totalPages ?? 1,
+    };
   }
 
   /**
-   * POST tạo mã: body { codeType: "one_month" | "three_months" | "one_year", numberInvitationCodes: "2" }
-   * Trả { success, data: InvitationCode[] }
+   * Tạo mã mời theo loại codeType (1 tháng / 3 tháng / 1 năm)
+   * Header có thể thêm Authorization giống Postman
    */
   async createStandardCode(
     type: "one_month" | "three_months" | "one_year",
-    qty = 1
+    qty = 1,
+    extraHeaders?: Record<string, string>
   ): Promise<{ success?: boolean; data: InvitationCode[] }> {
     const url = `${this.basePath}/code/create-standard`;
     const payload = {
@@ -93,7 +127,12 @@ class FranchiseService {
       numberInvitationCodes: String(Math.max(1, Math.min(1000, qty))),
     };
     this.log("POST", url, payload);
-    const response = await apiClient.post(url, payload);
+    const response = await apiClient.post(url, payload, {
+      headers: {
+        "Cache-Control": "no-cache",
+        ...(extraHeaders || {}),
+      },
+    });
     const body = response.data as any;
     return {
       success: !!body?.success,
@@ -101,10 +140,13 @@ class FranchiseService {
     };
   }
 
-  /** Dùng khi cần truyền id thay vì codeType; vẫn giữ để tương thích */
+  /**
+   * Tạo mã mời theo ID codeType
+   */
   async createStandardCodeById(
     codeTypeId: string,
-    qty = 1
+    qty = 1,
+    extraHeaders?: Record<string, string>
   ): Promise<{ success?: boolean; data: InvitationCode[] }> {
     const url = `${this.basePath}/code/create-standard`;
     const payload = {
@@ -112,7 +154,12 @@ class FranchiseService {
       numberInvitationCodes: String(Math.max(1, Math.min(1000, qty))),
     };
     this.log("POST", url, payload);
-    const response = await apiClient.post(url, payload);
+    const response = await apiClient.post(url, payload, {
+      headers: {
+        "Cache-Control": "no-cache",
+        ...(extraHeaders || {}),
+      },
+    });
     const body = response.data as any;
     return {
       success: !!body?.success,
@@ -120,7 +167,7 @@ class FranchiseService {
     };
   }
 
-  // =============== OTHERS (giữ nguyên flow cũ) ===============
+  // ==================== OTHERS ====================
 
   async getMyUserTrialQuotaLedger(
     status?: "active" | "inactive" | "expired",
@@ -158,19 +205,6 @@ class FranchiseService {
     return response.data;
   }
 
-  async getChildAllocationHistory(
-    childFranchiseUserId: string
-  ): Promise<ApiResponse<AllocationHistory[]>> {
-    const url = `${
-      this.basePath
-    }/manage-children-quota/allocation-history/child/${childFranchiseUserId}?ts=${Date.now()}`;
-    this.log("GET", url);
-    const response = await apiClient.get(url, {
-      headers: { "Cache-Control": "no-cache" },
-    });
-    return response.data;
-  }
-
   async getMyTrialPerformance(): Promise<ApiResponse<TrialPerformance>> {
     const url = `${
       this.basePath
@@ -195,91 +229,12 @@ class FranchiseService {
     return response.data;
   }
 
-  async getChildTrialPerformance(
-    childFranchiseUserId: string
-  ): Promise<ApiResponse<TrialPerformance>> {
-    const url = `${
-      this.basePath
-    }/reports/child-trial-performance/${childFranchiseUserId}?ts=${Date.now()}`;
-    this.log("GET", url);
-    const response = await apiClient.get(url, {
-      headers: { "Cache-Control": "no-cache" },
-    });
-    return response.data;
-  }
-
-  async getFullHierarchyPerformance(
-    campaignId?: string
-  ): Promise<ApiResponse<HierarchyPerformance>> {
-    const url = campaignId
-      ? `${
-          this.basePath
-        }/reports/full-hierarchy-performance/${campaignId}?ts=${Date.now()}`
-      : `${this.basePath}/reports/full-hierarchy-performance?ts=${Date.now()}`;
-    this.log("GET", url);
-    const response = await apiClient.get(url, {
-      headers: { "Cache-Control": "no-cache" },
-    });
-    return response.data;
-  }
-
   async getQuotaUtilization(): Promise<ApiResponse<QuotaUtilization>> {
     const url = `${this.basePath}/reports/quota-utilization?ts=${Date.now()}`;
     this.log("GET", url);
     const response = await apiClient.get(url, {
       headers: { "Cache-Control": "no-cache" },
     });
-    return response.data;
-  }
-
-  async getChildFranchises(): Promise<ApiResponse<ChildFranchise[]>> {
-    const url = `${this.basePath}/me/children?ts=${Date.now()}`;
-    this.log("GET", url);
-    const response = await apiClient.get(url, {
-      headers: { "Cache-Control": "no-cache" },
-    });
-    return response.data;
-  }
-
-  async searchFranchisesInHierarchy(
-    searchTerm: string
-  ): Promise<ApiResponse<ChildFranchise[]>> {
-    const url = `${this.basePath}/me/search-hierarchy?q=${encodeURIComponent(
-      searchTerm
-    )}&ts=${Date.now()}`;
-    this.log("GET", url);
-    const response = await apiClient.get(url, {
-      headers: { "Cache-Control": "no-cache" },
-    });
-    return response.data;
-  }
-
-  // Legacy
-  async generateInvitationCode(
-    campaignId: string
-  ): Promise<ApiResponse<InvitationCode>> {
-    const url = `${this.basePath}/me/generate-invitation`;
-    const payload = { campaignId };
-    this.log("POST", url, payload);
-    const response = await apiClient.post(url, payload);
-    return response.data;
-  }
-
-  async getMyHierarchyTree(): Promise<ApiResponse<ChildFranchise>> {
-    const url = `${this.basePath}/me/hierarchy-tree?ts=${Date.now()}`;
-    this.log("GET", url);
-    const response = await apiClient.get(url, {
-      headers: { "Cache-Control": "no-cache" },
-    });
-    return response.data;
-  }
-
-  async exportToExcel(
-    type: "performance" | "quota" | "hierarchy"
-  ): Promise<Blob> {
-    const url = `${this.basePath}/reports/export/${type}`;
-    this.log("GET", url);
-    const response = await apiClient.get(url, { responseType: "blob" });
     return response.data;
   }
 

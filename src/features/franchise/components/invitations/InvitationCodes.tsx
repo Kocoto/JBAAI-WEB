@@ -1,4 +1,4 @@
-import React, { Fragment, useMemo, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useState } from "react";
 import {
   alpha,
   Box,
@@ -28,10 +28,9 @@ import {
   FormControl,
   Select,
   MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Checkbox,
   TableSortLabel,
+  Checkbox,
+  TablePagination,
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
@@ -43,81 +42,43 @@ import UpdateIcon from "@mui/icons-material/Update";
 import BusinessIcon from "@mui/icons-material/Business";
 import LocalActivityIcon from "@mui/icons-material/LocalActivity";
 import AddIcon from "@mui/icons-material/Add";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import HourglassTopIcon from "@mui/icons-material/HourglassTop";
-import DoNotDisturbIcon from "@mui/icons-material/DoNotDisturb";
-import TaskAltIcon from "@mui/icons-material/TaskAlt";
-import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { useTheme } from "@mui/material";
-import { useFranchise } from "../../hooks/useFranchise";
 import type { InvitationCode } from "../../types/franchise.type";
+import apiClient from "@/shared/services/api/apiClient";
+import { franchiseService } from "../../services/franchiseService";
 
 /* ======================== CONFIG ======================== */
 const PACKAGE_ALIASES = {
-  one_month: new Set<string>([
-    "683d1e58d70c0d6366e3d716",
-    "68c130aeac8838b6adad4999",
-  ]),
-  three_months: new Set<string>([
-    "68cbc381bd30e2a1315d2709",
-    "68ca2c621ca7334cd3e44d15",
-  ]),
+  one_month: new Set<string>(["683d1e58d70c0d6366e3d716"]),
+  three_months: new Set<string>(["68cbc381bd30e2a1315d2709"]),
   one_year: new Set<string>(["683d2295d70c0d6366e3d741"]),
 } as const;
 
-const ORDER: Array<keyof typeof PACKAGE_ALIASES> = [
-  "one_month",
-  "three_months",
-  "one_year",
-];
+const ORDER = ["one_month", "three_months", "one_year"] as const;
 
-const GROUP_LABEL: Record<keyof typeof PACKAGE_ALIASES, string> = {
+const GROUP_LABEL: Record<(typeof ORDER)[number], string> = {
   one_month: "Dùng thử 1 tháng",
   three_months: "Dùng thử 3 tháng",
   one_year: "Dùng thử 1 năm",
 };
 
-const KIND_LABEL: Record<keyof typeof PACKAGE_ALIASES, string> = {
+const KIND_LABEL: Record<(typeof ORDER)[number], string> = {
   one_month: "Tạo 1 tháng",
   three_months: "Tạo 3 tháng",
   one_year: "Tạo 1 năm",
 };
 
-const STATUS_MAP: Record<
+const STATUS_COLOR: Record<
   string,
-  {
-    color: "success" | "warning" | "error" | "default";
-    icon: React.ReactElement;
-  }
+  { color: "success" | "error" | "default"; label?: string }
 > = {
-  active: { color: "success", icon: <CheckCircleIcon fontSize="inherit" /> },
-  inactive: { color: "error", icon: <DoNotDisturbIcon fontSize="inherit" /> },
-  expired: { color: "default", icon: <HourglassTopIcon fontSize="inherit" /> },
-  used: { color: "default", icon: <HourglassTopIcon fontSize="inherit" /> },
-  deleted: { color: "error", icon: <DeleteForeverIcon fontSize="inherit" /> },
-  default: { color: "default", icon: <HourglassTopIcon fontSize="inherit" /> },
+  active: { color: "success", label: "active" },
+  deleted: { color: "error", label: "deleted" },
+  default: { color: "default" },
 };
 
-function CodeTypeIcon({ group }: { group: keyof typeof PACKAGE_ALIASES }) {
-  const theme = useTheme();
-  if (group === "one_month") {
-    return (
-      <CalendarTodayIcon
-        sx={{ fontSize: 18, color: theme.palette.warning.main }}
-      />
-    );
-  }
-  if (group === "three_months") {
-    return (
-      <UpdateIcon sx={{ fontSize: 18, color: theme.palette.error.main }} />
-    );
-  }
-  return (
-    <BusinessIcon sx={{ fontSize: 18, color: theme.palette.success.main }} />
-  );
-}
-
+/* ======================== HELPERS ======================== */
 const formatDate = (d?: string) =>
   d
     ? new Date(d).toLocaleString("vi-VN", {
@@ -131,13 +92,12 @@ const formatDate = (d?: string) =>
 
 const resolveGroupByPackageId = (
   pkgId?: string
-): keyof typeof PACKAGE_ALIASES | null => {
+): (typeof ORDER)[number] | null => {
   if (!pkgId) return null;
   for (const key of ORDER) if (PACKAGE_ALIASES[key].has(pkgId)) return key;
   return null;
 };
 
-/* ======================== TRANSITION (không lỗi type) ======================== */
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & { children: React.ReactElement<any, any> },
   ref: React.Ref<unknown>
@@ -145,151 +105,248 @@ const Transition = React.forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-/* ======================== MAIN ======================== */
-type Kind = keyof typeof PACKAGE_ALIASES;
+/* ======================== TYPES ======================== */
+type Kind = (typeof ORDER)[number];
 type KindOrAll = Kind | "all";
 type StatusFilter = "all" | "active" | "deleted";
 type SortField = "createdAt" | "updatedAt";
 type SortDir = "asc" | "desc";
 
+interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
+  nextPage?: number;
+  prevPage?: number;
+}
+
+/* ======================== MAIN ======================== */
 export default function InvitationCodes() {
   const theme = useTheme();
-  const {
-    invitationCodes,
-    fetchInvitationCodes,
-    createStandardOneMonth,
-    createStandardThreeMonths,
-    createStandardOneYear,
-  } = useFranchise();
 
-  // (Optional) BE methods if available in your hook
-  const anyFranchise = useFranchise() as any;
-  const updateInvitationStatus:
-    | undefined
-    | ((id: string, status: string) => Promise<any>) =
-    anyFranchise.updateInvitationStatus;
-  const deleteInvitationCode: undefined | ((id: string) => Promise<any>) =
-    anyFranchise.deleteInvitationCode;
+  // server data
+  const [rows, setRows] = useState<InvitationCode[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Filters / search
+  // pagination (server-side)
+  const [page, setPage] = useState(1); // 1-based (MUI uses 0-based when render)
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+  });
+
+  // selection (for export selected)
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // filters
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<KindOrAll>("all");
-  const handleTypeFilter = (e: SelectChangeEvent<KindOrAll>) =>
-    setTypeFilter(e.target.value as KindOrAll);
-
-  // NEW
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  // sort (client-side on fetched page)
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  // Loading for create
-  const [loadingOne, setLoadingOne] = useState(false);
-  const [loadingThree, setLoadingThree] = useState(false);
-  const [loadingYear, setLoadingYear] = useState(false);
+  // create dialog
+  const [createDlg, setCreateDlg] = useState<{
+    open: boolean;
+    kind: Kind | null;
+    qtyText: string;
+    loading: boolean;
+  }>({ open: false, kind: null, qtyText: "1", loading: false });
 
-  // UX
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  // snackbar
   const [snack, setSnack] = useState<{
     open: boolean;
     msg: string;
     sev: "success" | "error" | "info";
   }>({ open: false, msg: "", sev: "success" });
 
-  // Select rows for export
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const isSelected = (id: string) => selectedIds.has(id);
-  const clearSelection = () => setSelectedIds(new Set());
-  const toggleRow = (id: string) =>
-    setSelectedIds((prev) => {
+  const isDark = theme.palette.mode === "dark";
+  const headerBorder = isDark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
+  const headerBg = alpha(theme.palette.primary.main, 0.06);
+
+  /* ---------------------- FETCH (headers: page, limit) ---------------------- */
+  const fetchList = async (p = page, l = limit) => {
+    setLoading(true);
+    try {
+      const token =
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("franchise_token") ||
+        "";
+      const res = await apiClient.get("/api/v1/invitation-code", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          page: String(p),
+          limit: String(l),
+          "Cache-Control": "no-cache",
+        },
+      });
+
+      // Flexible parser: supports several shapes
+      const body = res.data ?? {};
+      // data array
+      const list: InvitationCode[] = Array.isArray(body?.data?.data)
+        ? body.data.data
+        : Array.isArray(body?.data)
+        ? body.data
+        : Array.isArray(body)
+        ? body
+        : Array.isArray(body?.results)
+        ? body.results
+        : [];
+
+      // pagination object
+      const pag: PaginationMeta = body?.data?.pagination ??
+        body?.pagination ?? {
+          total: body?.total ?? list.length ?? 0,
+          page: body?.page ?? p,
+          limit: body?.limit ?? l,
+          totalPages:
+            body?.totalPages ??
+            Math.max(1, Math.ceil((body?.total ?? list.length ?? 0) / l)),
+          hasNextPage: body?.hasNextPage,
+          hasPrevPage: body?.hasPrevPage,
+          nextPage: body?.nextPage,
+          prevPage: body?.prevPage,
+        };
+
+      setRows(list);
+      setPagination({
+        total: Number(pag.total) || 0,
+        page: Number(pag.page) || p,
+        limit: Number(pag.limit) || l,
+        totalPages: Number(pag.totalPages) || 0,
+        hasNextPage: !!pag.hasNextPage,
+        hasPrevPage: !!pag.hasPrevPage,
+        nextPage: pag.nextPage,
+        prevPage: pag.prevPage,
+      });
+      setLimit(Number(pag.limit) || l);
+      setPage(Number(pag.page) || p);
+      // clear selection when page changes
+      setSelected(new Set());
+    } catch (e: any) {
+      console.error(e);
+      setSnack({
+        open: true,
+        msg: e?.message || "Không thể tải dữ liệu",
+        sev: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchList(page, limit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ---------------------- CREATE ---------------------- */
+  const openCreate = (kind: Kind) =>
+    setCreateDlg({ open: true, kind, qtyText: "1", loading: false });
+
+  const closeCreate = () =>
+    setCreateDlg((s) => ({ ...s, open: false, loading: false }));
+
+  const handleCreate = async () => {
+    if (!createDlg.kind) return;
+    const qty = Math.max(1, Math.min(1000, Number(createDlg.qtyText) || 0));
+    setCreateDlg((s) => ({ ...s, loading: true }));
+    try {
+      if (createDlg.kind === "one_month")
+        await franchiseService.createStandardCode("one_month", qty);
+      if (createDlg.kind === "three_months")
+        await franchiseService.createStandardCode("three_months", qty);
+      if (createDlg.kind === "one_year")
+        await franchiseService.createStandardCode("one_year", qty);
+      setSnack({ open: true, msg: `Đã tạo ${qty} mã`, sev: "success" });
+      // reload first page to thấy mã mới
+      await fetchList(1, limit);
+    } catch (e: any) {
+      setSnack({
+        open: true,
+        msg: e?.message || "Tạo mã thất bại",
+        sev: "error",
+      });
+    } finally {
+      closeCreate();
+    }
+  };
+
+  /* ---------------------- FILTER + SORT (client on current page) ---------------------- */
+  const filtered = useMemo(() => {
+    let out = [...rows];
+
+    if (typeFilter !== "all")
+      out = out.filter(
+        (r) => resolveGroupByPackageId(r.packageId) === typeFilter
+      );
+
+    if (statusFilter !== "all")
+      out = out.filter((r) => (r.status || "").toLowerCase() === statusFilter);
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      out = out.filter(
+        (r) =>
+          r.code.toLowerCase().includes(q) ||
+          (r.status || "").toLowerCase().includes(q)
+      );
+    }
+
+    out.sort((a, b) => {
+      const ta = new Date((a as any)[sortField] || 0).getTime();
+      const tb = new Date((b as any)[sortField] || 0).getTime();
+      return sortDir === "desc" ? tb - ta : ta - tb;
+    });
+
+    return out;
+  }, [rows, search, typeFilter, statusFilter, sortField, sortDir]);
+
+  const groups = useMemo(() => {
+    const map = new Map<Kind, InvitationCode[]>();
+    for (const row of filtered) {
+      const g = resolveGroupByPackageId(row.packageId);
+      if (!g) continue;
+      if (!map.has(g)) map.set(g, []);
+      map.get(g)!.push(row);
+    }
+    return ORDER.filter((k) => map.has(k)).map(
+      (k) => [k, map.get(k)!] as const
+    );
+  }, [filtered]);
+
+  /* ---------------------- SELECTION ---------------------- */
+  const currentPageIds = rows.map((r) => r._id);
+  const toggleAll = () =>
+    setSelected((prev) => {
+      const allSelected = currentPageIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      currentPageIds.forEach((id) =>
+        allSelected ? next.delete(id) : next.add(id)
+      );
+      return next;
+    });
+
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-  const toggleAllOnPage = (ids: string[]) =>
-    setSelectedIds((prev) => {
-      const allSelected = ids.every((id) => prev.has(id));
-      const next = new Set(prev);
-      ids.forEach((id) => (allSelected ? next.delete(id) : next.add(id)));
-      return next;
-    });
 
-  // Create dialog (2-step)
-  const [createDlg, setCreateDlg] = useState<{
-    open: boolean;
-    step: "form" | "confirm";
-    kind: Kind | null;
-    qtyText: string;
-  }>({ open: false, step: "form", kind: null, qtyText: "1" });
-
-  const openCreate = (kind: Kind) =>
-    setCreateDlg({ open: true, step: "form", kind, qtyText: "1" });
-  const closeCreate = () => setCreateDlg((s) => ({ ...s, open: false }));
-  const goConfirm = () => setCreateDlg((s) => ({ ...s, step: "confirm" }));
-  const handleQtyInput = (v: string) => {
-    if (v === "") return setCreateDlg((s) => ({ ...s, qtyText: "" }));
-    if (/^\d{1,4}$/.test(v)) {
-      const n = Math.min(1000, parseInt(v, 10) || 0);
-      setCreateDlg((s) => ({ ...s, qtyText: String(n) }));
-    }
-  };
-  const parsedQty = Math.min(
-    1000,
-    Math.max(1, parseInt(createDlg.qtyText || "0", 10) || 0)
-  );
-  const isQtyValid =
-    createDlg.qtyText !== "" && parsedQty >= 1 && parsedQty <= 1000;
-
-  // Confirm dialog for inline actions
-  const [actDlg, setActDlg] = useState<{
-    open: boolean;
-    type: "activate" | "delete";
-    row: InvitationCode | null;
-    loading: boolean;
-  }>({ open: false, type: "activate", row: null, loading: false });
-  const askActivate = (row: InvitationCode) =>
-    setActDlg({ open: true, type: "activate", row, loading: false });
-  const askDelete = (row: InvitationCode) =>
-    setActDlg({ open: true, type: "delete", row, loading: false });
-
-  const doPerformAction = async () => {
-    if (!actDlg.row) return;
-    setActDlg((s) => ({ ...s, loading: true }));
-    try {
-      if (actDlg.type === "activate") {
-        if (updateInvitationStatus) {
-          await updateInvitationStatus(actDlg.row._id, "active");
-          setSnack({ open: true, msg: "Đã kích hoạt mã", sev: "success" });
-          await fetchInvitationCodes();
-        } else {
-          setSnack({
-            open: true,
-            msg: "UI kích hoạt (chưa nối API)",
-            sev: "info",
-          });
-        }
-      } else {
-        if (deleteInvitationCode) {
-          await deleteInvitationCode(actDlg.row._id);
-          setSnack({ open: true, msg: "Đã xoá mã mời", sev: "success" });
-          await fetchInvitationCodes();
-        } else {
-          setSnack({ open: true, msg: "UI xoá (chưa nối API)", sev: "info" });
-        }
-      }
-    } catch (e: any) {
-      setSnack({
-        open: true,
-        msg: e?.message || "Thao tác thất bại",
-        sev: "error",
-      });
-    } finally {
-      setActDlg((s) => ({ ...s, loading: false, open: false }));
-    }
-  };
-
-  // Export Excel / CSV (CDN SheetJS, không cần cài package)
+  /* ---------------------- EXPORT ---------------------- */
   const exportExcel = async (list: InvitationCode[]) => {
-    const rows = list.map((r) => {
+    if (list.length === 0) return;
+    const rowsData = list.map((r) => {
       const g = resolveGroupByPackageId(r.packageId);
       return {
         Code: r.code,
@@ -301,10 +358,8 @@ export default function InvitationCodes() {
     });
 
     try {
-      // Thay thế phần import động bằng:
       const XLSX: any = await import("xlsx");
-
-      const ws = XLSX.utils.json_to_sheet(rows);
+      const ws = XLSX.utils.json_to_sheet(rowsData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "InvitationCodes");
       const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
@@ -321,145 +376,18 @@ export default function InvitationCodes() {
       URL.revokeObjectURL(a.href);
       setSnack({ open: true, msg: "Đã xuất Excel", sev: "success" });
     } catch {
-      // Fallback CSV
-      const header = Object.keys(rows[0] || {}).join(",");
-      const body = rows
-        .map((r) =>
-          Object.values(r)
-            .map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`)
-            .join(",")
-        )
-        .join("\n");
-      const csv = header + "\n" + body;
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `invitation-codes_${new Date()
-        .toISOString()
-        .slice(0, 19)
-        .replace(/[:T]/g, "-")}.csv`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      setSnack({ open: true, msg: "Đã xuất CSV (fallback)", sev: "info" });
+      setSnack({ open: true, msg: "Xuất Excel thất bại", sev: "error" });
     }
   };
 
-  // Data
-  const loadingTable = invitationCodes.loading;
-  const allRows = (invitationCodes.data ?? []) as InvitationCode[];
-
-  // Filter + search (thêm lọc trạng thái)
-  const filteredRows = useMemo(() => {
-    let out = allRows
-      .map((r) => ({ r, g: resolveGroupByPackageId(r.packageId) }))
-      .filter(
-        (x): x is { r: InvitationCode; g: keyof typeof PACKAGE_ALIASES } =>
-          x.g !== null
-      );
-
-    if (typeFilter !== "all") out = out.filter(({ g }) => g === typeFilter);
-
-    if (statusFilter !== "all") {
-      out = out.filter(({ r }) => {
-        const s = (r.status || "").toLowerCase();
-        if (statusFilter === "active") return s === "active";
-        if (statusFilter === "deleted")
-          return s === "deleted" || (r as any).isDeleted === true;
-        return true;
-      });
-    }
-
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      out = out.filter(
-        ({ r, g }) =>
-          r.code.toLowerCase().includes(q) ||
-          GROUP_LABEL[g].toLowerCase().includes(q) ||
-          (r.status || "").toLowerCase().includes(q)
-      );
-    }
-    return out;
-  }, [allRows, search, typeFilter, statusFilter]);
-
-  // Grouping + sort (dựa trên lựa chọn ở header)
-  const groups = useMemo(() => {
-    const map = new Map<keyof typeof PACKAGE_ALIASES, InvitationCode[]>();
-    for (const { r, g } of filteredRows) {
-      if (!map.has(g)) map.set(g, []);
-      map.get(g)!.push(r);
-    }
-    for (const [k, list] of map) {
-      list.sort((a, b) => {
-        const ta = new Date((a as any)[sortField] || 0).getTime();
-        const tb = new Date((b as any)[sortField] || 0).getTime();
-        return sortDir === "desc" ? tb - ta : ta - tb;
-      });
-      map.set(k, list);
-    }
-    return ORDER.filter((k) => map.has(k)).map(
-      (k) => [k, map.get(k)!] as const
-    );
-  }, [filteredRows, sortField, sortDir]);
-
-  // Helpers for header visuals
-  const isDark = theme.palette.mode === "dark";
-  const headerBorder = isDark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
-  const groupHeaderBg = isDark
-    ? alpha(theme.palette.primary.light, 0.12)
-    : alpha(theme.palette.primary.main, 0.06);
-
-  const flatFilteredIds = filteredRows.map(({ r }) => r._id);
-
-  // Copy code
-  const handleCopy = async (code: string) => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopiedCode(code);
-      setTimeout(() => setCopiedCode(null), 1200);
-    } catch {
-      setSnack({ open: true, msg: "Sao chép thất bại", sev: "error" });
-    }
-  };
-
-  // Create
-  const doCreate = async (
-    kind: Kind,
-    qty: number,
-    setLoading: (v: boolean) => void
-  ) => {
-    const n = Math.max(1, Math.min(1000, Number(qty) || 0));
-    setLoading(true);
-    try {
-      let created = 0;
-      if (kind === "one_month") {
-        const res = await createStandardOneMonth(n);
-        created = Array.isArray(res?.data) ? res.data.length : 0;
-      }
-      if (kind === "three_months") {
-        const res = await createStandardThreeMonths(n);
-        created = Array.isArray(res?.data) ? res.data.length : 0;
-      }
-      if (kind === "one_year") {
-        const res = await createStandardOneYear(n);
-        created = Array.isArray(res?.data) ? res.data.length : 0;
-      }
-      setSnack({
-        open: true,
-        msg: created > 0 ? `Đã tạo ${created} mã` : "Đã tạo mã",
-        sev: "success",
-      });
-    } catch (e: any) {
-      setSnack({ open: true, msg: e?.message || "Lỗi tạo mã", sev: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const mapSetLoading: Record<Kind, (v: boolean) => void> = {
-    one_month: setLoadingOne,
-    three_months: setLoadingThree,
-    one_year: setLoadingYear,
-  };
+  /* ---------------------- RENDER ---------------------- */
+  const totalAll = pagination.total; // tổng số mã từ BE
+  const isAllChecked =
+    currentPageIds.length > 0 && currentPageIds.every((id) => selected.has(id));
+  const isIndeterminate =
+    selected.size > 0 &&
+    !isAllChecked &&
+    currentPageIds.some((id) => selected.has(id));
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -469,11 +397,7 @@ export default function InvitationCodes() {
           p: 2.5,
           mb: 2,
           borderRadius: 3,
-          bgcolor: alpha(theme.palette.primary.main, 0.06),
-          backgroundImage: `linear-gradient(135deg, ${alpha(
-            theme.palette.primary.main,
-            0.08
-          )}, ${alpha(theme.palette.primary.dark, 0.06)})`,
+          bgcolor: headerBg,
           border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
         }}
         elevation={0}
@@ -499,7 +423,8 @@ export default function InvitationCodes() {
               Quản lý mã mời
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Theo thời hạn: 1 tháng • 3 tháng • 1 năm
+              Tổng: <b>{totalAll}</b> mã • Trang {pagination.page}/
+              {pagination.totalPages}
             </Typography>
           </Box>
 
@@ -511,29 +436,26 @@ export default function InvitationCodes() {
                   variant="outlined"
                   startIcon={<FileDownloadIcon />}
                   color="primary"
-                  disabled={selectedIds.size === 0}
+                  disabled={selected.size === 0}
                   onClick={() => {
-                    const map = new Map(allRows.map((r) => [r._id, r]));
-                    const picked = [...selectedIds]
-                      .map((id) => map.get(id)!)
-                      .filter(Boolean);
-                    exportExcel(picked);
+                    const idSet = new Set(selected);
+                    exportExcel(rows.filter((r) => idSet.has(r._id)));
                   }}
                   sx={{ borderRadius: 2 }}
                 >
-                  Xuất đã chọn ({selectedIds.size})
+                  Xuất đã chọn ({selected.size})
                 </Button>
               </span>
             </Tooltip>
 
-            {/* Export all (filtered) */}
-            <Tooltip title="Xuất Excel (ưu tiên) / CSV (fallback)">
+            {/* Export all (filtered on current page result) */}
+            <Tooltip title="Xuất tất cả (theo lọc hiện tại)">
               <span>
                 <Button
                   variant="outlined"
                   startIcon={<FileDownloadIcon />}
-                  onClick={() => exportExcel(filteredRows.map((x) => x.r))}
-                  disabled={filteredRows.length === 0}
+                  onClick={() => exportExcel(filtered)}
+                  disabled={filtered.length === 0}
                   sx={{ borderRadius: 2 }}
                 >
                   Xuất tất cả
@@ -547,11 +469,11 @@ export default function InvitationCodes() {
                 <Button
                   variant="outlined"
                   startIcon={<RefreshIcon />}
-                  onClick={() => fetchInvitationCodes()}
-                  disabled={loadingTable}
+                  onClick={() => fetchList(page, limit)}
+                  disabled={loading}
                   sx={{ borderRadius: 2 }}
                 >
-                  {loadingTable ? "Đang tải..." : "Làm mới"}
+                  {loading ? "Đang tải..." : "Làm mới"}
                 </Button>
               </span>
             </Tooltip>
@@ -559,7 +481,7 @@ export default function InvitationCodes() {
         </Stack>
       </Paper>
 
-      {/* Toolbar tạo mã */}
+      {/* Toolbar tạo + filter */}
       <Paper
         sx={{
           p: 2,
@@ -592,7 +514,7 @@ export default function InvitationCodes() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm mã, nhóm, trạng thái…"
-            sx={{ flex: 1, minWidth: 200, mr: 1 }}
+            sx={{ flex: 1, minWidth: 220, mr: 1 }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -602,66 +524,70 @@ export default function InvitationCodes() {
             }}
           />
 
-          <FormControl
-            size="small"
-            sx={{
-              width: 180,
-              flexShrink: 0,
-              "& .MuiOutlinedInput-root": { borderRadius: 8, px: 1 },
-            }}
-          >
+          <FormControl size="small" sx={{ width: 180, flexShrink: 0 }}>
             <Select
               value={typeFilter}
-              onChange={handleTypeFilter}
+              onChange={(e: SelectChangeEvent<KindOrAll>) =>
+                setTypeFilter(e.target.value as KindOrAll)
+              }
               displayEmpty
               renderValue={(val) =>
-                val === "all" ? (
-                  <span style={{ opacity: 0.8 }}>Tất cả loại mã</span>
-                ) : val === "one_month" ? (
-                  "Dùng thử 1 tháng"
-                ) : val === "three_months" ? (
-                  "Dùng thử 3 tháng"
-                ) : (
-                  "Dùng thử 1 năm"
-                )
+                val === "all" ? "Tất cả loại mã" : GROUP_LABEL[val as Kind]
               }
             >
-              <MenuItem value="all">
-                <em>Tất cả loại mã</em>
-              </MenuItem>
+              <MenuItem value="all">Tất cả loại mã</MenuItem>
               <MenuItem value="one_month">Dùng thử 1 tháng</MenuItem>
               <MenuItem value="three_months">Dùng thử 3 tháng</MenuItem>
               <MenuItem value="one_year">Dùng thử 1 năm</MenuItem>
             </Select>
           </FormControl>
 
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => openCreate("one_month")}
-          >
-            1 tháng
-          </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            startIcon={<AddIcon />}
-            onClick={() => openCreate("three_months")}
-          >
-            3 tháng
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<AddIcon />}
-            onClick={() => openCreate("one_year")}
-          >
-            1 năm
-          </Button>
+          <FormControl size="small" sx={{ width: 160, flexShrink: 0 }}>
+            <Select
+              value={statusFilter}
+              onChange={(e: SelectChangeEvent<StatusFilter>) =>
+                setStatusFilter(e.target.value as StatusFilter)
+              }
+              displayEmpty
+              renderValue={(val) =>
+                val === "all" ? "Tất cả trạng thái" : (val as string)
+              }
+            >
+              <MenuItem value="all">Tất cả trạng thái</MenuItem>
+              <MenuItem value="active">active</MenuItem>
+              <MenuItem value="deleted">deleted</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => openCreate("one_month")}
+            >
+              1 tháng
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<AddIcon />}
+              onClick={() => openCreate("three_months")}
+            >
+              3 tháng
+            </Button>
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<AddIcon />}
+              onClick={() => openCreate("one_year")}
+            >
+              1 năm
+            </Button>
+          </Stack>
         </Stack>
       </Paper>
 
-      {/* === Table === */}
+      {/* Table */}
       <Paper
         sx={{
           position: "relative",
@@ -682,71 +608,17 @@ export default function InvitationCodes() {
                   sx={{ bgcolor: "background.paper" }}
                 >
                   <Checkbox
-                    indeterminate={
-                      selectedIds.size > 0 &&
-                      selectedIds.size < flatFilteredIds.length
-                    }
-                    checked={
-                      flatFilteredIds.length > 0 &&
-                      flatFilteredIds.every((id) => selectedIds.has(id))
-                    }
-                    onChange={() => toggleAllOnPage(flatFilteredIds)}
+                    indeterminate={isIndeterminate}
+                    checked={isAllChecked}
+                    onChange={toggleAll}
                   />
                 </TableCell>
-
                 <TableCell width={260} sx={{ bgcolor: "background.paper" }}>
                   Mã
                 </TableCell>
-                <TableCell width={240} sx={{ bgcolor: "background.paper" }}>
+                <TableCell width={220} sx={{ bgcolor: "background.paper" }}>
                   Loại mã
                 </TableCell>
-
-                {/* Cột Trạng thái + Chip-Select cùng hàng */}
-                <TableCell
-                  width={220}
-                  sx={{
-                    bgcolor: "background.paper",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 1,
-                  }}
-                >
-                  <Typography variant="body2" fontWeight={600}>
-                    Trạng thái
-                  </Typography>
-
-                  <FormControl size="small" sx={{ minWidth: 0 }}>
-                    <Select
-                      value={statusFilter}
-                      onChange={(e: SelectChangeEvent<StatusFilter>) =>
-                        setStatusFilter(e.target.value as StatusFilter)
-                      }
-                      displayEmpty
-                      renderValue={(val) => (
-                        <Chip
-                          size="small"
-                          label={val === "all" ? "Tất cả" : String(val)}
-                          sx={{ height: 22, borderRadius: 2 }}
-                        />
-                      )}
-                      sx={{
-                        "& .MuiSelect-select": { p: 0 },
-                        minWidth: 80,
-                        ".MuiOutlinedInput-notchedOutline": { display: "none" },
-                        bgcolor: "transparent",
-                      }}
-                      IconComponent={() => null}
-                    >
-                      <MenuItem value="all">
-                        <em>Tất cả</em>
-                      </MenuItem>
-                      <MenuItem value="active">active</MenuItem>
-                      <MenuItem value="deleted">deleted</MenuItem>
-                    </Select>
-                  </FormControl>
-                </TableCell>
-
                 <TableCell width={180} sx={{ bgcolor: "background.paper" }}>
                   <TableSortLabel
                     active={sortField === "createdAt"}
@@ -783,6 +655,9 @@ export default function InvitationCodes() {
                     Cập nhật
                   </TableSortLabel>
                 </TableCell>
+                <TableCell width={160} sx={{ bgcolor: "background.paper" }}>
+                  Trạng thái
+                </TableCell>
               </TableRow>
             </TableHead>
 
@@ -795,36 +670,38 @@ export default function InvitationCodes() {
                 </TableRow>
               )}
 
-              {groups.map(([group, items]) => (
+              {groups.map(([group, list]) => (
                 <Fragment key={group}>
+                  {/* Group header */}
                   <TableRow
                     sx={{
-                      background: groupHeaderBg,
+                      background: isDark
+                        ? alpha(theme.palette.primary.light, 0.12)
+                        : alpha(theme.palette.primary.main, 0.06),
                       "& td": { borderBottom: "none" },
                     }}
                   >
-                    <TableCell colSpan={6}>
+                    <TableCell padding="checkbox" />
+                    <TableCell colSpan={5}>
                       <Stack direction="row" alignItems="center" spacing={1.25}>
-                        <CodeTypeIcon group={group} />
                         <Typography fontWeight={800}>
                           {GROUP_LABEL[group]}
                         </Typography>
-                        <Chip label={items.length} size="small" />
+                        <Chip label={list.length} size="small" />
                       </Stack>
                     </TableCell>
                   </TableRow>
 
-                  {items.map((r) => {
-                    const statusKey = (r.status || "").toLowerCase();
-                    const status =
-                      STATUS_MAP[statusKey] || STATUS_MAP["default"];
+                  {list.map((r) => {
+                    const sKey = (r.status || "").toLowerCase();
+                    const sc = STATUS_COLOR[sKey] || STATUS_COLOR.default;
+                    const label = sc.label ?? r.status ?? "";
                     return (
                       <TableRow hover key={r._id}>
-                        {/* Checkbox từng dòng */}
                         <TableCell padding="checkbox">
                           <Checkbox
-                            checked={isSelected(r._id)}
-                            onChange={() => toggleRow(r._id)}
+                            checked={selected.has(r._id)}
+                            onChange={() => toggleOne(r._id)}
                           />
                         </TableCell>
 
@@ -846,27 +723,21 @@ export default function InvitationCodes() {
                                 border: `1px solid ${
                                   isDark ? "#475569" : "rgba(0,0,0,.14)"
                                 }`,
-                                color: "#fff",
                                 fontFamily:
                                   "ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace",
                                 fontWeight: 800,
                                 letterSpacing: 0.25,
-                                textShadow: "0 1px 0 rgba(0,0,0,.6)",
                               }}
                             >
                               {r.code}
                             </Box>
 
-                            <Tooltip
-                              title={
-                                copiedCode === r.code
-                                  ? "Đã sao chép"
-                                  : "Sao chép"
-                              }
-                            >
+                            <Tooltip title="Sao chép">
                               <IconButton
                                 size="small"
-                                onClick={() => handleCopy(r.code)}
+                                onClick={() =>
+                                  navigator.clipboard.writeText(r.code)
+                                }
                               >
                                 <ContentCopyIcon fontSize="inherit" />
                               </IconButton>
@@ -885,75 +756,23 @@ export default function InvitationCodes() {
 
                         {/* Nhóm */}
                         <TableCell>
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            alignItems="center"
-                          >
-                            <CodeTypeIcon group={group} />
-                            <Typography variant="body2">
-                              {GROUP_LABEL[group]}
-                            </Typography>
-                          </Stack>
-                        </TableCell>
-
-                        {/* Trạng thái + select hành động */}
-                        <TableCell>
-                          <Stack
-                            direction="row"
-                            spacing={1.25}
-                            alignItems="center"
-                          >
-                            <Chip
-                              size="small"
-                              icon={status?.icon}
-                              label={r.status}
-                              color={status?.color}
-                              variant="outlined"
-                              sx={{ flexShrink: 0 }}
-                            />
-
-                            <FormControl size="small" sx={{ minWidth: 140 }}>
-                              <Select
-                                value=""
-                                displayEmpty
-                                onChange={(e) => {
-                                  const val = e.target.value as
-                                    | "activate"
-                                    | "delete"
-                                    | "";
-                                  if (val === "activate") askActivate(r);
-                                  if (val === "delete") askDelete(r);
-                                  (e.target as HTMLInputElement).blur();
-                                }}
-                                renderValue={() => (
-                                  <span style={{ opacity: 0.8 }}>
-                                    Chọn thao tác…
-                                  </span>
-                                )}
-                              >
-                                <MenuItem value="activate">
-                                  <ListItemIcon>
-                                    <TaskAltIcon fontSize="small" />
-                                  </ListItemIcon>
-                                  <ListItemText primary="Kích hoạt (active)" />
-                                </MenuItem>
-                                <MenuItem
-                                  value="delete"
-                                  sx={{ color: "error.main" }}
-                                >
-                                  <ListItemIcon sx={{ color: "error.main" }}>
-                                    <DeleteForeverIcon fontSize="small" />
-                                  </ListItemIcon>
-                                  <ListItemText primary="Xóa mã" />
-                                </MenuItem>
-                              </Select>
-                            </FormControl>
-                          </Stack>
+                          <Typography variant="body2">
+                            {GROUP_LABEL[group]}
+                          </Typography>
                         </TableCell>
 
                         <TableCell>{formatDate(r.createdAt)}</TableCell>
                         <TableCell>{formatDate(r.updatedAt)}</TableCell>
+
+                        {/* Trạng thái — green for active, red for deleted */}
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={label}
+                            color={sc.color}
+                            variant="outlined"
+                          />
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -962,51 +781,36 @@ export default function InvitationCodes() {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Pagination — lấy total/page/limit từ BE */}
+        <TablePagination
+          component="div"
+          count={pagination.total}
+          page={page - 1}
+          onPageChange={(_, newPage) => {
+            const targetPage = newPage + 1; // convert to 1-based
+            setPage(targetPage);
+            fetchList(targetPage, limit);
+          }}
+          rowsPerPage={limit}
+          onRowsPerPageChange={(e) => {
+            const newLimit = parseInt(e.target.value, 10) || 10;
+            setLimit(newLimit);
+            // quay về trang 1 khi đổi page size
+            setPage(1);
+            fetchList(1, newLimit);
+          }}
+          rowsPerPageOptions={[10, 20, 50]}
+          labelDisplayedRows={({ from, to, page }) =>
+            `Trang ${page + 1}/${Math.max(
+              1,
+              pagination.totalPages
+            )} • ${from}–${to} / ${pagination.total}`
+          }
+        />
       </Paper>
 
-      {/* Dialog xác nhận Activate/Delete */}
-      <Dialog
-        open={actDlg.open}
-        onClose={() => setActDlg((s) => ({ ...s, open: false }))}
-        maxWidth="xs"
-        fullWidth
-        TransitionComponent={Transition}
-      >
-        <DialogTitle sx={{ fontWeight: 800 }}>
-          {actDlg.type === "activate" ? "Kích hoạt mã" : "Xóa mã mời"}
-        </DialogTitle>
-        <DialogContent dividers>
-          {actDlg.type === "activate" ? (
-            <Alert severity="info" variant="outlined">
-              Xác nhận <b>kích hoạt</b> mã: <b>{actDlg.row?.code}</b>?
-            </Alert>
-          ) : (
-            <Alert severity="warning" variant="outlined">
-              Bạn chắc chắn muốn <b>xóa</b> mã: <b>{actDlg.row?.code}</b>?<br />
-              Hành động này không thể hoàn tác.
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={() => setActDlg((s) => ({ ...s, open: false }))}>
-            Hủy
-          </Button>
-          <Button
-            variant="contained"
-            color={actDlg.type === "activate" ? "primary" : "error"}
-            onClick={doPerformAction}
-            disabled={actDlg.loading}
-          >
-            {actDlg.loading ? (
-              <CircularProgress size={18} color="inherit" />
-            ) : (
-              "Xác nhận"
-            )}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog tạo mã (Form → Confirm) */}
+      {/* Dialog tạo mã */}
       <Dialog
         open={createDlg.open}
         onClose={closeCreate}
@@ -1014,73 +818,46 @@ export default function InvitationCodes() {
         fullWidth
         TransitionComponent={Transition}
       >
-        <DialogTitle sx={{ fontWeight: 800, pb: 1 }}>
-          {createDlg.step === "form"
-            ? createDlg.kind
-              ? KIND_LABEL[createDlg.kind]
-              : "Tạo mã"
-            : "Xác nhận tạo mã"}
+        <DialogTitle sx={{ fontWeight: 800 }}>
+          {createDlg.kind ? KIND_LABEL[createDlg.kind] : "Tạo mã"}
         </DialogTitle>
-
-        {createDlg.step === "form" ? (
-          <DialogContent dividers>
-            <Stack spacing={2}>
-              <TextField
-                autoFocus
-                label="Số lượng mã"
-                placeholder="Nhập số (1–1000)"
-                value={createDlg.qtyText}
-                inputMode="numeric"
-                onChange={(e) => handleQtyInput(e.target.value)}
-                error={!isQtyValid && createDlg.qtyText !== ""}
-                helperText={
-                  !isQtyValid && createDlg.qtyText !== ""
-                    ? "Vui lòng nhập số 1–1000"
-                    : "Giới hạn 1–1000"
-                }
-              />
-              <Alert severity="info" variant="outlined">
-                Bạn sắp tạo <b>{parsedQty}</b> mã cho{" "}
-                <b>{createDlg.kind ? GROUP_LABEL[createDlg.kind] : "-"}</b>.
-              </Alert>
-            </Stack>
-          </DialogContent>
-        ) : (
-          <DialogContent dividers>
-            <Alert severity="warning" variant="outlined">
-              Xác nhận tạo <b>{parsedQty}</b> mã cho{" "}
-              <b>{createDlg.kind ? GROUP_LABEL[createDlg.kind] : "-"}</b>?<br />
-              Hành động này không thể hoàn tác.
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            <TextField
+              autoFocus
+              label="Số lượng mã"
+              placeholder="Nhập số (1–1000)"
+              value={createDlg.qtyText}
+              onChange={(e) =>
+                setCreateDlg((s) => ({ ...s, qtyText: e.target.value }))
+              }
+              type="number"
+              inputProps={{ min: 1, max: 1000 }}
+              fullWidth
+            />
+            <Alert severity="info" variant="outlined">
+              Sẽ tạo{" "}
+              <b>
+                {Math.max(1, Math.min(1000, Number(createDlg.qtyText) || 0))}
+              </b>{" "}
+              mã cho <b>{createDlg.kind ? GROUP_LABEL[createDlg.kind] : "-"}</b>
+              .
             </Alert>
-          </DialogContent>
-        )}
-
+          </Stack>
+        </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={closeCreate}>Hủy</Button>
-          {createDlg.step === "form" ? (
-            <Button
-              variant="contained"
-              onClick={() => isQtyValid && goConfirm()}
-              disabled={!isQtyValid}
-            >
-              Tiếp tục
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              onClick={async () => {
-                if (!createDlg.kind) return;
-                await doCreate(
-                  createDlg.kind,
-                  parsedQty,
-                  mapSetLoading[createDlg.kind]
-                );
-                closeCreate();
-              }}
-            >
-              Xác nhận tạo
-            </Button>
-          )}
+          <Button
+            variant="contained"
+            onClick={handleCreate}
+            disabled={createDlg.loading}
+          >
+            {createDlg.loading ? (
+              <CircularProgress size={18} color="inherit" />
+            ) : (
+              "Xác nhận tạo"
+            )}
+          </Button>
         </DialogActions>
       </Dialog>
 

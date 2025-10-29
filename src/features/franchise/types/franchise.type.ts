@@ -76,6 +76,50 @@ export interface FranchiseStatistics {
   };
 }
 
+/* ========= Invitation Codes (phù hợp BE mới & cũ) ========= */
+
+export type InvitationCodeStatus =
+  | "active"
+  | "used"
+  | "expired"
+  | "inactive"
+  | "deleted"
+  | string;
+
+export type InvitationCodeType =
+  | "USER_TRIAL"
+  | "FRANCHISE_HIERARCHY"
+  | "USER_TRIAL_STANDARD_ONE_MONTH"
+  | "USER_TRIAL_STANDARD_THREE_MONTHS"
+  | "USER_TRIAL_STANDARD_ONE_YEAR"
+  | "RANDOM"
+  | string;
+
+export interface InvitedUser {
+  _id: string;
+  username: string;
+  email: string;
+}
+
+export interface InvitationStatistics {
+  totalCumulativeUses: number;
+  actualUsageCount: number;
+  lastUsedDate: string | null;
+  lastInvitedUser: InvitedUser | null;
+}
+
+export interface CurrentLedgerInfo {
+  ledgerId: string;
+  totalAllocated: number;
+  consumedByOwnInvites: number;
+  allocatedToChildren: number;
+  availableQuota: number;
+  status: "active" | "inactive" | string;
+  // đôi khi BE thêm các field ngày:
+  originalCampaignEndDate?: string;
+  endDate?: string;
+}
+
 /** Invitation code — hợp nhất BE mới & cũ */
 export interface InvitationCode {
   _id: string;
@@ -84,49 +128,32 @@ export interface InvitationCode {
   /** BE mới: định danh gói 1m/3m/1y */
   packageId?: string;
 
-  /** BE cũ: xác định 2 nhóm còn lại */
-  codeType?:
-    | "USER_TRIAL"
-    | "FRANCHISE_HIERARCHY"
-    | "USER_TRIAL_STANDARD_ONE_MONTH"
-    | "USER_TRIAL_STANDARD_THREE_MONTHS"
-    | "USER_TRIAL_STANDARD_ONE_YEAR"
-    | "RANDOM"
-    | { _id?: string; key?: string; name?: string }
-    | string;
+  /** BE cũ/khác: xác định nhóm */
+  codeType?: InvitationCodeType | { _id?: string; key?: string; name?: string };
 
-  status: "active" | "used" | "expired" | "inactive" | string;
+  status: InvitationCodeStatus;
 
-  /** BE mới có thể đưa usage lên top-level */
+  /** Một số BE đặt usage ở top-level */
   totalCumulativeUses?: number;
 
-  /** Giữ cho BE cũ */
-  statistics?: {
-    actualUsageCount?: number;
-    lastInvitedUser?: string | null;
-    lastUsedDate?: string | null;
-    totalCumulativeUses?: number;
-  };
+  /** Phần thống kê chuẩn (khớp payload Postman) */
+  statistics?: InvitationStatistics;
 
-  currentLedgerInfo?: {
-    originalCampaignEndDate?: string;
-    endDate?: string;
-  } | null;
+  /** Thông tin ledger hiện tại (khớp payload Postman) */
+  currentLedgerInfo?: CurrentLedgerInfo | null;
 
   userId?: string;
   createdAt: string;
   updatedAt: string;
 
+  // các biến thể khác nhau của BE (giữ optional để không phá chỗ khác)
   expiresAt?: string;
   endDate?: string;
-
   campaign?: {
     codeTypeId?: string;
     codeType?: { _id?: string; key?: string; name?: string } | string;
     endDate?: string;
   };
-
-  /** BE đôi khi gắn gói ở đây */
   package?: { _id?: string; id?: string; name?: string } | null;
   codePackageId?: string;
   standardPackageId?: string;
