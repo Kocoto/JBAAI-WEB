@@ -128,6 +128,9 @@ export interface InvitationCode {
   /** BE mới: định danh gói 1m/3m/1y */
   packageId?: string;
 
+  /** ✅ Thêm để hỗ trợ tìm kiếm theo prefix (BE có thể trả về) */
+  prefixCode?: string;
+
   /** BE cũ/khác: xác định nhóm */
   codeType?: InvitationCodeType | { _id?: string; key?: string; name?: string };
 

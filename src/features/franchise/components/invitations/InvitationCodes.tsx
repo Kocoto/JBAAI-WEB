@@ -153,13 +153,14 @@ export default function InvitationCodes() {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  // create dialog
+  // create dialog (thêm prefixText – KHÔNG đổi logic khác)
   const [createDlg, setCreateDlg] = useState<{
     open: boolean;
     kind: Kind | null;
     qtyText: string;
+    prefixText: string;
     loading: boolean;
-  }>({ open: false, kind: null, qtyText: "1", loading: false });
+  }>({ open: false, kind: null, qtyText: "1", prefixText: "", loading: false });
 
   // snackbar
   const [snack, setSnack] = useState<{
@@ -189,9 +190,8 @@ export default function InvitationCodes() {
         },
       });
 
-      // Flexible parser: supports several shapes
+      // Flexible parser
       const body = res.data ?? {};
-      // data array
       const list: InvitationCode[] = Array.isArray(body?.data?.data)
         ? body.data.data
         : Array.isArray(body?.data)
@@ -202,7 +202,6 @@ export default function InvitationCodes() {
         ? body.results
         : [];
 
-      // pagination object
       const pag: PaginationMeta = body?.data?.pagination ??
         body?.pagination ?? {
           total: body?.total ?? list.length ?? 0,
@@ -230,7 +229,6 @@ export default function InvitationCodes() {
       });
       setLimit(Number(pag.limit) || l);
       setPage(Number(pag.page) || p);
-      // clear selection when page changes
       setSelected(new Set());
     } catch (e: any) {
       console.error(e);
@@ -251,7 +249,13 @@ export default function InvitationCodes() {
 
   /* ---------------------- CREATE ---------------------- */
   const openCreate = (kind: Kind) =>
-    setCreateDlg({ open: true, kind, qtyText: "1", loading: false });
+    setCreateDlg({
+      open: true,
+      kind,
+      qtyText: "1",
+      prefixText: "",
+      loading: false,
+    });
 
   const closeCreate = () =>
     setCreateDlg((s) => ({ ...s, open: false, loading: false }));
@@ -259,16 +263,31 @@ export default function InvitationCodes() {
   const handleCreate = async () => {
     if (!createDlg.kind) return;
     const qty = Math.max(1, Math.min(1000, Number(createDlg.qtyText) || 0));
+    const prefix = createDlg.prefixText.trim() || undefined;
     setCreateDlg((s) => ({ ...s, loading: true }));
     try {
       if (createDlg.kind === "one_month")
-        await franchiseService.createStandardCode("one_month", qty);
+        await franchiseService.createStandardCode(
+          "one_month",
+          qty,
+          undefined,
+          prefix
+        );
       if (createDlg.kind === "three_months")
-        await franchiseService.createStandardCode("three_months", qty);
+        await franchiseService.createStandardCode(
+          "three_months",
+          qty,
+          undefined,
+          prefix
+        );
       if (createDlg.kind === "one_year")
-        await franchiseService.createStandardCode("one_year", qty);
+        await franchiseService.createStandardCode(
+          "one_year",
+          qty,
+          undefined,
+          prefix
+        );
       setSnack({ open: true, msg: `Đã tạo ${qty} mã`, sev: "success" });
-      // reload first page to thấy mã mới
       await fetchList(1, limit);
     } catch (e: any) {
       setSnack({
@@ -295,11 +314,13 @@ export default function InvitationCodes() {
 
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      out = out.filter(
-        (r) =>
-          r.code.toLowerCase().includes(q) ||
-          (r.status || "").toLowerCase().includes(q)
-      );
+      // ✅ THÊM: cho phép tìm theo prefixCode (không đụng logic khác)
+      out = out.filter((r: any) => {
+        const code = (r.code || "").toLowerCase();
+        const status = ((r.status as string) || "").toLowerCase();
+        const prefix = ((r.prefixCode as string) || "").toLowerCase(); // <— NEW
+        return code.includes(q) || status.includes(q) || prefix.includes(q); // <— NEW
+      });
     }
 
     out.sort((a, b) => {
@@ -448,7 +469,7 @@ export default function InvitationCodes() {
               </span>
             </Tooltip>
 
-            {/* Export all (filtered on current page result) */}
+            {/* Export all */}
             <Tooltip title="Xuất tất cả (theo lọc hiện tại)">
               <span>
                 <Button
@@ -513,7 +534,7 @@ export default function InvitationCodes() {
             size="small"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm mã, nhóm, trạng thái…"
+            placeholder="Tìm mã, prefix, trạng thái…"
             sx={{ flex: 1, minWidth: 220, mr: 1 }}
             InputProps={{
               startAdornment: (
@@ -810,7 +831,7 @@ export default function InvitationCodes() {
         />
       </Paper>
 
-      {/* Dialog tạo mã */}
+      {/* Dialog tạo mã — thêm ô prefixCode */}
       <Dialog
         open={createDlg.open}
         onClose={closeCreate}
@@ -835,12 +856,28 @@ export default function InvitationCodes() {
               inputProps={{ min: 1, max: 1000 }}
               fullWidth
             />
+            <TextField
+              label="Tiền tố mã (prefixCode)"
+              placeholder="Ví dụ: lan 2"
+              value={createDlg.prefixText}
+              onChange={(e) =>
+                setCreateDlg((s) => ({ ...s, prefixText: e.target.value }))
+              }
+              helperText="Không bắt buộc — nếu điền, BE sẽ tạo mã với tiền tố này."
+              fullWidth
+            />
             <Alert severity="info" variant="outlined">
               Sẽ tạo{" "}
               <b>
                 {Math.max(1, Math.min(1000, Number(createDlg.qtyText) || 0))}
               </b>{" "}
               mã cho <b>{createDlg.kind ? GROUP_LABEL[createDlg.kind] : "-"}</b>
+              {createDlg.prefixText.trim() ? (
+                <>
+                  {" "}
+                  với tiền tố <b>{createDlg.prefixText.trim()}</b>
+                </>
+              ) : null}
               .
             </Alert>
           </Stack>

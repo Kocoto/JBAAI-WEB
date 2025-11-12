@@ -58,13 +58,6 @@ class FranchiseService {
 
   // ==================== INVITATION CODES ====================
 
-  /**
-   * Lấy danh sách mã mời như Postman:
-   * GET /api/v1/franchise/me/invitation-codes
-   * - Trả về mảng InvitationCode (có statistics, currentLedgerInfo,...)
-   * - Giữ nguyên chữ ký (page, limit, extraHeaders, packageId) để không phá chỗ khác,
-   *   nhưng endpoint này KHÔNG dùng page/limit header.
-   */
   async getMyInvitationCodes(
     page = 1,
     limit = 10,
@@ -86,46 +79,65 @@ class FranchiseService {
     }`;
     this.log("GET", url);
 
-    const res = await apiClient.get(url, {
+    const response = await apiClient.get(url, {
       headers: {
         "Cache-Control": "no-cache",
+        page: String(page),
+        limit: String(limit),
         ...(extraHeaders || {}),
       },
     });
 
-    const body = res.data as any;
+    const body = response.data as any;
 
-    // Hỗ trợ cả 2 kiểu bao dữ liệu (một số BE trả {data: []}, số khác {data:{data:[]}})
-    const list: InvitationCode[] = Array.isArray(body?.data)
-      ? body.data
-      : Array.isArray(body?.data?.data)
+    const list: InvitationCode[] = Array.isArray(body?.data?.data)
       ? body.data.data
+      : Array.isArray(body?.data)
+      ? body.data
+      : Array.isArray(body?.results)
+      ? body.results
+      : Array.isArray(body)
+      ? body
       : [];
+
+    const pag = body?.data?.pagination ??
+      body?.pagination ?? {
+        total: body?.data?.totalDocs ?? body?.total ?? list.length ?? 0,
+        page: body?.data?.page ?? body?.page ?? page,
+        limit,
+        totalPages:
+          body?.data?.totalPages ??
+          body?.totalPages ??
+          Math.max(1, Math.ceil((body?.total ?? list.length ?? 0) / limit)),
+      };
 
     return {
       data: list,
-      // endpoint này thường không phân trang -> fallback số liệu cơ bản
-      total: body?.data?.totalDocs ?? list.length,
-      page: body?.data?.page ?? page,
-      limit,
-      totalPages: body?.data?.totalPages ?? 1,
+      total: Number(pag.total) || list.length || 0,
+      page: Number(pag.page) || page,
+      limit: Number(pag.limit) || limit,
+      totalPages: Number(pag.totalPages) || 1,
     };
   }
 
   /**
-   * Tạo mã mời theo loại codeType (1 tháng / 3 tháng / 1 năm)
-   * Header có thể thêm Authorization giống Postman
+   * Tạo mã mời chuẩn (1/3/12 tháng).
+   * ✅ Thêm tham số prefixCode (tùy chọn).
    */
   async createStandardCode(
     type: "one_month" | "three_months" | "one_year",
     qty = 1,
-    extraHeaders?: Record<string, string>
+    extraHeaders?: Record<string, string>,
+    prefixCode?: string
   ): Promise<{ success?: boolean; data: InvitationCode[] }> {
     const url = `${this.basePath}/code/create-standard`;
-    const payload = {
+    const payload: Record<string, any> = {
       codeType: type,
       numberInvitationCodes: String(Math.max(1, Math.min(1000, qty))),
     };
+    if (prefixCode && prefixCode.trim()) {
+      payload.prefixCode = prefixCode.trim();
+    }
     this.log("POST", url, payload);
     const response = await apiClient.post(url, payload, {
       headers: {
@@ -140,19 +152,21 @@ class FranchiseService {
     };
   }
 
-  /**
-   * Tạo mã mời theo ID codeType
-   */
+  /** (Nếu BE cần theo id) cũng hỗ trợ prefixCode */
   async createStandardCodeById(
     codeTypeId: string,
     qty = 1,
-    extraHeaders?: Record<string, string>
+    extraHeaders?: Record<string, string>,
+    prefixCode?: string
   ): Promise<{ success?: boolean; data: InvitationCode[] }> {
     const url = `${this.basePath}/code/create-standard`;
-    const payload = {
+    const payload: Record<string, any> = {
       codeTypeId,
       numberInvitationCodes: String(Math.max(1, Math.min(1000, qty))),
     };
+    if (prefixCode && prefixCode.trim()) {
+      payload.prefixCode = prefixCode.trim();
+    }
     this.log("POST", url, payload);
     const response = await apiClient.post(url, payload, {
       headers: {
@@ -172,7 +186,7 @@ class FranchiseService {
   async getMyUserTrialQuotaLedger(
     status?: "active" | "inactive" | "expired",
     rootCampaignId?: string
-  ): Promise<ApiResponse<UserTrialQuotaLedger[]>> {
+  ) {
     const params = new URLSearchParams();
     if (status) params.append("status", status);
     if (rootCampaignId) params.append("rootCampaignId", rootCampaignId);
@@ -187,25 +201,21 @@ class FranchiseService {
     return response.data;
   }
 
-  async allocateQuotaToChild(
-    payload: AllocateQuotaPayload
-  ): Promise<ApiResponse<AllocationHistory>> {
+  async allocateQuotaToChild(payload: AllocateQuotaPayload) {
     const url = `${this.basePath}/manage-children-quota/allocate`;
     this.log("POST", url, payload);
     const response = await apiClient.post(url, payload);
     return response.data;
   }
 
-  async revokeQuotaFromChild(
-    ledgerEntryId: string
-  ): Promise<ApiResponse<{ message: string }>> {
+  async revokeQuotaFromChild(ledgerEntryId: string) {
     const url = `${this.basePath}/manage-children-quota/revoke-allocation/${ledgerEntryId}`;
     this.log("PUT", url);
     const response = await apiClient.put(url);
     return response.data;
   }
 
-  async getMyTrialPerformance(): Promise<ApiResponse<TrialPerformance>> {
+  async getMyTrialPerformance() {
     const url = `${
       this.basePath
     }/reports/my-trial-performance?ts=${Date.now()}`;
@@ -216,9 +226,7 @@ class FranchiseService {
     return response.data;
   }
 
-  async getChildrenTrialPerformanceSummary(): Promise<
-    ApiResponse<ChildPerformanceSummary[]>
-  > {
+  async getChildrenTrialPerformanceSummary() {
     const url = `${
       this.basePath
     }/reports/children-trial-performance-summary?ts=${Date.now()}`;
@@ -229,7 +237,7 @@ class FranchiseService {
     return response.data;
   }
 
-  async getQuotaUtilization(): Promise<ApiResponse<QuotaUtilization>> {
+  async getQuotaUtilization() {
     const url = `${this.basePath}/reports/quota-utilization?ts=${Date.now()}`;
     this.log("GET", url);
     const response = await apiClient.get(url, {
@@ -238,9 +246,7 @@ class FranchiseService {
     return response.data;
   }
 
-  async validateInvitationCode(
-    code: string
-  ): Promise<ApiResponse<{ valid: boolean; message: string }>> {
+  async validateInvitationCode(code: string) {
     const url = `${this.basePath}/code/validate`;
     const payload = { code };
     this.log("POST", url, payload);
@@ -255,11 +261,10 @@ class FranchiseService {
     return response.data;
   }
 
-  /** ✅ THÊM: Allocate quota vào endpoint /api/v1/franchise/me/quota */
   async allocateQuota(
     payload: AllocateQuotaPayload,
     extraHeaders?: Record<string, string>
-  ): Promise<ApiResponse<any>> {
+  ) {
     const url = `${this.basePath}/me/quota`;
     this.log("POST", url, payload);
     const response = await apiClient.post(url, payload, {

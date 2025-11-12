@@ -1,34 +1,35 @@
 // src/features/admin/pages/AdminAddUser.tsx
-import React, { useMemo, useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { Paper } from "@mui/material";
 
 import {
   Box,
-  Button,
+  Paper,
   Grid,
-  TextField,
   Typography,
+  TextField,
   MenuItem,
+  Button,
   CircularProgress,
   Stack,
-  Avatar,
   InputAdornment,
-  Chip,
   Divider,
   IconButton,
   Snackbar,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Select,
-  FormControl,
-  InputLabel,
+  Tooltip,
 } from "@mui/material";
+
 import {
   Person as PersonIcon,
   Email as EmailIcon,
@@ -43,32 +44,79 @@ import {
   FilterList as FilterListIcon,
   Visibility,
   VisibilityOff,
+  Refresh as RefreshIcon,
+  Star as UpgradeIcon,
 } from "@mui/icons-material";
-import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-import { motion } from "framer-motion";
-import BaseDashboardLayout from "@/shared/components/layout/BaseDashboardLayout";
-import { useTranslation } from "react-i18next";
 
-// ------------------ Types ------------------
+import {
+  DataGrid,
+  GridColDef,
+  GridRenderCellParams,
+  GridPaginationModel,
+} from "@mui/x-data-grid";
+
+import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import BaseDashboardLayout from "@/shared/components/layout/BaseDashboardLayout";
+import apiClient from "@/shared/services/api/apiClient";
+
+/** =================== API PATHS (lock theo Postman) =================== */
+const baseHasV1 = String(apiClient?.defaults?.baseURL ?? "").includes(
+  "/api/v1"
+);
+const API_PREFIX = baseHasV1 ? "" : "/api/v1";
+
+const USERS_LIST_PATH = `${API_PREFIX}/admin/users`; // GET list
+const USERS_CREATE_PATH = `${API_PREFIX}/admin/users/create`; // POST create
+const userPath = (id: string) => `${USERS_LIST_PATH}/${id}`;
+
+/** =================== Types =================== */
 type FormData = {
-  fullName: string;
+  fullName: string; // -> username
   email: string;
   phone: string;
   password: string;
   confirmPassword: string;
   role: string;
+  optionEmail?: string; // optional để khớp schema
 };
 
-type User = {
-  id: number;
+type ApiUser = {
+  _id: string;
+  username: string;
+  email: string;
+  phone: string;
+  role: string;
+  status?: string;
+  type?: string;
+  createdAt: string;
+};
+
+type ApiUsersResponse = {
+  success?: boolean;
+  message?: string;
+  data?: ApiUser[];
+  total?: number;
+  pagination?: {
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalDocs?: number;
+  };
+};
+
+type UserRow = {
+  id: string;
   fullName: string;
   email: string;
   phone: string;
   role: string;
+  status?: string;
+  type?: string;
   createdAt: string;
 };
 
-// ------------------ Helper ------------------
+/** =================== Helpers =================== */
 const roleColor = (role: string) => {
   switch (role) {
     case "admin":
@@ -83,8 +131,23 @@ const roleColor = (role: string) => {
       return "default";
   }
 };
+const statusColor = (status?: string) =>
+  !status
+    ? "default"
+    : status === "active"
+    ? "success"
+    : status === "inactive"
+    ? "default"
+    : "warning";
+const typeColor = (type?: string) => {
+  if (!type) return "default";
+  const t = String(type).toLowerCase();
+  if (t === "premium") return "warning";
+  if (t === "standard") return "info";
+  if (t === "normal" || t === "basic") return "default";
+  return "secondary";
+};
 
-// Animation variants
 const formVariants = {
   hidden: { opacity: 0, y: 15 },
   visible: (i: number) => ({
@@ -94,54 +157,75 @@ const formVariants = {
   }),
 };
 
-// ------------------ Component ------------------
+const pickList = (payload: any): ApiUser[] =>
+  (Array.isArray(payload?.data) && payload.data) ||
+  (Array.isArray(payload) && payload) ||
+  [];
+
+const pickTotal = (payload: any, headers: any): number | undefined => {
+  const p = payload?.pagination || {};
+  const headerTotal = Number(headers?.["x-total-count"]);
+  return (
+    (typeof payload?.total === "number" && payload.total) ||
+    (typeof p?.total === "number" && p.total) ||
+    (typeof p?.totalDocs === "number" && p.totalDocs) ||
+    (!Number.isNaN(headerTotal) && headerTotal) ||
+    undefined
+  );
+};
+
+/** =================== Component =================== */
 export default function AdminAddUser() {
   const { t, i18n } = useTranslation();
   const locale = i18n.language?.startsWith("vi") ? "vi-VN" : "en-US";
 
-  // Validation schema (i18n)
-  const schema = useMemo(
+  /** ---------- Validation ---------- */
+  const schema: yup.ObjectSchema<FormData> = useMemo(
     () =>
-      yup.object({
-        fullName: yup
-          .string()
-          .matches(/^\S+$/, t("adminAddUser.validation.fullNameNoSpaces"))
-          .required(t("adminAddUser.validation.fullNameRequired")),
-        email: yup
-          .string()
-          .email(t("adminAddUser.validation.emailInvalid"))
-          .required(t("adminAddUser.validation.emailRequired")),
-        phone: yup
-          .string()
-          .matches(
-            /^(0|\+84)[0-9]{9,10}$/,
-            t("adminAddUser.validation.phoneInvalid")
-          )
-          .required(t("adminAddUser.validation.phoneRequired")),
-        password: yup
-          .string()
-          .min(6, t("adminAddUser.validation.passwordMin"))
-          .required(t("adminAddUser.validation.passwordRequired")),
-        confirmPassword: yup
-          .string()
-          .oneOf(
-            [yup.ref("password")],
-            t("adminAddUser.validation.passwordMismatch")
-          )
-          .required(t("adminAddUser.validation.confirmPasswordRequired")),
-        role: yup.string().required(t("adminAddUser.validation.roleRequired")),
-      }),
+      yup
+        .object({
+          fullName: yup
+            .string()
+            .matches(/^\S+$/, t("adminAddUser.validation.fullNameNoSpaces"))
+            .required(t("adminAddUser.validation.fullNameRequired")),
+          email: yup
+            .string()
+            .email(t("adminAddUser.validation.emailInvalid"))
+            .required(t("adminAddUser.validation.emailRequired")),
+          phone: yup
+            .string()
+            .required(t("adminAddUser.validation.phoneRequired")),
+          password: yup
+            .string()
+            .min(6, t("adminAddUser.validation.passwordMin"))
+            .required(t("adminAddUser.validation.passwordRequired")),
+          confirmPassword: yup
+            .string()
+            .oneOf(
+              [yup.ref("password")],
+              t("adminAddUser.validation.passwordMismatch")
+            )
+            .required(t("adminAddUser.validation.confirmPasswordRequired")),
+          role: yup
+            .string()
+            .required(t("adminAddUser.validation.roleRequired")),
+          optionEmail: yup
+            .string()
+            .email(t("adminAddUser.validation.emailInvalid"))
+            .transform((v) => (v === "" ? undefined : v))
+            .optional(),
+        })
+        .required(),
     [t, i18n.language]
   );
 
   const {
     control,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<FormData>({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(schema), // ✅ KHÔNG truyền generics để tránh xung đột
     defaultValues: {
       fullName: "",
       email: "",
@@ -149,132 +233,318 @@ export default function AdminAddUser() {
       password: "",
       confirmPassword: "",
       role: "",
+      optionEmail: "", // UI nhận string, schema transform -> undefined
     },
   });
 
-  // users state
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem("users");
-    return saved ? JSON.parse(saved) : [];
+  /** ---------- Users (server pagination) ---------- */
+  const [rows, setRows] = useState<UserRow[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
+
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 10,
   });
+  const [rowCount, setRowCount] = useState<number>(0);
 
-  // sync users with localStorage
+  const mapApiToRow = useCallback(
+    (u: ApiUser): UserRow => ({
+      id: u._id,
+      fullName: u.username,
+      email: u.email,
+      phone: u.phone ?? "",
+      role: u.role ?? "user",
+      status: u.status,
+      type: u.type,
+      createdAt: new Date(u.createdAt).toLocaleString(locale),
+    }),
+    [locale]
+  );
+
+  const fetchUsers = useCallback(
+    async (page0 = paginationModel.page, size = paginationModel.pageSize) => {
+      setLoadingUsers(true);
+      setUsersError(null);
+      try {
+        const page1 = page0 + 1; // API 1-based
+
+        const res = await apiClient.get<ApiUsersResponse>(USERS_LIST_PATH, {
+          headers: {
+            page: String(page1),
+            limit: String(size),
+            "x-page": String(page1),
+            "x-limit": String(size),
+            "X-Page": String(page1),
+            "X-Limit": String(size),
+          },
+          params: { page: page1, limit: size },
+        });
+
+        const payload = res?.data ?? {};
+        const list = pickList(payload);
+        setRows(list.map(mapApiToRow));
+
+        const total = pickTotal(payload, (res as any)?.headers);
+        if (typeof total === "number") {
+          setRowCount(total);
+        } else {
+          const hasNext = list.length === size;
+          const estimated = hasNext
+            ? page1 * size + 1
+            : (page1 - 1) * size + list.length;
+          setRowCount(estimated);
+        }
+      } catch (e: any) {
+        console.error(e);
+        setUsersError(
+          e?.response?.data?.message || e?.message || "Fetch users failed"
+        );
+        setRows([]);
+        setRowCount(0);
+      } finally {
+        setLoadingUsers(false);
+      }
+    },
+    [paginationModel.page, paginationModel.pageSize, mapApiToRow]
+  );
+
   useEffect(() => {
-    localStorage.setItem("users", JSON.stringify(users));
-  }, [users]);
+    fetchUsers();
+  }, [fetchUsers, paginationModel.page, paginationModel.pageSize]);
 
-  const [loading, setLoading] = useState(false);
-
-  // search & filter
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterRole, setFilterRole] = useState<string>("all");
-
-  // snackbar
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMsg, setSnackbarMsg] = useState<string>("");
-
-  // edit dialog
-  const [editOpen, setEditOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-
-  // delete confirm
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deletingUser, setDeletingUser] = useState<User | null>(null);
-
-  // password visibility
+  /** ---------- Create user (POST /admin/users/create) ---------- */
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
+    "success"
+  );
 
-  const nameWatch = watch("fullName");
-  const avatarLetter = nameWatch ? nameWatch.charAt(0).toUpperCase() : "?";
+  async function createUser(payload: any) {
+    const res = await apiClient.post(USERS_CREATE_PATH, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res?.data?.data ?? res?.data;
+  }
 
-  // Add user handler
-  const onSubmit = async (data: FormData) => {
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    const newUser: User = {
-      id: Date.now(),
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      role: data.role,
-      createdAt: new Date().toLocaleString(locale),
-    };
-    setUsers((prev) => [newUser, ...prev]);
-    setLoading(false);
-    reset();
-    setSnackbarMsg(t("adminAddUser.snackbar.createSuccess"));
-    setSnackbarOpen(true);
+  const onSubmit: SubmitHandler<FormData> = async (data) => {
+    try {
+      const payload = {
+        email: data.email,
+        password: data.password,
+        username: data.fullName,
+        phone: data.phone,
+        role: data.role || "user",
+        optionEmail: data.optionEmail?.trim() ? data.optionEmail : undefined,
+      };
+
+      const created = await createUser(payload);
+
+      // Optimistic prepend nếu đang ở trang đầu
+      if (created && paginationModel.page === 0) {
+        const newRow = mapApiToRow(created as ApiUser);
+        setRows((prev) =>
+          [newRow, ...prev.filter((r) => r.id !== newRow.id)].slice(
+            0,
+            paginationModel.pageSize
+          )
+        );
+        setRowCount((rc) => (typeof rc === "number" ? rc + 1 : rc));
+      }
+
+      // Reset về trang 1 & refetch để sync
+      await fetchUsers(0, paginationModel.pageSize);
+      setPaginationModel((p) => ({ ...p, page: 0 }));
+
+      setSnackbarSeverity("success");
+      setSnackbarMsg(
+        t("adminAddUser.snackbar.createSuccess", "Tạo người dùng thành công")
+      );
+      setSnackbarOpen(true);
+      reset();
+      setShowPassword(false);
+      setShowConfirmPassword(false);
+    } catch (e: any) {
+      console.error(e);
+      setSnackbarSeverity("error");
+      setSnackbarMsg(
+        e?.response?.data?.message || e?.message || "Create user failed"
+      );
+      setSnackbarOpen(true);
+    }
   };
 
-  // Filtered rows
+  /** ---------- Filter UI ---------- */
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
   const filteredRows = useMemo(() => {
-    return users.filter((u) => {
-      const q = searchTerm.trim().toLowerCase();
-      const matchesSearch =
+    const q = searchTerm.trim().toLowerCase();
+    return rows.filter((u) => {
+      const matchSearch =
         !q ||
         u.fullName.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
-        u.phone.includes(q);
-
-      const matchesRole = filterRole === "all" || u.role === filterRole;
-      return matchesSearch && matchesRole;
+        u.phone.toLowerCase().includes(q);
+      const matchRole = filterRole === "all" || u.role === filterRole;
+      const matchStatus =
+        filterStatus === "all" || (u.status ?? "") === filterStatus;
+      return matchSearch && matchRole && matchStatus;
     });
-  }, [users, searchTerm, filterRole]);
+  }, [rows, searchTerm, filterRole, filterStatus]);
 
-  // DataGrid columns
+  const activeFilters =
+    searchTerm.trim() !== "" || filterRole !== "all" || filterStatus !== "all";
+
+  /** ---------- Edit/Delete ---------- */
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserRow | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
+
+  const handlePatchUser = async (updated: UserRow) => {
+    try {
+      const payload: Partial<ApiUser> = {
+        username: updated.fullName,
+        email: updated.email,
+        phone: updated.phone,
+        role: updated.role,
+        status: updated.status,
+        type: updated.type,
+      };
+      await apiClient.patch(userPath(updated.id), payload);
+      setSnackbarSeverity("success");
+      setSnackbarMsg(
+        t("adminAddUser.snackbar.updateSuccess", "Cập nhật thành công")
+      );
+      setSnackbarOpen(true);
+      setEditOpen(false);
+      setEditingUser(null);
+      await fetchUsers();
+    } catch (e: any) {
+      console.error(e);
+      setSnackbarSeverity("error");
+      setSnackbarMsg(
+        e?.response?.data?.message || e?.message || "Update user failed"
+      );
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingUser) return;
+    try {
+      await apiClient.delete(userPath(deletingUser.id));
+      setSnackbarSeverity("success");
+      setSnackbarMsg(
+        t("adminAddUser.snackbar.deleteSuccess", "Xóa thành công")
+      );
+      setSnackbarOpen(true);
+      setDeleteOpen(false);
+      setDeletingUser(null);
+      if (rows.length === 1 && paginationModel.page > 0) {
+        setPaginationModel((prev) => ({ ...prev, page: prev.page - 1 }));
+      } else {
+        await fetchUsers();
+      }
+    } catch (e: any) {
+      console.error(e);
+      setSnackbarSeverity("error");
+      setSnackbarMsg(
+        e?.response?.data?.message || e?.message || "Delete user failed"
+      );
+      setSnackbarOpen(true);
+    }
+  };
+
+  /** ---------- Columns ---------- */
   const columns: GridColDef[] = [
     {
-      field: "avatar",
-      headerName: "",
-      width: 80,
-      renderCell: (params: GridRenderCellParams<any, User>) => (
-        <Avatar sx={{ bgcolor: "primary.main" }}>
-          {params.row.fullName?.charAt(0).toUpperCase()}
-        </Avatar>
-      ),
-    },
-    {
       field: "fullName",
-      headerName: t("adminAddUser.table.columns.fullName"),
+      headerName: t("adminAddUser.table.columns.fullName", "Họ tên"),
       flex: 1,
       minWidth: 180,
     },
     {
       field: "email",
-      headerName: t("adminAddUser.table.columns.email"),
+      headerName: t("adminAddUser.table.columns.email", "Email"),
       flex: 1.2,
       minWidth: 200,
     },
     {
       field: "phone",
-      headerName: t("adminAddUser.table.columns.phone"),
+      headerName: t("adminAddUser.table.columns.phone", "Số điện thoại"),
       flex: 1,
       minWidth: 140,
     },
     {
       field: "role",
-      headerName: t("adminAddUser.table.columns.role"),
+      headerName: t("adminAddUser.table.columns.role", "Vai trò"),
       width: 140,
-      renderCell: (params: GridRenderCellParams<User, User["role"]>) => (
+      renderCell: (p: GridRenderCellParams<UserRow, string>) => (
         <Chip
-          label={params.value ? t(`adminAddUser.roles.${params.value}`) : ""}
           size="small"
-          color={roleColor(params.value ?? "")}
+          label={p.value ?? "—"}
+          color={roleColor(p.value ?? "")}
         />
       ),
     },
     {
+      field: "status",
+      headerName: t("adminAddUser.table.columns.status", "Trạng thái"),
+      width: 120,
+      renderCell: (p) =>
+        p.value ? (
+          <Chip
+            size="small"
+            label={String(p.value)}
+            color={statusColor(p.value)}
+          />
+        ) : (
+          <Chip size="small" label="—" variant="outlined" />
+        ),
+    },
+    {
+      field: "type",
+      headerName: t("adminAddUser.table.columns.type", "Loại TK"),
+      width: 130,
+      renderCell: (p) =>
+        p.value ? (
+          <Chip
+            size="small"
+            label={String(p.value)}
+            color={typeColor(p.value)}
+          />
+        ) : (
+          <Chip size="small" label="—" variant="outlined" />
+        ),
+    },
+    {
       field: "createdAt",
-      headerName: t("adminAddUser.table.columns.createdAt"),
+      headerName: t("adminAddUser.table.columns.createdAt", "Ngày tạo"),
       width: 180,
     },
     {
       field: "actions",
-      headerName: t("adminAddUser.table.columns.actions"),
-      width: 140,
-      renderCell: (params: GridRenderCellParams<any, User>) => (
+      headerName: t("adminAddUser.table.columns.actions", "Hành động"),
+      width: 168,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams<any, UserRow>) => (
         <Stack direction="row" spacing={1}>
+          <Tooltip title={t("common.upgrade", "Nâng hạng")}>
+            <IconButton
+              size="small"
+              onClick={() => {
+                /* UI nâng hạng nếu cần */
+              }}
+            >
+              <UpgradeIcon />
+            </IconButton>
+          </Tooltip>
           <IconButton
             size="small"
             onClick={() => {
@@ -299,23 +569,7 @@ export default function AdminAddUser() {
     },
   ];
 
-  // Edit save
-  const handleEditSave = (updated: User) => {
-    setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    setEditOpen(false);
-    setSnackbarMsg(t("adminAddUser.snackbar.updateSuccess"));
-    setSnackbarOpen(true);
-  };
-
-  // Delete
-  const handleConfirmDelete = () => {
-    if (!deletingUser) return;
-    setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
-    setDeleteOpen(false);
-    setSnackbarMsg(t("adminAddUser.snackbar.deleteSuccess"));
-    setSnackbarOpen(true);
-  };
-
+  /** ---------- Render ---------- */
   return (
     <BaseDashboardLayout>
       <Box
@@ -323,73 +577,93 @@ export default function AdminAddUser() {
           width: "100%",
           maxWidth: "1400px",
           mx: "auto",
-          p: 3,
+          p: 0,
           borderRadius: 3,
-          bgcolor: "background.paper",
           border: "2px solid #61666f",
+          overflow: "hidden",
         }}
       >
         <Paper
-          elevation={6}
-          style={{
-            padding: "24px",
-            borderRadius: 12,
-            width: "100%",
-            background: "inherit",
-          }}
+          elevation={0}
+          sx={{ p: 3, borderRadius: 0, bgcolor: "background.paper" }}
         >
           {/* Header */}
-          <Stack direction="row" spacing={2} alignItems="center" mb={3}>
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            justifyContent="space-between"
+            mb={2}
+          >
             <Box>
               <Typography variant="h5" fontWeight={700}>
-                ➕ {t("adminAddUser.header.title")}
+                👤 {t("adminAddUser.header.title", "Quản lý người dùng")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {t("adminAddUser.header.subtitle")}
+                {t("adminAddUser.header.subtitle", "Tạo, sửa, xoá tài khoản")}
               </Typography>
             </Box>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={() => fetchUsers()}
+                disabled={loadingUsers}
+              >
+                {t("common.refresh", "Tải lại Users")}
+              </Button>
+            </Stack>
           </Stack>
 
           <Divider sx={{ mb: 3 }} />
 
-          {/* Form */}
+          {/* Create form */}
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <Grid container spacing={2}>
               {[
                 {
                   name: "fullName",
-                  label: t("adminAddUser.form.labels.fullName"),
+                  label: t("adminAddUser.form.labels.fullName", "Họ tên"),
                   icon: <PersonIcon />,
                   type: "text",
                 },
                 {
                   name: "email",
-                  label: t("adminAddUser.form.labels.email"),
+                  label: t("adminAddUser.form.labels.email", "Email"),
                   icon: <EmailIcon />,
                   type: "email",
                 },
                 {
                   name: "phone",
-                  label: t("adminAddUser.form.labels.phone"),
+                  label: t("adminAddUser.form.labels.phone", "Số điện thoại"),
                   icon: <PhoneIcon />,
                   type: "text",
                 },
                 {
+                  name: "optionEmail",
+                  label: "Option Email",
+                  icon: <EmailIcon />,
+                  type: "email",
+                },
+                {
                   name: "password",
-                  label: t("adminAddUser.form.labels.password"),
+                  label: t("adminAddUser.form.labels.password", "Mật khẩu"),
                   icon: <LockIcon />,
                   type: showPassword ? "text" : "password",
                   toggle: "password",
                 },
                 {
                   name: "confirmPassword",
-                  label: t("adminAddUser.form.labels.confirmPassword"),
+                  label: t(
+                    "adminAddUser.form.labels.confirmPassword",
+                    "Xác nhận mật khẩu"
+                  ),
                   icon: <LockIcon />,
                   type: showConfirmPassword ? "text" : "password",
                   toggle: "confirm",
                 },
               ].map((field, i) => (
-                <Grid sx={{ xs: 12, md: 6 }} key={field.name}>
+                <Grid key={field.name} sx={{ xs: 12, md: 6 }}>
                   <motion.div
                     initial="hidden"
                     animate="visible"
@@ -402,8 +676,8 @@ export default function AdminAddUser() {
                       render={({ field: f }) => (
                         <TextField
                           {...f}
-                          label={field.label}
                           fullWidth
+                          label={field.label}
                           type={field.type as string}
                           error={!!errors[field.name as keyof FormData]}
                           helperText={
@@ -417,38 +691,29 @@ export default function AdminAddUser() {
                                 {field.icon}
                               </InputAdornment>
                             ),
-                            endAdornment:
-                              field.toggle === "password" ? (
-                                <InputAdornment position="end">
-                                  <IconButton
-                                    onClick={() => setShowPassword((s) => !s)}
-                                    edge="end"
-                                    size="small"
-                                  >
-                                    {showPassword ? (
-                                      <VisibilityOff />
-                                    ) : (
-                                      <Visibility />
-                                    )}
-                                  </IconButton>
-                                </InputAdornment>
-                              ) : field.toggle === "confirm" ? (
-                                <InputAdornment position="end">
-                                  <IconButton
-                                    onClick={() =>
-                                      setShowConfirmPassword((s) => !s)
-                                    }
-                                    edge="end"
-                                    size="small"
-                                  >
-                                    {showConfirmPassword ? (
-                                      <VisibilityOff />
-                                    ) : (
-                                      <Visibility />
-                                    )}
-                                  </IconButton>
-                                </InputAdornment>
-                              ) : null,
+                            endAdornment: field.toggle ? (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  edge="end"
+                                  onClick={() =>
+                                    field.toggle === "password"
+                                      ? setShowPassword((s) => !s)
+                                      : setShowConfirmPassword((s) => !s)
+                                  }
+                                >
+                                  {(
+                                    field.toggle === "password"
+                                      ? showPassword
+                                      : showConfirmPassword
+                                  ) ? (
+                                    <VisibilityOff />
+                                  ) : (
+                                    <Visibility />
+                                  )}
+                                </IconButton>
+                              </InputAdornment>
+                            ) : undefined,
                           }}
                           sx={{
                             "& .MuiOutlinedInput-root": {
@@ -468,12 +733,12 @@ export default function AdminAddUser() {
                 </Grid>
               ))}
 
-              {/* Role select */}
+              {/* Role */}
               <Grid sx={{ xs: 12 }}>
                 <motion.div
                   initial="hidden"
                   animate="visible"
-                  custom={5}
+                  custom={6}
                   variants={formVariants}
                 >
                   <Controller
@@ -483,7 +748,7 @@ export default function AdminAddUser() {
                       <TextField
                         {...field}
                         select
-                        label={t("adminAddUser.form.labels.role")}
+                        label={t("adminAddUser.form.labels.role", "Vai trò")}
                         fullWidth
                         error={!!errors.role}
                         helperText={(errors.role?.message as string) ?? " "}
@@ -497,30 +762,18 @@ export default function AdminAddUser() {
                         sx={{
                           "& .MuiOutlinedInput-root": {
                             "& fieldset": { border: "2px solid #61666f" },
-                            "&:hover fieldset": {
-                              border: "2px solid #42464d",
-                            },
+                            "&:hover fieldset": { border: "2px solid #42464d" },
                             "&.Mui-focused fieldset": {
                               border: "2px solid #1976d2",
                             },
                           },
                         }}
                       >
-                        <MenuItem value="admin">
-                          {t("adminAddUser.roles.admin")}
-                        </MenuItem>
-                        <MenuItem value="manager">
-                          {t("adminAddUser.roles.manager")}
-                        </MenuItem>
-                        <MenuItem value="staff">
-                          {t("adminAddUser.roles.staff")}
-                        </MenuItem>
-                        <MenuItem value="franchise">
-                          {t("adminAddUser.roles.franchise")}
-                        </MenuItem>
-                        <MenuItem value="user">
-                          {t("adminAddUser.roles.user")}
-                        </MenuItem>
+                        <MenuItem value="admin">Admin</MenuItem>
+                        <MenuItem value="manager">Manager</MenuItem>
+                        <MenuItem value="staff">Staff</MenuItem>
+                        <MenuItem value="franchise">Franchise</MenuItem>
+                        <MenuItem value="user">User</MenuItem>
                       </TextField>
                     )}
                   />
@@ -539,20 +792,20 @@ export default function AdminAddUser() {
                       setShowPassword(false);
                       setShowConfirmPassword(false);
                     }}
-                    disabled={isSubmitting || loading}
+                    disabled={isSubmitting}
                   >
-                    {t("adminAddUser.buttons.reset")}
+                    {t("adminAddUser.buttons.reset", "Làm mới")}
                   </Button>
                   <Button
                     type="submit"
                     variant="contained"
                     startIcon={<AddUserIcon />}
-                    disabled={isSubmitting || loading}
+                    disabled={isSubmitting}
                   >
-                    {loading ? (
+                    {isSubmitting ? (
                       <CircularProgress size={22} />
                     ) : (
-                      t("adminAddUser.buttons.create")
+                      t("adminAddUser.buttons.create", "Tạo mới")
                     )}
                   </Button>
                 </Stack>
@@ -560,7 +813,7 @@ export default function AdminAddUser() {
             </Grid>
           </form>
 
-          {/* Search & Filters */}
+          {/* Filters */}
           <Divider sx={{ my: 3 }} />
           <Stack
             direction={{ xs: "column", sm: "row" }}
@@ -571,7 +824,10 @@ export default function AdminAddUser() {
           >
             <TextField
               size="small"
-              placeholder={t("adminAddUser.search.placeholder")}
+              placeholder={t(
+                "adminAddUser.search.placeholder",
+                "Tìm kiếm theo tên, email, SĐT..."
+              )}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
@@ -584,38 +840,51 @@ export default function AdminAddUser() {
               sx={{ width: { xs: "100%", sm: 420 } }}
             />
 
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel>
-                {t("adminAddUser.filters.roleFilterLabel")}
-              </InputLabel>
-              <Select
-                value={filterRole}
-                label={t("adminAddUser.filters.roleFilterLabel")}
-                onChange={(e) => setFilterRole(String(e.target.value))}
-                startAdornment={
-                  <InputAdornment position="start">
-                    <FilterListIcon />
-                  </InputAdornment>
-                }
-              >
-                <MenuItem value="all">
-                  {t("adminAddUser.filters.roles.all")}
-                </MenuItem>
-                <MenuItem value="admin">
-                  {t("adminAddUser.roles.admin")}
-                </MenuItem>
-                <MenuItem value="manager">
-                  {t("adminAddUser.roles.manager")}
-                </MenuItem>
-                <MenuItem value="staff">
-                  {t("adminAddUser.roles.staff")}
-                </MenuItem>
-                <MenuItem value="franchise">
-                  {t("adminAddUser.roles.franchise")}
-                </MenuItem>
-                <MenuItem value="user">{t("adminAddUser.roles.user")}</MenuItem>
-              </Select>
-            </FormControl>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ width: "100%", maxWidth: 500 }}
+            >
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>
+                  {t("adminAddUser.filters.roleFilterLabel", "Vai trò")}
+                </InputLabel>
+                <Select
+                  value={filterRole}
+                  label={t("adminAddUser.filters.roleFilterLabel", "Vai trò")}
+                  onChange={(e) => setFilterRole(String(e.target.value))}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <FilterListIcon />
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="all">{t("common.all", "Tất cả")}</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="manager">Manager</MenuItem>
+                  <MenuItem value="staff">Staff</MenuItem>
+                  <MenuItem value="franchise">Franchise</MenuItem>
+                  <MenuItem value="user">User</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>{t("common.status", "Trạng thái")}</InputLabel>
+                <Select
+                  value={filterStatus}
+                  label={t("common.status", "Trạng thái")}
+                  onChange={(e) => setFilterStatus(String(e.target.value))}
+                >
+                  <MenuItem value="all">{t("common.all", "Tất cả")}</MenuItem>
+                  <MenuItem value="active">
+                    {t("common.active", "Active")}
+                  </MenuItem>
+                  <MenuItem value="inactive">
+                    {t("common.inactive", "Inactive")}
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Stack>
           </Stack>
 
           {/* DataGrid */}
@@ -624,20 +893,23 @@ export default function AdminAddUser() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Box sx={{ height: 420, maxWidth: "1400px" }}>
+            <Box sx={{ height: 560, width: "100%" }}>
               <DataGrid
-                rows={filteredRows}
+                rows={activeFilters ? filteredRows : rows}
                 columns={columns}
                 getRowId={(row) => row.id}
-                pageSizeOptions={[5, 10]}
-                initialState={{
-                  pagination: { paginationModel: { pageSize: 5 } },
-                }}
+                paginationMode="server"
+                paginationModel={paginationModel}
+                onPaginationModelChange={(m) => setPaginationModel(m)}
+                rowCount={rowCount}
+                loading={loadingUsers}
+                pageSizeOptions={[5, 10, 20, 50]}
                 disableRowSelectionOnClick
+                density="standard"
                 sx={{
-                  bgcolor: "background.paper",
                   border: "2px solid #61666f",
                   borderRadius: 2,
+                  bgcolor: "background.paper",
                   "& .MuiDataGrid-columnHeaders": {
                     bgcolor: (theme) =>
                       theme.palette.mode === "light" ? "grey.100" : "grey.900",
@@ -647,6 +919,12 @@ export default function AdminAddUser() {
               />
             </Box>
           </motion.div>
+
+          {usersError && (
+            <Box mt={2}>
+              <Alert severity="error">{usersError}</Alert>
+            </Box>
+          )}
         </Paper>
       </Box>
 
@@ -658,29 +936,30 @@ export default function AdminAddUser() {
           setEditOpen(false);
           setEditingUser(null);
         }}
-        onSave={(updated) => handleEditSave(updated)}
+        onSave={handlePatchUser}
       />
 
       {/* Delete Confirm */}
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
-        <DialogTitle>{t("adminAddUser.dialogs.deleteTitle")}</DialogTitle>
+        <DialogTitle>
+          {t("adminAddUser.dialogs.deleteTitle", "Xác nhận xóa")}
+        </DialogTitle>
         <DialogContent>
           <Typography>
-            {t("adminAddUser.dialogs.deleteConfirm", {
-              name: deletingUser?.fullName ?? "",
-            })}
+            {t("adminAddUser.dialogs.deleteConfirm", "Bạn có chắc muốn xóa")}{" "}
+            <strong>{deletingUser?.fullName ?? ""}</strong>?
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteOpen(false)}>
-            {t("adminAddUser.buttons.cancel")}
+            {t("adminAddUser.buttons.cancel", "Hủy")}
           </Button>
           <Button
             color="error"
             variant="contained"
             onClick={handleConfirmDelete}
           >
-            {t("adminAddUser.buttons.delete")}
+            {t("adminAddUser.buttons.delete", "Xóa")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -688,13 +967,13 @@ export default function AdminAddUser() {
       {/* Snackbar */}
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={2500}
+        autoHideDuration={3500}
         onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           onClose={() => setSnackbarOpen(false)}
-          severity="success"
+          severity={snackbarSeverity}
           variant="filled"
         >
           {snackbarMsg}
@@ -704,7 +983,7 @@ export default function AdminAddUser() {
   );
 }
 
-// ------------------ EditUserDialog ------------------
+/** =================== EditUserDialog =================== */
 function EditUserDialog({
   open,
   user,
@@ -712,12 +991,13 @@ function EditUserDialog({
   onSave,
 }: {
   open: boolean;
-  user: User | null;
+  user: UserRow | null;
   onClose: () => void;
-  onSave: (u: User) => void;
+  onSave: (u: UserRow) => void;
 }) {
-  const { t, i18n } = useTranslation();
-  const [form, setForm] = useState<User | null>(user);
+  const { t } = useTranslation();
+  const [form, setForm] = useState<UserRow | null>(user);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setForm(user ? { ...user } : null);
@@ -725,15 +1005,26 @@ function EditUserDialog({
 
   if (!form) return null;
 
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave(form);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{t("adminAddUser.dialogs.editTitle")}</DialogTitle>
+      <DialogTitle>
+        {t("adminAddUser.dialogs.editTitle", "Chỉnh sửa người dùng")}
+      </DialogTitle>
       <DialogContent>
         <Box mt={1}>
           <Grid container spacing={2}>
             <Grid sx={{ xs: 12 }}>
               <TextField
-                label={t("adminAddUser.form.labels.fullName")}
+                label={t("adminAddUser.form.labels.fullName", "Họ tên")}
                 fullWidth
                 value={form.fullName}
                 onChange={(e) => setForm({ ...form, fullName: e.target.value })}
@@ -741,7 +1032,7 @@ function EditUserDialog({
             </Grid>
             <Grid sx={{ xs: 12, md: 6 }}>
               <TextField
-                label={t("adminAddUser.form.labels.email")}
+                label={t("adminAddUser.form.labels.email", "Email")}
                 fullWidth
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -749,7 +1040,7 @@ function EditUserDialog({
             </Grid>
             <Grid sx={{ xs: 12, md: 6 }}>
               <TextField
-                label={t("adminAddUser.form.labels.phone")}
+                label={t("adminAddUser.form.labels.phone", "Số điện thoại")}
                 fullWidth
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -757,27 +1048,61 @@ function EditUserDialog({
             </Grid>
             <Grid sx={{ xs: 12, md: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>{t("adminAddUser.form.labels.role")}</InputLabel>
+                <InputLabel>
+                  {t("adminAddUser.form.labels.role", "Vai trò")}
+                </InputLabel>
                 <Select
                   value={form.role}
-                  label={t("adminAddUser.form.labels.role")}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  label={t("adminAddUser.form.labels.role", "Vai trò")}
+                  onChange={(e) =>
+                    setForm({ ...form, role: String(e.target.value) })
+                  }
                 >
-                  <MenuItem value="admin">
-                    {t("adminAddUser.roles.admin")}
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="manager">Manager</MenuItem>
+                  <MenuItem value="staff">Staff</MenuItem>
+                  <MenuItem value="franchise">Franchise</MenuItem>
+                  <MenuItem value="user">User</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid sx={{ xs: 12, md: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>{t("common.status", "Trạng thái")}</InputLabel>
+                <Select
+                  value={form.status ?? ""}
+                  label={t("common.status", "Trạng thái")}
+                  onChange={(e) =>
+                    setForm({ ...form, status: String(e.target.value) })
+                  }
+                >
+                  <MenuItem value="active">
+                    {t("common.active", "Active")}
                   </MenuItem>
-                  <MenuItem value="manager">
-                    {t("adminAddUser.roles.manager")}
+                  <MenuItem value="inactive">
+                    {t("common.inactive", "Inactive")}
                   </MenuItem>
-                  <MenuItem value="staff">
-                    {t("adminAddUser.roles.staff")}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid sx={{ xs: 12, md: 6 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>
+                  {t("adminAddUser.table.columns.type", "Loại TK")}
+                </InputLabel>
+                <Select
+                  value={form.type ?? ""}
+                  label={t("adminAddUser.table.columns.type", "Loại TK")}
+                  onChange={(e) =>
+                    setForm({ ...form, type: String(e.target.value) })
+                  }
+                >
+                  <MenuItem value="">
+                    <em>—</em>
                   </MenuItem>
-                  <MenuItem value="franchise">
-                    {t("adminAddUser.roles.franchise")}
-                  </MenuItem>
-                  <MenuItem value="user">
-                    {t("adminAddUser.roles.user")}
-                  </MenuItem>
+                  <MenuItem value="normal">normal</MenuItem>
+                  <MenuItem value="standard">standard</MenuItem>
+                  <MenuItem value="premium">premium</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -786,14 +1111,15 @@ function EditUserDialog({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>{t("adminAddUser.buttons.cancel")}</Button>
-        <Button
-          variant="contained"
-          onClick={() => {
-            if (form) onSave(form);
-          }}
-        >
-          {t("adminAddUser.buttons.save")}
+        <Button onClick={onClose}>
+          {t("adminAddUser.buttons.cancel", "Hủy")}
+        </Button>
+        <Button variant="contained" onClick={handleSave} disabled={saving}>
+          {saving ? (
+            <CircularProgress size={22} />
+          ) : (
+            t("adminAddUser.buttons.save", "Lưu")
+          )}
         </Button>
       </DialogActions>
     </Dialog>

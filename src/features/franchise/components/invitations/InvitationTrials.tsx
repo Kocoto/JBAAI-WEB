@@ -1,3 +1,5 @@
+// src/features/franchise/components/invitations/InvitationTrials.tsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   alpha,
   Box,
@@ -12,7 +14,10 @@ import {
   Divider,
   Button,
   Grid,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
+import { useTheme } from "@mui/material";
 import LocalActivityIcon from "@mui/icons-material/LocalActivity";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import PersonIcon from "@mui/icons-material/Person";
@@ -22,8 +27,6 @@ import UpdateIcon from "@mui/icons-material/Update";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ErrorIcon from "@mui/icons-material/Error";
-import { useTheme } from "@mui/material";
-import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useFranchise } from "../../hooks/useFranchise";
@@ -31,34 +34,73 @@ import type { InvitationCode } from "../../types/franchise.type";
 
 const CARD_MIN_HEIGHT = 420;
 
+function getTypeKey(code?: InvitationCode["codeType"]) {
+  if (!code) return undefined;
+  if (typeof code === "string") return code;
+  return (
+    code.key ||
+    code._id ||
+    (typeof code.name === "string" ? code.name : undefined)
+  );
+}
+
 export default function InvitationTrials() {
   const theme = useTheme();
   const { t } = useTranslation();
+
   const {
     invitationCodes,
     fetchInvitationCodes,
     fetchFranchiseDetails,
     activeCode,
   } = useFranchise();
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const copyTimerRef = useRef<number | null>(null);
+
+  // ✅ Gọi API CHẮC CHẮN 1 lần khi mount (không phụ thuộc tối ưu ở hook)
   useEffect(() => {
+    let mounted = true;
+    console.time?.("InvitationTrials:initial-load");
+
     (async () => {
-      await fetchInvitationCodes();
-      await fetchFranchiseDetails();
+      try {
+        // gọi danh sách code trước để UI có dữ liệu sớm
+        await fetchInvitationCodes(1, 10);
+        // gọi details sau (không chặn hiển thị code)
+        fetchFranchiseDetails?.();
+      } catch (e) {
+        console.error("[InvitationTrials] initial fetch error:", e);
+      } finally {
+        if (mounted) console.timeEnd?.("InvitationTrials:initial-load");
+      }
     })();
-  }, [fetchInvitationCodes, fetchFranchiseDetails]);
+
+    return () => {
+      mounted = false;
+      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    };
+    // CHÚ Ý: không đưa fetchFranchiseDetails vào deps để tránh gọi lại khi ref thay đổi
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchInvitationCodes]);
 
   const handleCopyCode = async (code?: string) => {
     if (!code) return;
     await navigator.clipboard.writeText(code);
     setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 1500);
+    if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = window.setTimeout(() => setCopiedCode(null), 1500);
   };
 
   const handleActiveCode = async () => {
-    const result = await activeCode();
-    if (result?.success) fetchInvitationCodes();
+    try {
+      const result = await activeCode();
+      if (result?.success) {
+        await fetchInvitationCodes(1, 10);
+      }
+    } catch (e) {
+      console.error("[InvitationTrials] activeCode error:", e);
+    }
   };
 
   const fmt = (d?: string) =>
@@ -80,27 +122,30 @@ export default function InvitationTrials() {
       if (a.status === "active" && b.status !== "active") return -1;
       if (a.status !== "active" && b.status === "active") return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    })[0];
+    })?.[0];
 
+  // ✅ nhận dạng codeType an toàn (string hoặc object)
   const codeLegacy = useMemo(
     () =>
       pickNewestPrefActive(
         invitationCodes?.data,
-        (c) => c.codeType === "USER_TRIAL"
+        (c) => getTypeKey(c.codeType) === "USER_TRIAL"
       ),
     [invitationCodes?.data]
   );
+
   const codeFranchise = useMemo(
     () =>
       pickNewestPrefActive(
         invitationCodes?.data,
-        (c) => c.codeType === "FRANCHISE_HIERARCHY"
+        (c) => getTypeKey(c.codeType) === "FRANCHISE_HIERARCHY"
       ),
     [invitationCodes?.data]
   );
 
   const codeTypeLabel = (ct?: InvitationCode["codeType"]) => {
-    switch (ct) {
+    const k = getTypeKey(ct);
+    switch (k) {
       case "USER_TRIAL":
         return t("franchise.invitations.codeType.userTrial", {
           defaultValue: "Dùng thử (cũ)",
@@ -114,7 +159,7 @@ export default function InvitationTrials() {
     }
   };
 
-  const InvitationCodeCard = ({
+  const InvitationCodeCard = React.memo(function InvitationCodeCard({
     invitationCode,
     title,
     icon,
@@ -124,7 +169,7 @@ export default function InvitationTrials() {
     title: string;
     icon: React.ReactNode;
     color: string;
-  }) => {
+  }) {
     const code = invitationCode?.code ?? "N/A";
     const status = invitationCode?.status ?? "inactive";
 
@@ -302,7 +347,12 @@ export default function InvitationTrials() {
         </CardContent>
       </Card>
     );
-  };
+  });
+
+  // ======= UI =======
+  const isLoading = invitationCodes.loading;
+  const hasError = !!invitationCodes.error;
+  const hasData = (invitationCodes.data?.length || 0) > 0;
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -335,7 +385,7 @@ export default function InvitationTrials() {
 
         <Stack direction="row" spacing={1} sx={{ ml: "auto" }}>
           <Tooltip title={t("common.refresh")}>
-            <IconButton onClick={() => fetchInvitationCodes()}>
+            <IconButton onClick={() => fetchInvitationCodes(1, 10)}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
@@ -362,39 +412,52 @@ export default function InvitationTrials() {
           border: `1px solid ${theme.palette.divider}`,
         }}
       >
-        <Box
-          sx={{
-            display: "grid",
-            gap: 3,
-            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-            alignItems: "stretch",
-          }}
-        >
-          <InvitationCodeCard
-            invitationCode={codeLegacy}
-            title={t("franchise.invitations.cards.userTrialLegacy", {
-              defaultValue: "Mã dùng thử (cũ)",
-            })}
-            icon={
-              <PersonIcon
-                sx={{ color: theme.palette.info.main, fontSize: 28 }}
-              />
-            }
-            color={theme.palette.info.main}
-          />
-          <InvitationCodeCard
-            invitationCode={codeFranchise}
-            title={t("franchise.invitations.cards.franchise", {
-              defaultValue: "Mã nhánh hệ thống",
-            })}
-            icon={
-              <BusinessIcon
-                sx={{ color: theme.palette.success.main, fontSize: 28 }}
-              />
-            }
-            color={theme.palette.success.main}
-          />
-        </Box>
+        {isLoading && !hasData ? (
+          <Stack alignItems="center" spacing={2} sx={{ py: 6 }}>
+            <CircularProgress />
+            <Typography variant="body2" color="text.secondary">
+              {t("common.loading", { defaultValue: "Đang tải..." })}
+            </Typography>
+          </Stack>
+        ) : hasError ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {invitationCodes.error?.message || "Lỗi tải dữ liệu"}
+          </Alert>
+        ) : (
+          <Box
+            sx={{
+              display: "grid",
+              gap: 3,
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              alignItems: "stretch",
+            }}
+          >
+            <InvitationCodeCard
+              invitationCode={codeLegacy}
+              title={t("franchise.invitations.cards.userTrialLegacy", {
+                defaultValue: "Mã dùng thử (cũ)",
+              })}
+              icon={
+                <PersonIcon
+                  sx={{ color: theme.palette.info.main, fontSize: 28 }}
+                />
+              }
+              color={theme.palette.info.main}
+            />
+            <InvitationCodeCard
+              invitationCode={codeFranchise}
+              title={t("franchise.invitations.cards.franchise", {
+                defaultValue: "Mã nhánh hệ thống",
+              })}
+              icon={
+                <BusinessIcon
+                  sx={{ color: theme.palette.success.main, fontSize: 28 }}
+                />
+              }
+              color={theme.palette.success.main}
+            />
+          </Box>
+        )}
       </Paper>
     </Box>
   );
