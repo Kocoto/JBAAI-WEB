@@ -53,6 +53,7 @@
       }
     }
   },
+
   "adminRequests": {
     "header": {
       "title": "Upgrade Request Management",
@@ -61,7 +62,9 @@
     "filters": {
       "searchPlaceholder": "Search by name, email, phone...",
       "roleFilterLabel": "Filter by role",
-      "roles": { "all": "All" }
+      "roles": {
+        "all": "All"
+      }
     },
     "roles": {
       "user": "User",
@@ -97,10 +100,18 @@
       "export": "Export report"
     },
     "tabs": {
-      "pending": { "title": "Pending requests" },
-      "reviewing": { "title": "Requests under review" },
-      "approved": { "title": "Approved requests" },
-      "rejected": { "title": "Rejected requests" }
+      "pending": {
+        "title": "Pending requests"
+      },
+      "reviewing": {
+        "title": "Requests under review"
+      },
+      "approved": {
+        "title": "Approved requests"
+      },
+      "rejected": {
+        "title": "Rejected requests"
+      }
     },
     "empty": {
       "pending": "No pending requests",
@@ -112,6 +123,7 @@
       "placeholderHint": "New requests will appear here"
     }
   },
+
   "adminAddUser": {
     "header": {
       "title": "Add new user",
@@ -184,6 +196,7 @@
       "deleteSuccess": "User deleted successfully"
     }
   },
+
   "adminFranchise": {
     "header": {
       "title": "Franchise Management",
@@ -243,6 +256,7 @@
       "id": "ID"
     }
   },
+
   "adminCampaignForm": {
     "header": {
       "title": "Create New Campaign",
@@ -302,6 +316,7 @@
       "createFailed": "An error occurred while creating the campaign"
     }
   },
+
   "adminCampaignList": {
     "header": {
       "title": "Campaign Management",
@@ -364,6 +379,7 @@
       "create": "Create campaign"
     }
   },
+
   "campaignDataGrid": {
     "loading": "Loading campaign data...",
     "empty": {
@@ -371,6 +387,7 @@
       "subtitle": "Data will appear here once campaigns are available"
     }
   },
+
   "nav": {
     "home": "Home",
     "admin": {
@@ -382,7 +399,9 @@
       "reports": "Reports",
       "settings": "Settings",
       "users.all": "All users",
-      "users.add": "Add new user"
+      "users.add": "Add new user",
+      "invitations": "Invitations",
+      "invitations.all": "All invitation codes"
     },
     "seller": {
       "dashboard": "Dashboard",
@@ -419,11 +438,13 @@
       "profile": "Profile"
     }
   },
+
   "navDesc": {
     "admin": {
       "dashboard": "System overview",
       "requests": "Manage upgrade requests",
       "users": "Manage users",
+      "invitations": "Manage all invitation codes",
       "franchises": "Manage branches",
       "campaigns": "Manage marketing campaigns",
       "reports": "Reports & analytics",
@@ -451,40 +472,20 @@
       "profile": "Personal information"
     }
   },
-  "franchise": {
-    "invitations": {
-      "title": "Invitation Codes",
-      "subtitle": "Manage and monitor your system invitation codes",
-      "codeType": {
-        "userTrial": "Free trial",
-        "joinSystem": "Join the system"
-      },
-      "stats": {
-        "title": "Usage stats",
-        "usage": "Uses",
-        "total": "Total accumulated"
-      },
-      "activate": {
-        "btn": "Activate invitation code"
-      },
-      "cards": {
-        "userTrial": "User Trial Code",
-        "franchise": "Franchise Invitation Code"
-      }
-    }
-  },
+
   "common": {
     "copy": "Copy",
     "copied": "Copied!",
+    "refresh": "Refresh",
+    "export": "Export",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
     "status": {
       "active": "Active",
       "inactive": "Inactive"
-    },
-    "createdAt": "Created:",
-    "updatedAt": "Updated:",
-    "refresh": "Refresh",
-    "export": "Export"
+    }
   },
+
   "franchise": {
     "quota": {
       "allocate": {
@@ -520,21 +521,7 @@
           "error": "An error occurred while allocating quota!"
         }
       }
-    }
-  },
-  "common": {
-    "copy": "Copy",
-    "copied": "Copied!",
-    "refresh": "Refresh",
-    "export": "Export",
-    "createdAt": "Created",
-    "updatedAt": "Updated",
-    "status": {
-      "active": "Active",
-      "inactive": "Inactive"
-    }
-  },
-  "franchise": {
+    },
     "invitations": {
       "title": "Invitation Codes",
       "subtitle": "Manage and track your system's invitation codes",

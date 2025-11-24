@@ -16,6 +16,7 @@
       "unexpected": "Đã xảy ra lỗi, vui lòng thử lại sau."
     }
   },
+
   "dashboard": {
     "overview": "Tổng quan",
     "details": "Chi tiết",
@@ -52,6 +53,7 @@
       }
     }
   },
+
   "adminRequests": {
     "header": {
       "title": "Quản lý Yêu cầu Nâng cấp",
@@ -60,7 +62,9 @@
     "filters": {
       "searchPlaceholder": "Tìm theo tên, email, SĐT...",
       "roleFilterLabel": "Lọc theo vai trò",
-      "roles": { "all": "Tất cả" }
+      "roles": {
+        "all": "Tất cả"
+      }
     },
     "roles": {
       "user": "User",
@@ -96,10 +100,18 @@
       "export": "Xuất báo cáo"
     },
     "tabs": {
-      "pending": { "title": "Yêu cầu đang chờ" },
-      "reviewing": { "title": "Yêu cầu đang xét duyệt" },
-      "approved": { "title": "Yêu cầu đã được chấp thuận" },
-      "rejected": { "title": "Yêu cầu đã bị từ chối" }
+      "pending": {
+        "title": "Yêu cầu đang chờ"
+      },
+      "reviewing": {
+        "title": "Yêu cầu đang xét duyệt"
+      },
+      "approved": {
+        "title": "Yêu cầu đã được chấp thuận"
+      },
+      "rejected": {
+        "title": "Yêu cầu đã bị từ chối"
+      }
     },
     "empty": {
       "pending": "Không có yêu cầu nào đang chờ xử lý",
@@ -111,6 +123,7 @@
       "placeholderHint": "Các yêu cầu mới sẽ xuất hiện ở đây"
     }
   },
+
   "adminAddUser": {
     "header": {
       "title": "Thêm người dùng mới",
@@ -183,6 +196,7 @@
       "deleteSuccess": "Xóa user thành công"
     }
   },
+
   "adminFranchise": {
     "header": {
       "title": "Quản lý Franchise",
@@ -302,6 +316,7 @@
       "createFailed": "Có lỗi xảy ra khi tạo chiến dịch"
     }
   },
+
   "adminCampaignList": {
     "header": {
       "title": "Quản lý Chiến dịch",
@@ -364,6 +379,7 @@
       "create": "Tạo chiến dịch"
     }
   },
+
   "campaignDataGrid": {
     "loading": "Đang tải dữ liệu chiến dịch...",
     "empty": {
@@ -371,9 +387,9 @@
       "subtitle": "Dữ liệu sẽ xuất hiện ở đây khi có chiến dịch"
     }
   },
+
   "nav": {
     "home": "Trang chủ",
-
     "admin": {
       "dashboard": "Bảng điều khiển",
       "requests": "Quản lý Request",
@@ -382,11 +398,11 @@
       "campaigns": "Chiến dịch",
       "reports": "Báo cáo",
       "settings": "Cài đặt",
-
       "users.all": "Tất cả Users",
-      "users.add": "Thêm User mới"
+      "users.add": "Thêm User mới",
+      "invitations": "Quản lý mã mời",
+      "invitations.all": "Danh sách tất cả mã mời"
     },
-
     "seller": {
       "dashboard": "Bảng điều khiển",
       "products": "Sản phẩm",
@@ -396,33 +412,26 @@
       "campaigns": "Chiến dịch",
       "profile": "Hồ sơ"
     },
-
     "franchise": {
       "dashboard": "Bảng điều khiển",
       "quota": "Quản lý Quota",
       "quota.my": "Quota của tôi",
       "quota.allocate": "Cấp phát Quota",
       "quota.history": "Lịch sử cấp phát",
-
       "children": "Franchise con",
       "children.list": "Danh sách Franchise con",
       "children.hierarchy": "Cây phân cấp",
-
       "invitations": "Mã mời",
       "invitations.codes": "Danh sách mã mời thời hạn",
-
       "performance": "Hiệu suất",
       "performance.my": "Hiệu suất của tôi",
       "performance.children": "Hiệu suất Franchise con",
       "performance.hierarchy": "Hiệu suất toàn bộ",
-
       "reports": "Báo cáo",
       "reports.quota": "Sử dụng Quota",
       "reports.export": "Xuất báo cáo",
-
       "profile": "Thông tin"
     },
-
     "user": {
       "dashboard": "Bảng điều khiển",
       "campaigns": "Chiến dịch",
@@ -435,6 +444,7 @@
       "dashboard": "Tổng quan hệ thống",
       "requests": "Quản lý các yêu cầu nâng cấp",
       "users": "Quản lý người dùng",
+      "invitations": "Quản lý tất cả mã mời",
       "franchises": "Quản lý chi nhánh",
       "campaigns": "Quản lý chiến dịch marketing",
       "reports": "Báo cáo và thống kê",
@@ -462,55 +472,24 @@
       "profile": "Thông tin cá nhân"
     }
   },
+
   "common": {
+    "copy": "Sao chép",
     "copied": "Đã sao chép!",
-    "copy": "Sao chép mã",
-    "status": {
-      "active": "Hoạt động",
-      "inactive": "Không hoạt động"
-    },
     "refresh": "Làm mới",
+    "export": "Xuất báo cáo",
     "cancel": "Hủy",
     "confirm": "Xác nhận",
     "processing": "Đang xử lý...",
-    "createdAt": "Ngày tạo:",
-    "updatedAt": "Cập nhật:",
-    "never": "Chưa sử dụng"
-  },
-  "franchise": {
-    "invitations": {
-      "title": "Quản lý Mã Mời",
-      "subtitle": "Quản lý và theo dõi các mã mời của hệ thống",
-      "codeType": {
-        "userTrial": "Dùng thử miễn phí",
-        "joinSystem": "Tham gia hệ thống"
-      },
-      "stats": {
-        "title": "📊 Thống kê sử dụng",
-        "usage": "Lần sử dụng",
-        "total": "Tổng tích lũy"
-      },
-      "activate": {
-        "btn": "Kích hoạt mã mời"
-      },
-      "cards": {
-        "userTrial": "Mã Mời Dùng Thử",
-        "franchise": "Mã Mời Franchise"
-      }
-    }
-  },
-  "common": {
-    "copy": "Sao chép mã",
-    "copied": "Đã sao chép!",
+    "createdAt": "Ngày tạo",
+    "updatedAt": "Cập nhật",
+    "never": "Chưa sử dụng",
     "status": {
       "active": "Hoạt động",
       "inactive": "Không hoạt động"
-    },
-    "createdAt": "Ngày tạo:",
-    "updatedAt": "Cập nhật:",
-    "refresh": "Làm mới",
-    "export": "Xuất báo cáo"
+    }
   },
+
   "franchise": {
     "quota": {
       "allocate": {
@@ -546,22 +525,7 @@
           "error": "Có lỗi xảy ra khi cấp phát quota!"
         }
       }
-    }
-  },
-
-  "common": {
-    "copy": "Sao chép",
-    "copied": "Đã sao chép!",
-    "refresh": "Làm mới",
-    "export": "Xuất báo cáo",
-    "createdAt": "Ngày tạo",
-    "updatedAt": "Cập nhật",
-    "status": {
-      "active": "Hoạt động",
-      "inactive": "Không hoạt động"
-    }
-  },
-  "franchise": {
+    },
     "invitations": {
       "title": "Quản lý Mã Mời",
       "subtitle": "Quản lý và theo dõi các mã mời của hệ thống",

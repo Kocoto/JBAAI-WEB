@@ -7,7 +7,6 @@ import * as yup from "yup";
 import {
   Box,
   Paper,
-  Grid,
   Typography,
   TextField,
   MenuItem,
@@ -28,6 +27,9 @@ import {
   DialogContent,
   DialogActions,
   Tooltip,
+  Avatar,
+  OutlinedInput,
+  FormHelperText,
 } from "@mui/material";
 
 import {
@@ -60,14 +62,15 @@ import { useTranslation } from "react-i18next";
 import BaseDashboardLayout from "@/shared/components/layout/BaseDashboardLayout";
 import apiClient from "@/shared/services/api/apiClient";
 
-/** =================== API PATHS (lock theo Postman) =================== */
+/** =================== API PATHS =================== */
 const baseHasV1 = String(apiClient?.defaults?.baseURL ?? "").includes(
   "/api/v1"
 );
 const API_PREFIX = baseHasV1 ? "" : "/api/v1";
 
-const USERS_LIST_PATH = `${API_PREFIX}/admin/users`; // GET list
-const USERS_CREATE_PATH = `${API_PREFIX}/admin/users/create`; // POST create
+const USERS_LIST_PATH = `${API_PREFIX}/admin/users`; // GET list users
+const USERS_CREATE_PATH = `${API_PREFIX}/admin/users/create`; // POST create user
+const UPGRADE_USER_SUBSCRIPTION_PATH = `${API_PREFIX}/admin/users/subscription/activate`; // POST upgrade
 const userPath = (id: string) => `${USERS_LIST_PATH}/${id}`;
 
 /** =================== Types =================== */
@@ -78,7 +81,7 @@ type FormData = {
   password: string;
   confirmPassword: string;
   role: string;
-  optionEmail?: string; // optional để khớp schema
+  optionEmail?: string;
 };
 
 type ApiUser = {
@@ -95,14 +98,7 @@ type ApiUser = {
 type ApiUsersResponse = {
   success?: boolean;
   message?: string;
-  data?: ApiUser[];
-  total?: number;
-  pagination?: {
-    total?: number;
-    page?: number;
-    limit?: number;
-    totalDocs?: number;
-  };
+  data?: ApiUser[] | ApiUser;
 };
 
 type UserRow = {
@@ -131,6 +127,7 @@ const roleColor = (role: string) => {
       return "default";
   }
 };
+
 const statusColor = (status?: string) =>
   !status
     ? "default"
@@ -139,6 +136,7 @@ const statusColor = (status?: string) =>
     : status === "inactive"
     ? "default"
     : "warning";
+
 const typeColor = (type?: string) => {
   if (!type) return "default";
   const t = String(type).toLowerCase();
@@ -148,31 +146,10 @@ const typeColor = (type?: string) => {
   return "secondary";
 };
 
-const formVariants = {
-  hidden: { opacity: 0, y: 15 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.12, duration: 0.4 },
-  }),
-};
-
 const pickList = (payload: any): ApiUser[] =>
   (Array.isArray(payload?.data) && payload.data) ||
   (Array.isArray(payload) && payload) ||
   [];
-
-const pickTotal = (payload: any, headers: any): number | undefined => {
-  const p = payload?.pagination || {};
-  const headerTotal = Number(headers?.["x-total-count"]);
-  return (
-    (typeof payload?.total === "number" && payload.total) ||
-    (typeof p?.total === "number" && p.total) ||
-    (typeof p?.totalDocs === "number" && p.totalDocs) ||
-    (!Number.isNaN(headerTotal) && headerTotal) ||
-    undefined
-  );
-};
 
 /** =================== Component =================== */
 export default function AdminAddUser() {
@@ -224,8 +201,9 @@ export default function AdminAddUser() {
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    watch,
   } = useForm<FormData>({
-    resolver: yupResolver(schema), // ✅ KHÔNG truyền generics để tránh xung đột
+    resolver: yupResolver(schema),
     defaultValues: {
       fullName: "",
       email: "",
@@ -233,12 +211,19 @@ export default function AdminAddUser() {
       password: "",
       confirmPassword: "",
       role: "",
-      optionEmail: "", // UI nhận string, schema transform -> undefined
+      optionEmail: "",
     },
   });
 
-  /** ---------- Users (server pagination) ---------- */
-  const [rows, setRows] = useState<UserRow[]>([]);
+  // Preview card
+  const previewFullName = watch("fullName") || "New User";
+  const previewEmail = watch("email") || "email@example.com";
+  const previewPhone = watch("phone") || "—";
+  const previewOptionEmail = watch("optionEmail") || "—";
+  const previewRole = watch("role") || "user";
+
+  /** ---------- Users (client-side pagination + global search) ---------- */
+  const [allRows, setAllRows] = useState<UserRow[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
 
@@ -246,7 +231,10 @@ export default function AdminAddUser() {
     page: 0,
     pageSize: 10,
   });
-  const [rowCount, setRowCount] = useState<number>(0);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   const mapApiToRow = useCallback(
     (u: ApiUser): UserRow => ({
@@ -262,58 +250,58 @@ export default function AdminAddUser() {
     [locale]
   );
 
-  const fetchUsers = useCallback(
-    async (page0 = paginationModel.page, size = paginationModel.pageSize) => {
-      setLoadingUsers(true);
-      setUsersError(null);
-      try {
-        const page1 = page0 + 1; // API 1-based
+  const fetchAllUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    setUsersError(null);
+    try {
+      // lấy TẤT CẢ users: page=1, limit rất lớn
+      const page = 1;
+      const limit = 9999;
 
-        const res = await apiClient.get<ApiUsersResponse>(USERS_LIST_PATH, {
-          headers: {
-            page: String(page1),
-            limit: String(size),
-            "x-page": String(page1),
-            "x-limit": String(size),
-            "X-Page": String(page1),
-            "X-Limit": String(size),
-          },
-          params: { page: page1, limit: size },
-        });
+      const res = await apiClient.get<ApiUsersResponse>(USERS_LIST_PATH, {
+        headers: {
+          page: String(page),
+          limit: String(limit),
+          "x-page": String(page),
+          "x-limit": String(limit),
+          "X-Page": String(page),
+          "X-Limit": String(limit),
+        },
+        params: { page, limit },
+      });
 
-        const payload = res?.data ?? {};
-        const list = pickList(payload);
-        setRows(list.map(mapApiToRow));
+      const payload = res?.data ?? {};
+      let list = pickList(payload);
 
-        const total = pickTotal(payload, (res as any)?.headers);
-        if (typeof total === "number") {
-          setRowCount(total);
-        } else {
-          const hasNext = list.length === size;
-          const estimated = hasNext
-            ? page1 * size + 1
-            : (page1 - 1) * size + list.length;
-          setRowCount(estimated);
-        }
-      } catch (e: any) {
-        console.error(e);
-        setUsersError(
-          e?.response?.data?.message || e?.message || "Fetch users failed"
-        );
-        setRows([]);
-        setRowCount(0);
-      } finally {
-        setLoadingUsers(false);
-      }
-    },
-    [paginationModel.page, paginationModel.pageSize, mapApiToRow]
-  );
+      // newest first
+      list = list.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setAllRows(list.map(mapApiToRow));
+      setPaginationModel((p) => ({ ...p, page: 0 }));
+    } catch (e: any) {
+      console.error(e);
+      setUsersError(
+        e?.response?.data?.message || e?.message || "Fetch users failed"
+      );
+      setAllRows([]);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [mapApiToRow]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers, paginationModel.page, paginationModel.pageSize]);
+    fetchAllUsers();
+  }, [fetchAllUsers]);
 
-  /** ---------- Create user (POST /admin/users/create) ---------- */
+  // reset page khi filter/search đổi
+  useEffect(() => {
+    setPaginationModel((p) => ({ ...p, page: 0 }));
+  }, [searchTerm, filterRole, filterStatus]);
+
+  /** ---------- Create user ---------- */
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -321,12 +309,29 @@ export default function AdminAddUser() {
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
     "success"
   );
+  const [createOpen, setCreateOpen] = useState(false);
 
-  async function createUser(payload: any) {
-    const res = await apiClient.post(USERS_CREATE_PATH, payload, {
-      headers: { "Content-Type": "application/json" },
-    });
-    return res?.data?.data ?? res?.data;
+  async function createUser(payload: any): Promise<ApiUser | null> {
+    const res = await apiClient.post<ApiUsersResponse>(
+      USERS_CREATE_PATH,
+      payload,
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    const raw = res?.data;
+    let user: any = null;
+    if (raw?.data) {
+      if (Array.isArray(raw.data)) {
+        user = raw.data[0];
+      } else {
+        user = raw.data;
+      }
+    }
+
+    if (!user || !user._id) return null;
+    return user as ApiUser;
   }
 
   const onSubmit: SubmitHandler<FormData> = async (data) => {
@@ -342,21 +347,10 @@ export default function AdminAddUser() {
 
       const created = await createUser(payload);
 
-      // Optimistic prepend nếu đang ở trang đầu
-      if (created && paginationModel.page === 0) {
-        const newRow = mapApiToRow(created as ApiUser);
-        setRows((prev) =>
-          [newRow, ...prev.filter((r) => r.id !== newRow.id)].slice(
-            0,
-            paginationModel.pageSize
-          )
-        );
-        setRowCount((rc) => (typeof rc === "number" ? rc + 1 : rc));
+      if (created && created._id) {
+        const newRow = mapApiToRow(created);
+        setAllRows((prev) => [newRow, ...prev]); // user mới luôn nằm trên cùng
       }
-
-      // Reset về trang 1 & refetch để sync
-      await fetchUsers(0, paginationModel.pageSize);
-      setPaginationModel((p) => ({ ...p, page: 0 }));
 
       setSnackbarSeverity("success");
       setSnackbarMsg(
@@ -366,6 +360,7 @@ export default function AdminAddUser() {
       reset();
       setShowPassword(false);
       setShowConfirmPassword(false);
+      setCreateOpen(false);
     } catch (e: any) {
       console.error(e);
       setSnackbarSeverity("error");
@@ -376,14 +371,10 @@ export default function AdminAddUser() {
     }
   };
 
-  /** ---------- Filter UI ---------- */
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterRole, setFilterRole] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-
+  /** ---------- Filter + search trên allRows ---------- */
   const filteredRows = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    return rows.filter((u) => {
+    return allRows.filter((u) => {
       const matchSearch =
         !q ||
         u.fullName.toLowerCase().includes(q) ||
@@ -394,16 +385,70 @@ export default function AdminAddUser() {
         filterStatus === "all" || (u.status ?? "") === filterStatus;
       return matchSearch && matchRole && matchStatus;
     });
-  }, [rows, searchTerm, filterRole, filterStatus]);
+  }, [allRows, searchTerm, filterRole, filterStatus]);
 
-  const activeFilters =
-    searchTerm.trim() !== "" || filterRole !== "all" || filterStatus !== "all";
-
-  /** ---------- Edit/Delete ---------- */
+  /** ---------- Edit/Delete/Upgrade ---------- */
   const [editOpen, setEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
+
+  // Upgrade dialog state
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradingUser, setUpgradingUser] = useState<UserRow | null>(null);
+  const [upgradeCode, setUpgradeCode] = useState("");
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+
+  const handleOpenUpgrade = (row: UserRow) => {
+    setUpgradingUser(row);
+    setUpgradeCode("");
+    setUpgradeOpen(true);
+  };
+
+  const handleConfirmUpgrade = async () => {
+    if (!upgradingUser) return;
+    if (!upgradeCode.trim()) {
+      setSnackbarSeverity("error");
+      setSnackbarMsg("Vui lòng nhập mã nâng cấp (codeRandom)");
+      setSnackbarOpen(true);
+      return;
+    }
+
+    setUpgradeLoading(true);
+    try {
+      await apiClient.post(
+        UPGRADE_USER_SUBSCRIPTION_PATH,
+        {
+          userId: upgradingUser.id,
+          codeRandom: upgradeCode.trim(),
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      setSnackbarSeverity("success");
+      setSnackbarMsg("Nâng cấp tài khoản thành công");
+      setSnackbarOpen(true);
+
+      setUpgradeOpen(false);
+      setUpgradingUser(null);
+      setUpgradeCode("");
+
+      await fetchAllUsers();
+    } catch (e: any) {
+      console.error(e);
+      setSnackbarSeverity("error");
+      setSnackbarMsg(
+        e?.response?.data?.message ||
+          e?.message ||
+          "Upgrade user subscription failed"
+      );
+      setSnackbarOpen(true);
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
 
   const handlePatchUser = async (updated: UserRow) => {
     try {
@@ -423,7 +468,10 @@ export default function AdminAddUser() {
       setSnackbarOpen(true);
       setEditOpen(false);
       setEditingUser(null);
-      await fetchUsers();
+
+      setAllRows((prev) =>
+        prev.map((r) => (r.id === updated.id ? updated : r))
+      );
     } catch (e: any) {
       console.error(e);
       setSnackbarSeverity("error");
@@ -445,11 +493,8 @@ export default function AdminAddUser() {
       setSnackbarOpen(true);
       setDeleteOpen(false);
       setDeletingUser(null);
-      if (rows.length === 1 && paginationModel.page > 0) {
-        setPaginationModel((prev) => ({ ...prev, page: prev.page - 1 }));
-      } else {
-        await fetchUsers();
-      }
+
+      setAllRows((prev) => prev.filter((r) => r.id !== deletingUser.id));
     } catch (e: any) {
       console.error(e);
       setSnackbarSeverity("error");
@@ -530,7 +575,7 @@ export default function AdminAddUser() {
     {
       field: "actions",
       headerName: t("adminAddUser.table.columns.actions", "Hành động"),
-      width: 168,
+      width: 190,
       sortable: false,
       filterable: false,
       renderCell: (params: GridRenderCellParams<any, UserRow>) => (
@@ -538,9 +583,7 @@ export default function AdminAddUser() {
           <Tooltip title={t("common.upgrade", "Nâng hạng")}>
             <IconButton
               size="small"
-              onClick={() => {
-                /* UI nâng hạng nếu cần */
-              }}
+              onClick={() => handleOpenUpgrade(params.row as UserRow)}
             >
               <UpgradeIcon />
             </IconButton>
@@ -607,214 +650,34 @@ export default function AdminAddUser() {
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon />}
-                onClick={() => fetchUsers()}
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilterRole("all");
+                  setFilterStatus("all");
+                  fetchAllUsers();
+                }}
                 disabled={loadingUsers}
               >
                 {t("common.refresh", "Tải lại Users")}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<AddUserIcon />}
+                onClick={() => {
+                  reset();
+                  setShowPassword(false);
+                  setShowConfirmPassword(false);
+                  setCreateOpen(true);
+                }}
+              >
+                {t("adminAddUser.buttons.openCreate", "Thêm user mới")}
               </Button>
             </Stack>
           </Stack>
 
           <Divider sx={{ mb: 3 }} />
 
-          {/* Create form */}
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            <Grid container spacing={2}>
-              {[
-                {
-                  name: "fullName",
-                  label: t("adminAddUser.form.labels.fullName", "Họ tên"),
-                  icon: <PersonIcon />,
-                  type: "text",
-                },
-                {
-                  name: "email",
-                  label: t("adminAddUser.form.labels.email", "Email"),
-                  icon: <EmailIcon />,
-                  type: "email",
-                },
-                {
-                  name: "phone",
-                  label: t("adminAddUser.form.labels.phone", "Số điện thoại"),
-                  icon: <PhoneIcon />,
-                  type: "text",
-                },
-                {
-                  name: "optionEmail",
-                  label: "Option Email",
-                  icon: <EmailIcon />,
-                  type: "email",
-                },
-                {
-                  name: "password",
-                  label: t("adminAddUser.form.labels.password", "Mật khẩu"),
-                  icon: <LockIcon />,
-                  type: showPassword ? "text" : "password",
-                  toggle: "password",
-                },
-                {
-                  name: "confirmPassword",
-                  label: t(
-                    "adminAddUser.form.labels.confirmPassword",
-                    "Xác nhận mật khẩu"
-                  ),
-                  icon: <LockIcon />,
-                  type: showConfirmPassword ? "text" : "password",
-                  toggle: "confirm",
-                },
-              ].map((field, i) => (
-                <Grid key={field.name} sx={{ xs: 12, md: 6 }}>
-                  <motion.div
-                    initial="hidden"
-                    animate="visible"
-                    custom={i}
-                    variants={formVariants}
-                  >
-                    <Controller
-                      name={field.name as keyof FormData}
-                      control={control}
-                      render={({ field: f }) => (
-                        <TextField
-                          {...f}
-                          fullWidth
-                          label={field.label}
-                          type={field.type as string}
-                          error={!!errors[field.name as keyof FormData]}
-                          helperText={
-                            (errors[field.name as keyof FormData]?.message as
-                              | string
-                              | undefined) ?? " "
-                          }
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                {field.icon}
-                              </InputAdornment>
-                            ),
-                            endAdornment: field.toggle ? (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  edge="end"
-                                  onClick={() =>
-                                    field.toggle === "password"
-                                      ? setShowPassword((s) => !s)
-                                      : setShowConfirmPassword((s) => !s)
-                                  }
-                                >
-                                  {(
-                                    field.toggle === "password"
-                                      ? showPassword
-                                      : showConfirmPassword
-                                  ) ? (
-                                    <VisibilityOff />
-                                  ) : (
-                                    <Visibility />
-                                  )}
-                                </IconButton>
-                              </InputAdornment>
-                            ) : undefined,
-                          }}
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              "& fieldset": { border: "2px solid #61666f" },
-                              "&:hover fieldset": {
-                                border: "2px solid #42464d",
-                              },
-                              "&.Mui-focused fieldset": {
-                                border: "2px solid #1976d2",
-                              },
-                            },
-                          }}
-                        />
-                      )}
-                    />
-                  </motion.div>
-                </Grid>
-              ))}
-
-              {/* Role */}
-              <Grid sx={{ xs: 12 }}>
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  custom={6}
-                  variants={formVariants}
-                >
-                  <Controller
-                    name="role"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        select
-                        label={t("adminAddUser.form.labels.role", "Vai trò")}
-                        fullWidth
-                        error={!!errors.role}
-                        helperText={(errors.role?.message as string) ?? " "}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <WorkIcon />
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "& fieldset": { border: "2px solid #61666f" },
-                            "&:hover fieldset": { border: "2px solid #42464d" },
-                            "&.Mui-focused fieldset": {
-                              border: "2px solid #1976d2",
-                            },
-                          },
-                        }}
-                      >
-                        <MenuItem value="admin">Admin</MenuItem>
-                        <MenuItem value="manager">Manager</MenuItem>
-                        <MenuItem value="staff">Staff</MenuItem>
-                        <MenuItem value="franchise">Franchise</MenuItem>
-                        <MenuItem value="user">User</MenuItem>
-                      </TextField>
-                    )}
-                  />
-                </motion.div>
-              </Grid>
-
-              {/* Buttons */}
-              <Grid sx={{ xs: 12, md: 6 }}>
-                <Stack direction="row" spacing={2} justifyContent="flex-end">
-                  <Button
-                    variant="outlined"
-                    color="secondary"
-                    startIcon={<ResetIcon />}
-                    onClick={() => {
-                      reset();
-                      setShowPassword(false);
-                      setShowConfirmPassword(false);
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    {t("adminAddUser.buttons.reset", "Làm mới")}
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    startIcon={<AddUserIcon />}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <CircularProgress size={22} />
-                    ) : (
-                      t("adminAddUser.buttons.create", "Tạo mới")
-                    )}
-                  </Button>
-                </Stack>
-              </Grid>
-            </Grid>
-          </form>
-
           {/* Filters */}
-          <Divider sx={{ my: 3 }} />
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
@@ -895,14 +758,12 @@ export default function AdminAddUser() {
           >
             <Box sx={{ height: 560, width: "100%" }}>
               <DataGrid
-                rows={activeFilters ? filteredRows : rows}
+                rows={filteredRows}
                 columns={columns}
                 getRowId={(row) => row.id}
-                paginationMode="server"
+                paginationMode="client"
                 paginationModel={paginationModel}
                 onPaginationModelChange={(m) => setPaginationModel(m)}
-                rowCount={rowCount}
-                loading={loadingUsers}
                 pageSizeOptions={[5, 10, 20, 50]}
                 disableRowSelectionOnClick
                 density="standard"
@@ -927,6 +788,486 @@ export default function AdminAddUser() {
           )}
         </Paper>
       </Box>
+
+      {/* Create User Dialog */}
+      <Dialog
+        open={createOpen}
+        onClose={() => {
+          if (!isSubmitting) setCreateOpen(false);
+        }}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            border: "1px solid rgba(209,213,219,0.6)",
+            overflow: "visible",
+            background:
+              "linear-gradient(135deg, #f9fafb 0%, #ffffff 40%, #eef4ff 100%)",
+            boxShadow: "0 18px 50px rgba(15,23,42,0.18)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            px: 3,
+            pt: 2.2,
+            pb: 1.5,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+          }}
+        >
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg,#93c5fd,#a5b4fc)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              boxShadow: "0 8px 18px rgba(147,197,253,0.4)",
+            }}
+          >
+            <AddUserIcon fontSize="small" />
+          </Box>
+
+          <Box>
+            <Typography
+              variant="subtitle1"
+              fontWeight={700}
+              sx={{ color: "#111827" }}
+            >
+              Thêm người dùng mới
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#6b7280" }}>
+              Nhập nhanh thông tin & kiểm tra trước khi tạo.
+            </Typography>
+          </Box>
+        </DialogTitle>
+
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <DialogContent sx={{ px: 3, pt: 0.5, pb: 0.5 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                bgcolor: "rgba(255,255,255,0.9)",
+                border: "1px solid rgba(226,232,240,0.9)",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2.5,
+                }}
+              >
+                {/* Card preview */}
+                <Box sx={{ flex: 1 }}>
+                  <Paper
+                    sx={{
+                      p: 2.2,
+                      borderRadius: 2.5,
+                      minHeight: 230,
+                      background:
+                        "linear-gradient(135deg, #e0f2fe 0%, #e5e7ff 40%, #eef2ff 100%)",
+                      border: "1px solid rgba(148,163,184,0.35)",
+                      boxShadow: "0 10px 24px rgba(148,163,184,0.35)",
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      mb={1.5}
+                      alignItems="center"
+                    >
+                      <Avatar
+                        sx={{
+                          width: 38,
+                          height: 38,
+                          bgcolor: "#bfdbfe",
+                          color: "#1d4ed8",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {previewFullName.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={700}>
+                          {previewFullName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "#64748b" }}>
+                          {previewEmail}
+                        </Typography>
+                      </Box>
+                    </Stack>
+
+                    <Stack direction="row" spacing={1} mb={1.5}>
+                      <Chip
+                        size="small"
+                        label={previewRole || "user"}
+                        sx={{
+                          bgcolor: "#e2e8f0",
+                          color: "#334155",
+                          borderRadius: "999px",
+                          "& .MuiChip-label": { px: 1.4 },
+                        }}
+                      />
+                      <Chip
+                        size="small"
+                        label="normal"
+                        sx={{
+                          bgcolor: "#e2e8f0",
+                          color: "#334155",
+                          borderRadius: "999px",
+                          "& .MuiChip-label": { px: 1.4 },
+                        }}
+                      />
+                    </Stack>
+
+                    <Divider
+                      sx={{ mb: 1.5, borderColor: "rgba(148,163,184,0.5)" }}
+                    />
+
+                    <Typography variant="caption" sx={{ color: "#64748b" }}>
+                      Số điện thoại
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      {previewPhone}
+                    </Typography>
+
+                    <Typography variant="caption" sx={{ color: "#64748b" }}>
+                      Option email
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      {previewOptionEmail}
+                    </Typography>
+
+                    <Typography variant="caption" sx={{ color: "#64748b" }}>
+                      Loại TK
+                    </Typography>
+                    <Typography variant="body2">normal</Typography>
+
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        mt: 2.5,
+                        display: "block",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      Bạn có thể chỉnh sửa thông tin sau khi tạo tài khoản.
+                    </Typography>
+                  </Paper>
+                </Box>
+
+                {/* Form bên phải */}
+                <Box sx={{ flex: 1 }}>
+                  <Stack spacing={1.8}>
+                    {/* Họ tên */}
+                    <Controller
+                      name="fullName"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          fullWidth
+                          size="small"
+                          label="Họ và tên"
+                          error={!!errors.fullName}
+                          helperText={
+                            (errors.fullName?.message as string) ?? " "
+                          }
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <PersonIcon fontSize="small" />
+                              </InputAdornment>
+                            ),
+                            sx: { borderRadius: 2 },
+                          }}
+                        />
+                      )}
+                    />
+
+                    {/* Email */}
+                    <Controller
+                      name="email"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          fullWidth
+                          size="small"
+                          label="Email"
+                          error={!!errors.email}
+                          helperText={(errors.email?.message as string) ?? " "}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <EmailIcon fontSize="small" />
+                              </InputAdornment>
+                            ),
+                            sx: { borderRadius: 2 },
+                          }}
+                        />
+                      )}
+                    />
+
+                    {/* Phone */}
+                    <Controller
+                      name="phone"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          fullWidth
+                          size="small"
+                          label="Số điện thoại"
+                          error={!!errors.phone}
+                          helperText={(errors.phone?.message as string) ?? " "}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <PhoneIcon fontSize="small" />
+                              </InputAdornment>
+                            ),
+                            sx: { borderRadius: 2 },
+                          }}
+                        />
+                      )}
+                    />
+
+                    {/* Option email */}
+                    <Controller
+                      name="optionEmail"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          fullWidth
+                          size="small"
+                          label="Option email"
+                          error={!!errors.optionEmail}
+                          helperText={
+                            (errors.optionEmail?.message as string) ?? " "
+                          }
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <EmailIcon fontSize="small" />
+                              </InputAdornment>
+                            ),
+                            sx: { borderRadius: 2 },
+                          }}
+                        />
+                      )}
+                    />
+
+                    {/* Mật khẩu */}
+                    <Controller
+                      name="password"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl
+                          fullWidth
+                          variant="outlined"
+                          size="small"
+                          sx={{ mb: 1 }}
+                        >
+                          <InputLabel error={!!errors.password}>
+                            Mật khẩu
+                          </InputLabel>
+                          <OutlinedInput
+                            {...field}
+                            type={showPassword ? "text" : "password"}
+                            label="Mật khẩu"
+                            startAdornment={
+                              <InputAdornment position="start">
+                                <LockIcon
+                                  sx={{ color: "#4b5563" }}
+                                  fontSize="small"
+                                />
+                              </InputAdornment>
+                            }
+                            endAdornment={
+                              <InputAdornment
+                                position="end"
+                                sx={{ cursor: "pointer" }}
+                                onClick={() => setShowPassword((v) => !v)}
+                              >
+                                {showPassword ? (
+                                  <VisibilityOff
+                                    sx={{ color: "#111827" }}
+                                    fontSize="small"
+                                  />
+                                ) : (
+                                  <Visibility
+                                    sx={{ color: "#111827" }}
+                                    fontSize="small"
+                                  />
+                                )}
+                              </InputAdornment>
+                            }
+                            sx={{
+                              borderRadius: "999px",
+                              "& .MuiOutlinedInput-notchedOutline": {
+                                borderWidth: 1.5,
+                              },
+                            }}
+                          />
+                          <FormHelperText error={!!errors.password}>
+                            {(errors.password?.message as string) ?? " "}
+                          </FormHelperText>
+                        </FormControl>
+                      )}
+                    />
+
+                    {/* Xác nhận mật khẩu */}
+                    <Controller
+                      name="confirmPassword"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth variant="outlined" size="small">
+                          <InputLabel error={!!errors.confirmPassword}>
+                            Xác nhận mật khẩu
+                          </InputLabel>
+                          <OutlinedInput
+                            {...field}
+                            type={showConfirmPassword ? "text" : "password"}
+                            label="Xác nhận mật khẩu"
+                            startAdornment={
+                              <InputAdornment position="start">
+                                <LockIcon
+                                  sx={{ color: "#4b5563" }}
+                                  fontSize="small"
+                                />
+                              </InputAdornment>
+                            }
+                            endAdornment={
+                              <InputAdornment
+                                position="end"
+                                sx={{ cursor: "pointer" }}
+                                onClick={() =>
+                                  setShowConfirmPassword((v) => !v)
+                                }
+                              >
+                                {showConfirmPassword ? (
+                                  <VisibilityOff
+                                    sx={{ color: "#111827" }}
+                                    fontSize="small"
+                                  />
+                                ) : (
+                                  <Visibility
+                                    sx={{ color: "#111827" }}
+                                    fontSize="small"
+                                  />
+                                )}
+                              </InputAdornment>
+                            }
+                            sx={{
+                              borderRadius: "999px",
+                              "& .MuiOutlinedInput-notchedOutline": {
+                                borderWidth: 1.5,
+                              },
+                            }}
+                          />
+                          <FormHelperText error={!!errors.confirmPassword}>
+                            {(errors.confirmPassword?.message as string) ?? " "}
+                          </FormHelperText>
+                        </FormControl>
+                      )}
+                    />
+
+                    {/* Role */}
+                    <Controller
+                      name="role"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          select
+                          fullWidth
+                          size="small"
+                          label="Vai trò"
+                          error={!!errors.role}
+                          helperText={(errors.role?.message as string) ?? " "}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <WorkIcon fontSize="small" />
+                              </InputAdornment>
+                            ),
+                            sx: { borderRadius: 2 },
+                          }}
+                        >
+                          <MenuItem value="user">User</MenuItem>
+                          <MenuItem value="admin">Admin</MenuItem>
+                          <MenuItem value="manager">Manager</MenuItem>
+                          <MenuItem value="staff">Staff</MenuItem>
+                          <MenuItem value="franchise">Franchise</MenuItem>
+                        </TextField>
+                      )}
+                    />
+                  </Stack>
+                </Box>
+              </Box>
+            </Paper>
+          </DialogContent>
+
+          <DialogActions
+            sx={{
+              px: 3,
+              pt: 1,
+              pb: 2.4,
+              justifyContent: "flex-end",
+              bgcolor: "transparent",
+              gap: 1,
+            }}
+          >
+            <Button
+              startIcon={<ResetIcon />}
+              onClick={() => {
+                reset();
+                setShowPassword(false);
+                setShowConfirmPassword(false);
+              }}
+              disabled={isSubmitting}
+            >
+              Làm mới
+            </Button>
+
+            <Button
+              onClick={() => {
+                if (!isSubmitting) setCreateOpen(false);
+              }}
+            >
+              Hủy
+            </Button>
+
+            <Button
+              type="submit"
+              variant="contained"
+              startIcon={!isSubmitting && <AddUserIcon />}
+              disabled={isSubmitting}
+              sx={{
+                borderRadius: 999,
+                px: 2.6,
+                py: 0.7,
+                background:
+                  "linear-gradient(135deg, #60a5fa 0%, #818cf8 60%, #a5b4fc 100%)",
+                boxShadow: "0 10px 26px rgba(129,140,248,0.45)",
+              }}
+            >
+              {isSubmitting ? <CircularProgress size={20} /> : "Tạo tài khoản"}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
 
       {/* Edit Dialog */}
       <EditUserDialog
@@ -960,6 +1301,58 @@ export default function AdminAddUser() {
             onClick={handleConfirmDelete}
           >
             {t("adminAddUser.buttons.delete", "Xóa")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Upgrade Dialog */}
+      <Dialog
+        open={upgradeOpen}
+        onClose={() => {
+          if (!upgradeLoading) {
+            setUpgradeOpen(false);
+            setUpgradingUser(null);
+            setUpgradeCode("");
+          }
+        }}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Nâng hạng tài khoản</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            User: <strong>{upgradingUser?.fullName}</strong>
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            label="Mã nâng cấp (codeRandom)"
+            value={upgradeCode}
+            onChange={(e) => setUpgradeCode(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              if (!upgradeLoading) {
+                setUpgradeOpen(false);
+                setUpgradingUser(null);
+                setUpgradeCode("");
+              }
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmUpgrade}
+            disabled={upgradeLoading}
+          >
+            {upgradeLoading ? (
+              <CircularProgress size={20} />
+            ) : (
+              "Xác nhận nâng hạng"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1021,32 +1414,28 @@ function EditUserDialog({
       </DialogTitle>
       <DialogContent>
         <Box mt={1}>
-          <Grid container spacing={2}>
-            <Grid sx={{ xs: 12 }}>
-              <TextField
-                label={t("adminAddUser.form.labels.fullName", "Họ tên")}
-                fullWidth
-                value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-              />
-            </Grid>
-            <Grid sx={{ xs: 12, md: 6 }}>
+          <Stack spacing={2}>
+            <TextField
+              label={t("adminAddUser.form.labels.fullName", "Họ tên")}
+              fullWidth
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+            />
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label={t("adminAddUser.form.labels.email", "Email")}
                 fullWidth
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
-            </Grid>
-            <Grid sx={{ xs: 12, md: 6 }}>
               <TextField
                 label={t("adminAddUser.form.labels.phone", "Số điện thoại")}
                 fullWidth
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
               />
-            </Grid>
-            <Grid sx={{ xs: 12, md: 6 }}>
+            </Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <FormControl fullWidth size="small">
                 <InputLabel>
                   {t("adminAddUser.form.labels.role", "Vai trò")}
@@ -1065,8 +1454,6 @@ function EditUserDialog({
                   <MenuItem value="user">User</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid sx={{ xs: 12, md: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>{t("common.status", "Trạng thái")}</InputLabel>
                 <Select
@@ -1084,29 +1471,27 @@ function EditUserDialog({
                   </MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid sx={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth size="small">
-                <InputLabel>
-                  {t("adminAddUser.table.columns.type", "Loại TK")}
-                </InputLabel>
-                <Select
-                  value={form.type ?? ""}
-                  label={t("adminAddUser.table.columns.type", "Loại TK")}
-                  onChange={(e) =>
-                    setForm({ ...form, type: String(e.target.value) })
-                  }
-                >
-                  <MenuItem value="">
-                    <em>—</em>
-                  </MenuItem>
-                  <MenuItem value="normal">normal</MenuItem>
-                  <MenuItem value="standard">standard</MenuItem>
-                  <MenuItem value="premium">premium</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+            </Stack>
+            <FormControl fullWidth size="small">
+              <InputLabel>
+                {t("adminAddUser.table.columns.type", "Loại TK")}
+              </InputLabel>
+              <Select
+                value={form.type ?? ""}
+                label={t("adminAddUser.table.columns.type", "Loại TK")}
+                onChange={(e) =>
+                  setForm({ ...form, type: String(e.target.value) })
+                }
+              >
+                <MenuItem value="">
+                  <em>—</em>
+                </MenuItem>
+                <MenuItem value="normal">normal</MenuItem>
+                <MenuItem value="standard">standard</MenuItem>
+                <MenuItem value="premium">premium</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
         </Box>
       </DialogContent>
 

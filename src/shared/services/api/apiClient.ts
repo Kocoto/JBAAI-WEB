@@ -10,7 +10,7 @@ const getRefreshToken = () => localStorage.getItem("refreshToken");
 // Lưu accessToken và refreshToken vào localStorage
 const setTokens = (accessToken: string, refreshToken: string) => {
   localStorage.setItem("accessToken", accessToken);
-  localStorage.setItem("refreshToken", refreshToken);     
+  localStorage.setItem("refreshToken", refreshToken);
 };
 
 // Xóa tokens khỏi localStorage (khi logout hoặc refresh token thất bại)
@@ -103,6 +103,7 @@ apiClient.interceptors.response.use(
         // Nếu không có refresh token, xóa tokens và chuyển về trang login
         isRefreshing = false;
         clearTokens();
+        ``;
         window.location.href = "/login";
         return Promise.reject(error);
       }
