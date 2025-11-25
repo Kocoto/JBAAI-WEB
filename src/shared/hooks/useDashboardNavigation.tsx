@@ -80,7 +80,7 @@ export const useDashboardNavigation = () => {
             id: "users",
             label: "Quản lý Users",
             labelKey: "nav.admin.users",
-            path: "/admin/users",
+            path: "/admin/users/all", // parent trỏ luôn tới /all để không bị 404
             icon: <PeopleIcon />,
             description: "Quản lý người dùng",
             descriptionKey: "navDesc.admin.users",
@@ -101,31 +101,23 @@ export const useDashboardNavigation = () => {
               },
             ],
           },
-          // 🔹 MỤC MỚI: QUẢN LÝ MÃ MỜI (ngang hàng với users)
+          // 🔹 QUẢN LÝ MÃ MỜI – ngang hàng với users
           {
             id: "invitations",
             label: "Quản lý mã mời",
             labelKey: "nav.admin.invitations",
-            path: "/admin/invitations",
+            path: "/admin/invitations/all", // parent cũng trỏ tới /all
             icon: <LocalActivityIcon />,
             description: "Quản lý tất cả mã mời",
             descriptionKey: "navDesc.admin.invitations",
             children: [
               {
                 id: "all-invitations",
-                label: "Danh sách mã mời",
+                label: "Danh sách tất cả mã mời",
                 labelKey: "nav.admin.invitations.all",
                 path: "/admin/invitations/all",
                 icon: <LocalActivityIcon fontSize="small" />,
               },
-              // nếu sau này bạn muốn thêm "Tạo mã mời", chỉ việc bổ sung 1 child nữa ở đây
-              // {
-              //   id: "create-invitation",
-              //   label: "Tạo mã mời",
-              //   labelKey: "nav.admin.invitations.create",
-              //   path: "/admin/invitations/create",
-              //   icon: <LocalActivityIcon fontSize="small" />,
-              // },
             ],
           },
           {
@@ -457,7 +449,7 @@ export const useDashboardNavigation = () => {
     return findItem(navigationItems);
   }, [location.pathname, navigationItems]);
 
-  // 4) Breadcrumbs
+  // 4) Breadcrumbs (label đã dịch, kèm labelKey để component khác dùng nếu muốn)
   const breadcrumbs = useMemo<BreadcrumbItem[]>(() => {
     const items: BreadcrumbItem[] = [];
 
@@ -522,15 +514,24 @@ export const useDashboardNavigation = () => {
   }, [navigationItems]);
 
   return {
+    // ĐÃ DỊCH:
     navigationItems,
     flatNavigationItems,
     currentNavItem,
+
+    // Bản gốc (nếu nơi khác cần):
     rawNavigationItems,
+
+    // Breadcrumbs
     breadcrumbs,
+
+    // Navigation utils
     navigateTo,
     navigateToHome,
     navigateBack,
     navigateToLogin,
+
+    // State
     isHome,
     currentPath: location.pathname,
     userRole: user?.role,

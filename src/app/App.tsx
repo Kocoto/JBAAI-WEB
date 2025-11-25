@@ -33,6 +33,7 @@ import FranchiseProfile from "@/features/franchise/pages/FranchiseProfile";
 import AdminAllUsers from "@/features/admin/pages/AdminAllUsers";
 import AdminAddUser from "@/features/admin/pages/AdminAddUser";
 import AdminReports from "@/features/admin/pages/AdminReports";
+import AdminInvitationsPage from "@/features/admin/pages/AdminInvitationsPage";
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
         }
       />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
       {/* Root route - redirect based on role */}
       <Route
         path="/"
@@ -56,6 +58,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       {/* Admin routes */}
       <Route
         path="/admin/dashboard"
@@ -137,6 +140,28 @@ function App() {
           </ProtectedRoute>
         }
       />
+      {/* 🔹 Admin invitation management */}
+      <Route
+        path="/admin/invitations"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminInvitationsPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/invitations/all"
+        element={
+          <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <AdminInvitationsPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        }
+      />
+
       {/* Seller routes */}
       <Route
         path="/seller/dashboard"
@@ -148,6 +173,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       {/* Franchise routes */}
       <Route
         path="/franchise/dashboard"
@@ -158,7 +184,7 @@ function App() {
             </RoleBasedRoute>
           </ProtectedRoute>
         }
-      />{" "}
+      />
       <Route
         path="/franchise/invitations/codes"
         element={
@@ -289,7 +315,8 @@ function App() {
           </ProtectedRoute>
         }
       />
-      {/* User routes (nếu cần) */}
+
+      {/* User routes */}
       <Route
         path="/user/dashboard"
         element={
@@ -300,6 +327,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
