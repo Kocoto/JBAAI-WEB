@@ -853,7 +853,7 @@ export default function InvitationCodes() {
                 setCreateDlg((s) => ({ ...s, qtyText: e.target.value }))
               }
               type="number"
-              inputProps={{ min: 1, max: 1000 }}
+              inputProps={{ min: 1, max: 1200 }}
               fullWidth
             />
             <TextField
@@ -869,7 +869,7 @@ export default function InvitationCodes() {
             <Alert severity="info" variant="outlined">
               Sẽ tạo{" "}
               <b>
-                {Math.max(1, Math.min(1000, Number(createDlg.qtyText) || 0))}
+                {Math.max(1, Math.min(1200, Number(createDlg.qtyText) || 0))}
               </b>{" "}
               mã cho <b>{createDlg.kind ? GROUP_LABEL[createDlg.kind] : "-"}</b>
               {createDlg.prefixText.trim() ? (
