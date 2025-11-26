@@ -821,7 +821,7 @@ export default function InvitationCodes() {
             setPage(1);
             fetchList(1, newLimit);
           }}
-          rowsPerPageOptions={[10, 20, 50]}
+          rowsPerPageOptions={[10, 20, 50, 1200]}
           labelDisplayedRows={({ from, to, page }) =>
             `Trang ${page + 1}/${Math.max(
               1,
