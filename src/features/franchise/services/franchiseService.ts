@@ -31,6 +31,7 @@ class FranchiseService {
   }
 
   // ==================== FRANCHISE INFO ====================
+
   async getMyFranchiseDetails(): Promise<ApiResponse<ApiDetailResponse>> {
     const url = `${this.basePath}/me/details`;
     this.log("GET", url);
@@ -121,8 +122,40 @@ class FranchiseService {
   }
 
   /**
+   * Tìm mã theo prefixCode
+   * GET /api/v1/franchise/code/find-by-prefix?prefix=MH
+   */
+  async findCodesByPrefix(
+    prefix: string,
+    extraHeaders?: Record<string, string>
+  ): Promise<InvitationCode[]> {
+    const params = new URLSearchParams();
+    params.set("prefix", prefix);
+    params.set("ts", String(Date.now()));
+
+    const url = `${this.basePath}/code/find-by-prefix?${params.toString()}`;
+    this.log("GET", url);
+
+    const response = await apiClient.get(url, {
+      headers: {
+        "Cache-Control": "no-cache",
+        ...(extraHeaders || {}),
+      },
+    });
+
+    const body = response.data as any;
+    const list: InvitationCode[] = Array.isArray(body?.data)
+      ? body.data
+      : Array.isArray(body)
+      ? body
+      : [];
+
+    return list;
+  }
+
+  /**
    * Tạo mã mời chuẩn (1/3/12 tháng).
-   * ✅ Thêm tham số prefixCode (tùy chọn).
+   * Có prefixCode (tùy chọn), không giới hạn max ở FE.
    */
   async createStandardCode(
     type: "one_month" | "three_months" | "one_year",
@@ -131,14 +164,19 @@ class FranchiseService {
     prefixCode?: string
   ): Promise<{ success?: boolean; data: InvitationCode[] }> {
     const url = `${this.basePath}/code/create-standard`;
+
+    const safeQty = Math.max(1, Math.floor(qty || 0));
+
     const payload: Record<string, any> = {
       codeType: type,
-      numberInvitationCodes: String(Math.max(1, Math.min(1000, qty))),
+      numberInvitationCodes: String(safeQty),
     };
     if (prefixCode && prefixCode.trim()) {
       payload.prefixCode = prefixCode.trim();
     }
+
     this.log("POST", url, payload);
+
     const response = await apiClient.post(url, payload, {
       headers: {
         "Cache-Control": "no-cache",
@@ -152,7 +190,7 @@ class FranchiseService {
     };
   }
 
-  /** (Nếu BE cần theo id) cũng hỗ trợ prefixCode */
+  /** (Nếu BE cần theo id) cũng hỗ trợ prefixCode, không giới hạn max */
   async createStandardCodeById(
     codeTypeId: string,
     qty = 1,
@@ -160,14 +198,19 @@ class FranchiseService {
     prefixCode?: string
   ): Promise<{ success?: boolean; data: InvitationCode[] }> {
     const url = `${this.basePath}/code/create-standard`;
+
+    const safeQty = Math.max(1, Math.floor(qty || 0));
+
     const payload: Record<string, any> = {
       codeTypeId,
-      numberInvitationCodes: String(Math.max(1, Math.min(1000, qty))),
+      numberInvitationCodes: String(safeQty),
     };
     if (prefixCode && prefixCode.trim()) {
       payload.prefixCode = prefixCode.trim();
     }
+
     this.log("POST", url, payload);
+
     const response = await apiClient.post(url, payload, {
       headers: {
         "Cache-Control": "no-cache",

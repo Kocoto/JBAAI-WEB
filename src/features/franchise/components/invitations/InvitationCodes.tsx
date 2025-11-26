@@ -37,9 +37,6 @@ import { TransitionProps } from "@mui/material/transitions";
 import SearchIcon from "@mui/icons-material/Search";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import UpdateIcon from "@mui/icons-material/Update";
-import BusinessIcon from "@mui/icons-material/Business";
 import LocalActivityIcon from "@mui/icons-material/LocalActivity";
 import AddIcon from "@mui/icons-material/Add";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
@@ -153,7 +150,7 @@ export default function InvitationCodes() {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  // create dialog (thêm prefixText – KHÔNG đổi logic khác)
+  // create dialog
   const [createDlg, setCreateDlg] = useState<{
     open: boolean;
     kind: Kind | null;
@@ -190,7 +187,6 @@ export default function InvitationCodes() {
         },
       });
 
-      // Flexible parser
       const body = res.data ?? {};
       const list: InvitationCode[] = Array.isArray(body?.data?.data)
         ? body.data.data
@@ -262,9 +258,20 @@ export default function InvitationCodes() {
 
   const handleCreate = async () => {
     if (!createDlg.kind) return;
-    const qty = Math.max(1, Math.min(1000, Number(createDlg.qtyText) || 0));
+
+    const qty = Math.max(1, Math.floor(Number(createDlg.qtyText) || 0));
+    if (!qty || qty < 1) {
+      setSnack({
+        open: true,
+        msg: "Số lượng mã phải lớn hơn 0",
+        sev: "error",
+      });
+      return;
+    }
+
     const prefix = createDlg.prefixText.trim() || undefined;
     setCreateDlg((s) => ({ ...s, loading: true }));
+
     try {
       if (createDlg.kind === "one_month")
         await franchiseService.createStandardCode(
@@ -300,6 +307,48 @@ export default function InvitationCodes() {
     }
   };
 
+  /* ---------------------- TÌM THEO PREFIX TỪ BE ---------------------- */
+  const handleSearchPrefixFromBE = async () => {
+    const q = search.trim();
+    if (!q) {
+      // nếu không có prefix => load lại danh sách thường
+      fetchList(1, limit);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const list = await franchiseService.findCodesByPrefix(q);
+      const total = list.length;
+
+      setRows(list);
+      setPagination({
+        total,
+        page: 1,
+        limit: total || 10,
+        totalPages: 1,
+      });
+      setPage(1);
+      setLimit(total || 10);
+      setSelected(new Set());
+
+      setSnack({
+        open: true,
+        msg: `Đã tìm được ${total} mã theo prefix "${q}"`,
+        sev: "success",
+      });
+    } catch (e: any) {
+      console.error(e);
+      setSnack({
+        open: true,
+        msg: e?.message || "Tìm theo prefix thất bại",
+        sev: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ---------------------- FILTER + SORT (client on current page) ---------------------- */
   const filtered = useMemo(() => {
     let out = [...rows];
@@ -314,12 +363,11 @@ export default function InvitationCodes() {
 
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      // ✅ THÊM: cho phép tìm theo prefixCode (không đụng logic khác)
       out = out.filter((r: any) => {
         const code = (r.code || "").toLowerCase();
         const status = ((r.status as string) || "").toLowerCase();
-        const prefix = ((r.prefixCode as string) || "").toLowerCase(); // <— NEW
-        return code.includes(q) || status.includes(q) || prefix.includes(q); // <— NEW
+        const prefix = ((r.prefixCode as string) || "").toLowerCase();
+        return code.includes(q) || status.includes(q) || prefix.includes(q);
       });
     }
 
@@ -402,13 +450,15 @@ export default function InvitationCodes() {
   };
 
   /* ---------------------- RENDER ---------------------- */
-  const totalAll = pagination.total; // tổng số mã từ BE
+  const totalAll = pagination.total; // tổng số mã từ BE (hoặc từ tìm prefix)
   const isAllChecked =
     currentPageIds.length > 0 && currentPageIds.every((id) => selected.has(id));
   const isIndeterminate =
     selected.size > 0 &&
     !isAllChecked &&
     currentPageIds.some((id) => selected.has(id));
+
+  const previewQty = Math.max(1, Math.floor(Number(createDlg.qtyText) || 0));
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -530,20 +580,35 @@ export default function InvitationCodes() {
             "& .MuiInputBase-root": { height: 38 },
           }}
         >
-          <TextField
-            size="small"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm mã, prefix, trạng thái…"
+          {/* Search + nút Tìm prefix */}
+          <Stack
+            direction="row"
+            spacing={1}
             sx={{ flex: 1, minWidth: 220, mr: 1 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-          />
+          >
+            <TextField
+              size="small"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Tìm mã, prefix, trạng thái…"
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              sx={{ flexShrink: 0, minWidth: 110 }}
+              onClick={handleSearchPrefixFromBE}
+            >
+              Tìm prefix
+            </Button>
+          </Stack>
 
           <FormControl size="small" sx={{ width: 180, flexShrink: 0 }}>
             <Select
@@ -803,7 +868,7 @@ export default function InvitationCodes() {
           </Table>
         </TableContainer>
 
-        {/* Pagination — lấy total/page/limit từ BE */}
+        {/* Pagination — lấy total/page/limit từ BE hoặc từ tìm prefix */}
         <TablePagination
           component="div"
           count={pagination.total}
@@ -831,7 +896,7 @@ export default function InvitationCodes() {
         />
       </Paper>
 
-      {/* Dialog tạo mã — thêm ô prefixCode */}
+      {/* Dialog tạo mã — thêm ô prefixCode, không giới hạn max */}
       <Dialog
         open={createDlg.open}
         onClose={closeCreate}
@@ -847,18 +912,18 @@ export default function InvitationCodes() {
             <TextField
               autoFocus
               label="Số lượng mã"
-              placeholder="Nhập số (1–1000)"
+              placeholder="Nhập số (≥ 1)"
               value={createDlg.qtyText}
               onChange={(e) =>
                 setCreateDlg((s) => ({ ...s, qtyText: e.target.value }))
               }
               type="number"
-              inputProps={{ min: 1, max: 1200 }}
+              inputProps={{ min: 1 }} // bỏ max, chỉ giữ min
               fullWidth
             />
             <TextField
               label="Tiền tố mã (prefixCode)"
-              placeholder="Ví dụ: lan 2"
+              placeholder="Ví dụ: MH"
               value={createDlg.prefixText}
               onChange={(e) =>
                 setCreateDlg((s) => ({ ...s, prefixText: e.target.value }))
@@ -867,11 +932,8 @@ export default function InvitationCodes() {
               fullWidth
             />
             <Alert severity="info" variant="outlined">
-              Sẽ tạo{" "}
-              <b>
-                {Math.max(1, Math.min(1200, Number(createDlg.qtyText) || 0))}
-              </b>{" "}
-              mã cho <b>{createDlg.kind ? GROUP_LABEL[createDlg.kind] : "-"}</b>
+              Sẽ tạo <b>{previewQty}</b> mã cho{" "}
+              <b>{createDlg.kind ? GROUP_LABEL[createDlg.kind] : "-"}</b>
               {createDlg.prefixText.trim() ? (
                 <>
                   {" "}
