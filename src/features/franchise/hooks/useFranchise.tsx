@@ -1,5 +1,5 @@
-// src/features/franchise/hooks/useFranchise.ts
 import { useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { franchiseService } from "../services/franchiseService";
 import {
   InvitationCode,
@@ -7,12 +7,9 @@ import {
   ApiError,
 } from "../types/franchise.type";
 
-const INVITATION_CACHE_KEY = "franchise_invitation_codes_cache_v2";
-
 type InvitationCodesState = {
   data: InvitationCode[];
-  loading: boolean; // dùng khi lần đầu fetch mà chưa có data
-  refreshing: boolean; // dùng khi đã có data và đang cập nhật nền
+  loading: boolean;
   error: ApiError | null;
   page: number;
   limit: number;
@@ -20,84 +17,47 @@ type InvitationCodesState = {
   totalPages?: number;
 };
 
-function readCache(): InvitationCode[] | null {
-  try {
-    const raw = localStorage.getItem(INVITATION_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed?.data)
-      ? (parsed.data as InvitationCode[])
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeCache(data: InvitationCode[]) {
-  try {
-    localStorage.setItem(
-      INVITATION_CACHE_KEY,
-      JSON.stringify({ data, ts: Date.now() })
-    );
-  } catch {
-    // ignore
-  }
-}
-
 export const useFranchise = () => {
-  const cacheData = readCache();
+  const navigate = useNavigate();
 
   const [invitationCodes, setInvitationCodes] = useState<InvitationCodesState>({
-    data: cacheData ?? [],
-    loading: false, // ❗ KHÔNG auto loading lần 1
-    refreshing: false,
+    data: [],
+    loading: false,
     error: null,
     page: 1,
     limit: 10,
-    total: cacheData?.length ?? 0,
+    total: 0,
     totalPages: 1,
   });
 
-  // Đọc token một lần
+  // ✅ Đọc token 1 lần (giảm truy cập localStorage lặp lại)
   const tokenRef = useRef<string>(
     localStorage.getItem("franchise_token") ||
       localStorage.getItem("accessToken") ||
       ""
   );
 
-  // ❗ Chỉ gọi hàm này khi bạn CHỦ ĐỘNG gọi (bấm refresh / sau activeCode)
+  // ✅ Gọi API lấy danh sách mã mời (để consumer tự điều khiển thời điểm gọi → tránh trùng)
   const fetchInvitationCodes = useCallback(async (page = 1, limit = 10) => {
-    setInvitationCodes((prev) => ({
-      ...prev,
-      loading: prev.data.length === 0, // lần đầu chưa có data -> show spinner
-      refreshing: prev.data.length > 0, // đã có data -> chỉ báo "đang cập nhật"
-      error: null,
-    }));
-
+    setInvitationCodes((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const res = await franchiseService.getMyInvitationCodes(page, limit, {
         Authorization: `Bearer ${tokenRef.current}`,
       });
 
-      const data = res.data ?? [];
-
-      writeCache(data);
-
       setInvitationCodes({
-        data,
+        data: res.data ?? [],
         loading: false,
-        refreshing: false,
         error: null,
         page: res.page ?? page,
         limit,
-        total: res.total ?? data.length ?? 0,
+        total: res.total ?? res.data?.length ?? 0,
         totalPages: res.totalPages ?? 1,
       });
     } catch (error) {
       setInvitationCodes((prev) => ({
         ...prev,
         loading: false,
-        refreshing: false,
         error: error as ApiError,
       }));
     }
@@ -122,7 +82,7 @@ export const useFranchise = () => {
     try {
       await franchiseService.getMyFranchiseDetails();
     } catch {
-      // không phá UI
+      // noop
     }
   }, []);
 
@@ -130,7 +90,7 @@ export const useFranchise = () => {
     try {
       const res = await franchiseService.activeCode();
       return res;
-    } catch {
+    } catch (e) {
       return { success: false };
     }
   }, []);
@@ -146,6 +106,7 @@ export const useFranchise = () => {
     }
   }, []);
 
+  // ❌ ĐÃ LOẠI BỎ useEffect auto-fetch để tránh gọi đúp
   return {
     invitationCodes,
     fetchInvitationCodes,

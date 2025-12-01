@@ -1,4 +1,3 @@
-// src/features/franchise/services/franchiseService.ts
 import apiClient from "@/shared/services/api/apiClient";
 import {
   FranchiseStatistics,
@@ -31,65 +30,30 @@ class FranchiseService {
     }
   }
 
-  private async timedRequest<T>(
-    label: string,
-    fn: () => Promise<T>
-  ): Promise<T> {
-    const start = performance.now();
-    try {
-      const res = await fn();
-      const end = performance.now();
-      if (import.meta.env.MODE !== "production") {
-        console.log(
-          `[FranchiseService] ${label} took ${(end - start).toFixed(0)} ms`
-        );
-      }
-      return res;
-    } catch (e) {
-      const end = performance.now();
-      if (import.meta.env.MODE !== "production") {
-        console.log(
-          `[FranchiseService] ${label} FAILED after ${(end - start).toFixed(
-            0
-          )} ms`,
-          e
-        );
-      }
-      throw e;
-    }
-  }
-
   // ==================== FRANCHISE INFO ====================
 
   async getMyFranchiseDetails(): Promise<ApiResponse<ApiDetailResponse>> {
     const url = `${this.basePath}/me/details`;
     this.log("GET", url);
-
-    const response = await this.timedRequest("getMyFranchiseDetails", () =>
-      apiClient.get(url)
-    );
+    const response = await apiClient.get(url);
     return response.data;
   }
 
   async getMyQuota(): Promise<ApiResponse<QuotaInfo>> {
     const url = `${this.basePath}/me/quota?ts=${Date.now()}`;
     this.log("GET", url);
-    const response = await this.timedRequest("getMyQuota", () =>
-      apiClient.get(url, {
-        headers: { "Cache-Control": "no-cache" },
-      })
-    );
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
     return response.data;
   }
 
   async getMyStatistics(): Promise<ApiResponse<FranchiseStatistics>> {
     const url = `${this.basePath}/me/statistics?ts=${Date.now()}`;
     this.log("GET", url);
-    const response = await this.timedRequest("getMyStatistics", () =>
-      apiClient.get(url, {
-        headers: { "Cache-Control": "no-cache" },
-      })
-    );
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
     return response.data;
   }
 
@@ -116,16 +80,14 @@ class FranchiseService {
     }`;
     this.log("GET", url);
 
-    const response = await this.timedRequest("getMyInvitationCodes", () =>
-      apiClient.get(url, {
-        headers: {
-          "Cache-Control": "no-cache",
-          page: String(page),
-          limit: String(limit),
-          ...(extraHeaders || {}),
-        },
-      })
-    );
+    const response = await apiClient.get(url, {
+      headers: {
+        "Cache-Control": "no-cache",
+        page: String(page),
+        limit: String(limit),
+        ...(extraHeaders || {}),
+      },
+    });
 
     const body = response.data as any;
 
@@ -174,14 +136,12 @@ class FranchiseService {
     const url = `${this.basePath}/code/find-by-prefix?${params.toString()}`;
     this.log("GET", url);
 
-    const response = await this.timedRequest("findCodesByPrefix", () =>
-      apiClient.get(url, {
-        headers: {
-          "Cache-Control": "no-cache",
-          ...(extraHeaders || {}),
-        },
-      })
-    );
+    const response = await apiClient.get(url, {
+      headers: {
+        "Cache-Control": "no-cache",
+        ...(extraHeaders || {}),
+      },
+    });
 
     const body = response.data as any;
     const list: InvitationCode[] = Array.isArray(body?.data)
@@ -217,14 +177,12 @@ class FranchiseService {
 
     this.log("POST", url, payload);
 
-    const response = await this.timedRequest("createStandardCode", () =>
-      apiClient.post(url, payload, {
-        headers: {
-          "Cache-Control": "no-cache",
-          ...(extraHeaders || {}),
-        },
-      })
-    );
+    const response = await apiClient.post(url, payload, {
+      headers: {
+        "Cache-Control": "no-cache",
+        ...(extraHeaders || {}),
+      },
+    });
     const body = response.data as any;
     return {
       success: !!body?.success,
@@ -253,14 +211,12 @@ class FranchiseService {
 
     this.log("POST", url, payload);
 
-    const response = await this.timedRequest("createStandardCodeById", () =>
-      apiClient.post(url, payload, {
-        headers: {
-          "Cache-Control": "no-cache",
-          ...(extraHeaders || {}),
-        },
-      })
-    );
+    const response = await apiClient.post(url, payload, {
+      headers: {
+        "Cache-Control": "no-cache",
+        ...(extraHeaders || {}),
+      },
+    });
     const body = response.data as any;
     return {
       success: !!body?.success,
@@ -282,29 +238,23 @@ class FranchiseService {
       ? `${this.basePath}/me/user-trial-quota-ledger?${qs}&ts=${Date.now()}`
       : `${this.basePath}/me/user-trial-quota-ledger?ts=${Date.now()}`;
     this.log("GET", url);
-    const response = await this.timedRequest("getMyUserTrialQuotaLedger", () =>
-      apiClient.get(url, {
-        headers: { "Cache-Control": "no-cache" },
-      })
-    );
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
     return response.data;
   }
 
   async allocateQuotaToChild(payload: AllocateQuotaPayload) {
     const url = `${this.basePath}/manage-children-quota/allocate`;
     this.log("POST", url, payload);
-    const response = await this.timedRequest("allocateQuotaToChild", () =>
-      apiClient.post(url, payload)
-    );
+    const response = await apiClient.post(url, payload);
     return response.data;
   }
 
   async revokeQuotaFromChild(ledgerEntryId: string) {
     const url = `${this.basePath}/manage-children-quota/revoke-allocation/${ledgerEntryId}`;
     this.log("PUT", url);
-    const response = await this.timedRequest("revokeQuotaFromChild", () =>
-      apiClient.put(url)
-    );
+    const response = await apiClient.put(url);
     return response.data;
   }
 
@@ -313,11 +263,9 @@ class FranchiseService {
       this.basePath
     }/reports/my-trial-performance?ts=${Date.now()}`;
     this.log("GET", url);
-    const response = await this.timedRequest("getMyTrialPerformance", () =>
-      apiClient.get(url, {
-        headers: { "Cache-Control": "no-cache" },
-      })
-    );
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
     return response.data;
   }
 
@@ -326,24 +274,18 @@ class FranchiseService {
       this.basePath
     }/reports/children-trial-performance-summary?ts=${Date.now()}`;
     this.log("GET", url);
-    const response = await this.timedRequest(
-      "getChildrenTrialPerformanceSummary",
-      () =>
-        apiClient.get(url, {
-          headers: { "Cache-Control": "no-cache" },
-        })
-    );
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
     return response.data;
   }
 
   async getQuotaUtilization() {
     const url = `${this.basePath}/reports/quota-utilization?ts=${Date.now()}`;
     this.log("GET", url);
-    const response = await this.timedRequest("getQuotaUtilization", () =>
-      apiClient.get(url, {
-        headers: { "Cache-Control": "no-cache" },
-      })
-    );
+    const response = await apiClient.get(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
     return response.data;
   }
 
@@ -351,18 +293,14 @@ class FranchiseService {
     const url = `${this.basePath}/code/validate`;
     const payload = { code };
     this.log("POST", url, payload);
-    const response = await this.timedRequest("validateInvitationCode", () =>
-      apiClient.post(url, payload)
-    );
+    const response = await apiClient.post(url, payload);
     return response.data;
   }
 
   async activeCode() {
     const url = `${this.basePath}/code/active`;
     this.log("POST", url);
-    const response = await this.timedRequest("activeCode", () =>
-      apiClient.post(url)
-    );
+    const response = await apiClient.post(url);
     return response.data;
   }
 
@@ -372,14 +310,12 @@ class FranchiseService {
   ) {
     const url = `${this.basePath}/me/quota`;
     this.log("POST", url, payload);
-    const response = await this.timedRequest("allocateQuota", () =>
-      apiClient.post(url, payload, {
-        headers: {
-          "Cache-Control": "no-cache",
-          ...(extraHeaders || {}),
-        },
-      })
-    );
+    const response = await apiClient.post(url, payload, {
+      headers: {
+        "Cache-Control": "no-cache",
+        ...(extraHeaders || {}),
+      },
+    });
     return response.data;
   }
 }
