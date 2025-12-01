@@ -34,6 +34,7 @@ import type { InvitationCode } from "../../types/franchise.type";
 
 const CARD_MIN_HEIGHT = 420;
 
+// Chuẩn hoá codeType
 function getTypeKey(code?: InvitationCode["codeType"]) {
   if (!code) return undefined;
   if (typeof code === "string") return code;
@@ -57,32 +58,30 @@ export default function InvitationTrials() {
 
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const copyTimerRef = useRef<number | null>(null);
+  const [isSlowLoading, setIsSlowLoading] = useState(false);
 
-  // ✅ Gọi API CHẮC CHẮN 1 lần khi mount (không phụ thuộc tối ưu ở hook)
+  // ❗ KHÔNG fetch khi mount nữa – chỉ cleanup timer
   useEffect(() => {
-    let mounted = true;
-    console.time?.("InvitationTrials:initial-load");
-
-    (async () => {
-      try {
-        // gọi danh sách code trước để UI có dữ liệu sớm
-        await fetchInvitationCodes(1, 10);
-        // gọi details sau (không chặn hiển thị code)
-        fetchFranchiseDetails?.();
-      } catch (e) {
-        console.error("[InvitationTrials] initial fetch error:", e);
-      } finally {
-        if (mounted) console.timeEnd?.("InvitationTrials:initial-load");
-      }
-    })();
-
     return () => {
-      mounted = false;
       if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current);
     };
-    // CHÚ Ý: không đưa fetchFranchiseDetails vào deps để tránh gọi lại khi ref thay đổi
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchInvitationCodes]);
+  }, []);
+
+  // Nếu đang loading lần đầu (chưa có data) > 5s thì báo server chậm
+  useEffect(() => {
+    const hasData = (invitationCodes.data?.length || 0) > 0;
+
+    if (!invitationCodes.loading || hasData) {
+      setIsSlowLoading(false);
+      return;
+    }
+
+    const id = window.setTimeout(() => {
+      setIsSlowLoading(true);
+    }, 5000);
+
+    return () => window.clearTimeout(id);
+  }, [invitationCodes.loading, invitationCodes.data]);
 
   const handleCopyCode = async (code?: string) => {
     if (!code) return;
@@ -114,34 +113,46 @@ export default function InvitationTrials() {
         })
       : "N/A";
 
-  const pickNewestPrefActive = (
-    arr: InvitationCode[] | undefined,
-    pred: (c: InvitationCode) => boolean
-  ) =>
-    arr?.filter(pred).sort((a, b) => {
-      if (a.status === "active" && b.status !== "active") return -1;
-      if (a.status !== "active" && b.status === "active") return 1;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    })?.[0];
+  // Chỉ duyệt mảng 1 lần để lấy 2 mã cần thiết
+  const { newestLegacy, newestFranchise } = useMemo(() => {
+    const initial = {
+      newestLegacy: undefined as InvitationCode | undefined,
+      newestFranchise: undefined as InvitationCode | undefined,
+    };
 
-  // ✅ nhận dạng codeType an toàn (string hoặc object)
-  const codeLegacy = useMemo(
-    () =>
-      pickNewestPrefActive(
-        invitationCodes?.data,
-        (c) => getTypeKey(c.codeType) === "USER_TRIAL"
-      ),
-    [invitationCodes?.data]
-  );
+    const arr = invitationCodes.data;
+    if (!arr || arr.length === 0) return initial;
 
-  const codeFranchise = useMemo(
-    () =>
-      pickNewestPrefActive(
-        invitationCodes?.data,
-        (c) => getTypeKey(c.codeType) === "FRANCHISE_HIERARCHY"
-      ),
-    [invitationCodes?.data]
-  );
+    const updateNewest = (
+      current: InvitationCode | undefined,
+      next: InvitationCode
+    ) => {
+      if (!current) return next;
+
+      const curActive = current.status === "active";
+      const nextActive = next.status === "active";
+
+      if (!curActive && nextActive) return next;
+      if (curActive && !nextActive) return current;
+
+      const curTime = new Date(current.createdAt).getTime();
+      const nextTime = new Date(next.createdAt).getTime();
+      return nextTime > curTime ? next : current;
+    };
+
+    return arr.reduce((acc, c) => {
+      const typeKey = getTypeKey(c.codeType);
+      if (typeKey === "USER_TRIAL") {
+        acc.newestLegacy = updateNewest(acc.newestLegacy, c);
+      } else if (typeKey === "FRANCHISE_HIERARCHY") {
+        acc.newestFranchise = updateNewest(acc.newestFranchise, c);
+      }
+      return acc;
+    }, initial);
+  }, [invitationCodes.data]);
+
+  const codeLegacy = newestLegacy;
+  const codeFranchise = newestFranchise;
 
   const codeTypeLabel = (ct?: InvitationCode["codeType"]) => {
     const k = getTypeKey(ct);
@@ -290,7 +301,9 @@ export default function InvitationTrials() {
                   }}
                 >
                   <Typography variant="h4" fontWeight={700} color="info.main">
-                    {invitationCode?.statistics?.actualUsageCount ?? 0}
+                    {invitationCode?.statistics?.actualUsageCount ??
+                      invitationCode?.totalCumulativeUses ??
+                      0}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {t("franchise.invitations.stats.usage")}
@@ -311,7 +324,9 @@ export default function InvitationTrials() {
                     fontWeight={700}
                     color="warning.main"
                   >
-                    {invitationCode?.statistics?.totalCumulativeUses ?? 0}
+                    {invitationCode?.statistics?.totalCumulativeUses ??
+                      invitationCode?.totalCumulativeUses ??
+                      0}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {t("franchise.invitations.stats.total")}
@@ -349,13 +364,14 @@ export default function InvitationTrials() {
     );
   });
 
-  // ======= UI =======
-  const isLoading = invitationCodes.loading;
-  const hasError = !!invitationCodes.error;
   const hasData = (invitationCodes.data?.length || 0) > 0;
+  const isLoading = invitationCodes.loading;
+  const isRefreshing = invitationCodes.refreshing;
+  const hasError = !!invitationCodes.error;
 
   return (
     <Box sx={{ width: "100%" }}>
+      {/* Header */}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
         <Box
           sx={{
@@ -404,6 +420,7 @@ export default function InvitationTrials() {
         </Stack>
       </Stack>
 
+      {/* Body */}
       <Paper
         elevation={0}
         sx={{
@@ -412,51 +429,99 @@ export default function InvitationTrials() {
           border: `1px solid ${theme.palette.divider}`,
         }}
       >
-        {isLoading && !hasData ? (
+        {/* Chưa có dữ liệu & không loading */}
+        {!hasData && !isLoading && !isRefreshing && !hasError && (
+          <Stack alignItems="center" spacing={2} sx={{ py: 6 }}>
+            <Typography variant="body2" color="text.secondary">
+              Chưa có dữ liệu mã mời.
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={() => fetchInvitationCodes(1, 10)}
+            >
+              Tải mã mời
+            </Button>
+          </Stack>
+        )}
+
+        {/* Loading lần đầu (khi user bấm Tải mà chưa có data) */}
+        {isLoading && !hasData && (
           <Stack alignItems="center" spacing={2} sx={{ py: 6 }}>
             <CircularProgress />
             <Typography variant="body2" color="text.secondary">
               {t("common.loading", { defaultValue: "Đang tải..." })}
             </Typography>
+            {isSlowLoading && (
+              <Typography variant="caption" color="text.secondary">
+                Máy chủ có thể đang khởi động lần đầu nên sẽ mất khoảng 10–20
+                giây. Vui lòng chờ thêm một chút nhé.
+              </Typography>
+            )}
           </Stack>
-        ) : hasError ? (
+        )}
+
+        {/* Lỗi & chưa có data */}
+        {hasError && !hasData && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {invitationCodes.error?.message || "Lỗi tải dữ liệu"}
           </Alert>
-        ) : (
-          <Box
-            sx={{
-              display: "grid",
-              gap: 3,
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-              alignItems: "stretch",
-            }}
-          >
-            <InvitationCodeCard
-              invitationCode={codeLegacy}
-              title={t("franchise.invitations.cards.userTrialLegacy", {
-                defaultValue: "Mã dùng thử (cũ)",
-              })}
-              icon={
-                <PersonIcon
-                  sx={{ color: theme.palette.info.main, fontSize: 28 }}
-                />
-              }
-              color={theme.palette.info.main}
-            />
-            <InvitationCodeCard
-              invitationCode={codeFranchise}
-              title={t("franchise.invitations.cards.franchise", {
-                defaultValue: "Mã nhánh hệ thống",
-              })}
-              icon={
-                <BusinessIcon
-                  sx={{ color: theme.palette.success.main, fontSize: 28 }}
-                />
-              }
-              color={theme.palette.success.main}
-            />
-          </Box>
+        )}
+
+        {/* Có data rồi: luôn hiện card ngay */}
+        {hasData && (
+          <>
+            <Box
+              sx={{
+                display: "grid",
+                gap: 3,
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                alignItems: "stretch",
+              }}
+            >
+              <InvitationCodeCard
+                invitationCode={codeLegacy}
+                title={t("franchise.invitations.cards.userTrialLegacy", {
+                  defaultValue: "Mã dùng thử (cũ)",
+                })}
+                icon={
+                  <PersonIcon
+                    sx={{ color: theme.palette.info.main, fontSize: 28 }}
+                  />
+                }
+                color={theme.palette.info.main}
+              />
+              <InvitationCodeCard
+                invitationCode={codeFranchise}
+                title={t("franchise.invitations.cards.franchise", {
+                  defaultValue: "Mã nhánh hệ thống",
+                })}
+                icon={
+                  <BusinessIcon
+                    sx={{ color: theme.palette.success.main, fontSize: 28 }}
+                  />
+                }
+                color={theme.palette.success.main}
+              />
+            </Box>
+
+            {/* Đang refresh nền */}
+            {isRefreshing && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", textAlign: "right", mt: 1 }}
+              >
+                Đang cập nhật dữ liệu mới...
+              </Typography>
+            )}
+
+            {/* Có lỗi khi refresh nhưng vẫn có data cache */}
+            {hasError && hasData && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                Không cập nhật được dữ liệu mới, đang hiển thị dữ liệu cũ.
+              </Alert>
+            )}
+          </>
         )}
       </Paper>
     </Box>
