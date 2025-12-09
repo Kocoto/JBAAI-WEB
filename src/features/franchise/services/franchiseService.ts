@@ -208,7 +208,7 @@ class FranchiseService {
     if (prefixCode && prefixCode.trim()) {
       payload.prefixCode = prefixCode.trim();
     }
-
+ 
     this.log("POST", url, payload);
 
     const response = await apiClient.post(url, payload, {
@@ -282,7 +282,7 @@ class FranchiseService {
 
   async getQuotaUtilization() {
     const url = `${this.basePath}/reports/quota-utilization?ts=${Date.now()}`;
-    this.log("GET", url);
+    this.log("GET", url); 
     const response = await apiClient.get(url, {
       headers: { "Cache-Control": "no-cache" },
     });

@@ -349,6 +349,80 @@ export default function InvitationCodes() {
     }
   };
 
+  /* ---------------------- EXPORT ---------------------- */
+  const exportExcel = async (list: InvitationCode[]) => {
+    if (list.length === 0) return;
+    const rowsData = list.map((r) => {
+      const g = resolveGroupByPackageId(r.packageId);
+      return {
+        Prefix: (r as any).prefixCode || "",
+        Code: r.code,
+        "Loại mã": g ? GROUP_LABEL[g] : "",
+        "Trạng thái": r.status || "",
+        "Tạo lúc": formatDate(r.createdAt),
+        "Cập nhật": formatDate(r.updatedAt),
+      };
+    });
+
+    try {
+      const XLSX: any = await import("xlsx");
+      const ws = XLSX.utils.json_to_sheet(rowsData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "InvitationCodes");
+      const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const blob = new Blob([wbout], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `invitation-codes_${new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace(/[:T]/g, "-")}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setSnack({ open: true, msg: "Đã xuất Excel", sev: "success" });
+    } catch {
+      setSnack({ open: true, msg: "Xuất Excel thất bại", sev: "error" });
+    }
+  };
+
+  // Export Excel theo prefix (dùng search hiện tại, gọi BE)
+  const handleExportPrefixFromBE = async () => {
+    const q = search.trim();
+    if (!q) {
+      setSnack({
+        open: true,
+        msg: "Vui lòng nhập prefix trước khi xuất Excel",
+        sev: "error",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const list = await franchiseService.findCodesByPrefix(q);
+      if (!list.length) {
+        setSnack({
+          open: true,
+          msg: `Không tìm thấy mã nào với prefix "${q}"`,
+          sev: "info",
+        });
+        return;
+      }
+      await exportExcel(list);
+    } catch (e: any) {
+      console.error(e);
+      setSnack({
+        open: true,
+        msg: e?.message || "Xuất Excel theo prefix thất bại",
+        sev: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ---------------------- FILTER + SORT (client on current page) ---------------------- */
   const filtered = useMemo(() => {
     let out = [...rows];
@@ -412,45 +486,8 @@ export default function InvitationCodes() {
       return next;
     });
 
-  /* ---------------------- EXPORT ---------------------- */
-  const exportExcel = async (list: InvitationCode[]) => {
-    if (list.length === 0) return;
-    const rowsData = list.map((r) => {
-      const g = resolveGroupByPackageId(r.packageId);
-      return {
-        Code: r.code,
-        "Loại mã": g ? GROUP_LABEL[g] : "",
-        "Trạng thái": r.status || "",
-        "Tạo lúc": formatDate(r.createdAt),
-        "Cập nhật": formatDate(r.updatedAt),
-      };
-    });
-
-    try {
-      const XLSX: any = await import("xlsx");
-      const ws = XLSX.utils.json_to_sheet(rowsData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "InvitationCodes");
-      const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      const blob = new Blob([wbout], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `invitation-codes_${new Date()
-        .toISOString()
-        .slice(0, 19)
-        .replace(/[:T]/g, "-")}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      setSnack({ open: true, msg: "Đã xuất Excel", sev: "success" });
-    } catch {
-      setSnack({ open: true, msg: "Xuất Excel thất bại", sev: "error" });
-    }
-  };
-
   /* ---------------------- RENDER ---------------------- */
-  const totalAll = pagination.total; // tổng số mã từ BE (hoặc từ tìm prefix)
+  const totalAll = pagination.total;
   const isAllChecked =
     currentPageIds.length > 0 && currentPageIds.every((id) => selected.has(id));
   const isIndeterminate =
@@ -499,6 +536,7 @@ export default function InvitationCodes() {
             </Typography>
           </Box>
 
+          {/* Cụm nút export + refresh */}
           <Stack direction="row" spacing={1}>
             {/* Export selected */}
             <Tooltip title="Xuất các mã đã chọn">
@@ -530,6 +568,21 @@ export default function InvitationCodes() {
                   sx={{ borderRadius: 2 }}
                 >
                   Xuất tất cả
+                </Button>
+              </span>
+            </Tooltip>
+
+            {/* Export theo prefix (dựa trên ô search) */}
+            <Tooltip title="Xuất Excel theo prefix (dựa trên ô tìm kiếm)">
+              <span>
+                <Button
+                  variant="outlined"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExportPrefixFromBE}
+                  disabled={!search.trim() || loading}
+                  sx={{ borderRadius: 2 }}
+                >
+                  Xuất theo prefix
                 </Button>
               </span>
             </Tooltip>
@@ -850,7 +903,7 @@ export default function InvitationCodes() {
                         <TableCell>{formatDate(r.createdAt)}</TableCell>
                         <TableCell>{formatDate(r.updatedAt)}</TableCell>
 
-                        {/* Trạng thái — green for active, red for deleted */}
+                        {/* Trạng thái */}
                         <TableCell>
                           <Chip
                             size="small"
@@ -868,7 +921,7 @@ export default function InvitationCodes() {
           </Table>
         </TableContainer>
 
-        {/* Pagination — lấy total/page/limit từ BE hoặc từ tìm prefix */}
+        {/* Pagination */}
         <TablePagination
           component="div"
           count={pagination.total}
@@ -882,7 +935,6 @@ export default function InvitationCodes() {
           onRowsPerPageChange={(e) => {
             const newLimit = parseInt(e.target.value, 10) || 10;
             setLimit(newLimit);
-            // quay về trang 1 khi đổi page size
             setPage(1);
             fetchList(1, newLimit);
           }}
@@ -896,7 +948,7 @@ export default function InvitationCodes() {
         />
       </Paper>
 
-      {/* Dialog tạo mã — thêm ô prefixCode, không giới hạn max */}
+      {/* Dialog tạo mã */}
       <Dialog
         open={createDlg.open}
         onClose={closeCreate}
@@ -918,7 +970,7 @@ export default function InvitationCodes() {
                 setCreateDlg((s) => ({ ...s, qtyText: e.target.value }))
               }
               type="number"
-              inputProps={{ min: 1 }} // bỏ max, chỉ giữ min
+              inputProps={{ min: 1 }}
               fullWidth
             />
             <TextField
