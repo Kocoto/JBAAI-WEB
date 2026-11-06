@@ -147,6 +147,7 @@ const typeColor = (type?: string) => {
 };
 
 const pickList = (payload: any): ApiUser[] =>
+  (Array.isArray(payload?.data?.users) && payload.data.users) ||
   (Array.isArray(payload?.data) && payload.data) ||
   (Array.isArray(payload) && payload) ||
   [];
@@ -240,7 +241,7 @@ export default function AdminAddUser() {
     (u: ApiUser): UserRow => ({
       id: u._id,
       fullName: u.username,
-      email: u.email,
+      email: u.email ?? "",
       phone: u.phone ?? "",
       role: u.role ?? "user",
       status: u.status,
