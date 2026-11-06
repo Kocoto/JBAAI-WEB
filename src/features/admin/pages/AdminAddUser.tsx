@@ -484,8 +484,22 @@ export default function AdminAddUser() {
       return;
     }
 
+    // Server không kiểm tra định dạng email, vì web khác gửi lại cả email cũ ở mọi lần lưu.
+    // Ở đây chỉ email vừa đổi mới vào payload, nên email cũ sai chuẩn không bị chặn.
+    if (payload.email && !yup.string().email().isValidSync(payload.email)) {
+      setSnackbarSeverity("error");
+      setSnackbarMsg(
+        t("adminAddUser.validation.emailInvalid", "Email không hợp lệ")
+      );
+      setSnackbarOpen(true);
+      return;
+    }
+
     try {
-      await apiClient.put(userPath(updated.id), payload);
+      const res = await apiClient.put<{ data: ApiUser }>(
+        userPath(updated.id),
+        payload
+      );
       setSnackbarSeverity("success");
       setSnackbarMsg(
         t("adminAddUser.snackbar.updateSuccess", "Cập nhật thành công")
@@ -494,14 +508,9 @@ export default function AdminAddUser() {
       setEditOpen(false);
       setEditingUser(null);
 
-      const { username, ...rest } = payload;
-      setAllRows((prev) =>
-        prev.map((r) =>
-          r.id === updated.id
-            ? { ...r, ...rest, fullName: username ?? r.fullName }
-            : r
-        )
-      );
+      // Hiện theo response: server có thể chuẩn hóa giá trị (SĐT về E.164).
+      const saved = mapApiToRow(res.data.data);
+      setAllRows((prev) => prev.map((r) => (r.id === updated.id ? saved : r)));
     } catch (e: unknown) {
       console.error(e);
       setSnackbarSeverity("error");
