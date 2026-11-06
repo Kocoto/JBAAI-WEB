@@ -170,9 +170,8 @@
     },
     "roles": {
       "admin": "Admin",
-      "manager": "Manager",
-      "staff": "Staff",
       "franchise": "Franchise",
+      "seller": "Seller",
       "user": "User"
     },
     "table": {
@@ -181,6 +180,7 @@
         "email": "Email",
         "phone": "Phone",
         "role": "Role",
+        "type": "Account type",
         "createdAt": "Created at",
         "actions": "Actions"
       }
@@ -193,7 +193,9 @@
     "snackbar": {
       "createSuccess": "User created successfully",
       "updateSuccess": "User updated successfully",
-      "deleteSuccess": "User deleted successfully"
+      "deleteSuccess": "User deleted successfully",
+      "noChanges": "No changes to save",
+      "cannotClear": "Cannot clear {{fields}}. Enter a new value or leave it unchanged."
     }
   },
 

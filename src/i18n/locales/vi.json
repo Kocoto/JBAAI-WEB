@@ -170,9 +170,8 @@
     },
     "roles": {
       "admin": "Admin",
-      "manager": "Manager",
-      "staff": "Staff",
       "franchise": "Franchise",
+      "seller": "Seller",
       "user": "User"
     },
     "table": {
@@ -181,6 +180,7 @@
         "email": "Email",
         "phone": "Số điện thoại",
         "role": "Vai trò",
+        "type": "Loại TK",
         "createdAt": "Ngày tạo",
         "actions": "Hành động"
       }
@@ -193,7 +193,9 @@
     "snackbar": {
       "createSuccess": "Tạo user thành công",
       "updateSuccess": "Cập nhật user thành công",
-      "deleteSuccess": "Xóa user thành công"
+      "deleteSuccess": "Xóa user thành công",
+      "noChanges": "Không có thay đổi nào để lưu",
+      "cannotClear": "Không thể xóa {{fields}}. Hãy nhập giá trị mới hoặc giữ nguyên."
     }
   },
 

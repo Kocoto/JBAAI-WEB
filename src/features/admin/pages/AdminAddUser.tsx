@@ -61,6 +61,10 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import BaseDashboardLayout from "@/shared/components/layout/BaseDashboardLayout";
 import apiClient from "@/shared/services/api/apiClient";
+import {
+  buildAdminUserUpdate,
+  getApiErrorMessage,
+} from "@/features/admin/services/adminUserUpdate";
 
 /** =================== API PATHS =================== */
 const baseHasV1 = String(apiClient?.defaults?.baseURL ?? "").includes(
@@ -117,10 +121,6 @@ const roleColor = (role: string) => {
   switch (role) {
     case "admin":
       return "error";
-    case "manager":
-      return "primary";
-    case "staff":
-      return "success";
     case "franchise":
       return "secondary";
     default:
@@ -147,6 +147,7 @@ const typeColor = (type?: string) => {
 };
 
 const pickList = (payload: any): ApiUser[] =>
+  (Array.isArray(payload?.data?.users) && payload.data.users) ||
   (Array.isArray(payload?.data) && payload.data) ||
   (Array.isArray(payload) && payload) ||
   [];
@@ -240,7 +241,7 @@ export default function AdminAddUser() {
     (u: ApiUser): UserRow => ({
       id: u._id,
       fullName: u.username,
-      email: u.email,
+      email: u.email ?? "",
       phone: u.phone ?? "",
       role: u.role ?? "user",
       status: u.status,
@@ -306,9 +307,9 @@ export default function AdminAddUser() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
-    "success"
-  );
+  const [snackbarSeverity, setSnackbarSeverity] = useState<
+    "success" | "error" | "info"
+  >("success");
   const [createOpen, setCreateOpen] = useState(false);
 
   async function createUser(payload: any): Promise<ApiUser | null> {
@@ -450,17 +451,56 @@ export default function AdminAddUser() {
     }
   };
 
-  const handlePatchUser = async (updated: UserRow) => {
+  const handleUpdateUser = async (updated: UserRow) => {
+    if (!editingUser) return;
+
+    const { payload, cleared } = buildAdminUserUpdate(editingUser, updated);
+
+    // Bỏ trường đi rồi báo thành công thì admin tưởng đã xóa, nên dừng và báo ngay.
+    if (cleared.length > 0) {
+      const fields = cleared
+        .map((field) => t(`adminAddUser.table.columns.${field}`, field))
+        .join(", ");
+      setSnackbarSeverity("error");
+      setSnackbarMsg(
+        t(
+          "adminAddUser.snackbar.cannotClear",
+          "Không thể xóa {{fields}}. Hãy nhập giá trị mới hoặc giữ nguyên.",
+          { fields }
+        )
+      );
+      setSnackbarOpen(true);
+      return;
+    }
+
+    // Body rỗng cũng trả 400.
+    if (Object.keys(payload).length === 0) {
+      setSnackbarSeverity("info");
+      setSnackbarMsg(
+        t("adminAddUser.snackbar.noChanges", "Không có thay đổi nào để lưu")
+      );
+      setSnackbarOpen(true);
+      setEditOpen(false);
+      setEditingUser(null);
+      return;
+    }
+
+    // Server không kiểm tra định dạng email, vì web khác gửi lại cả email cũ ở mọi lần lưu.
+    // Ở đây chỉ email vừa đổi mới vào payload, nên email cũ sai chuẩn không bị chặn.
+    if (payload.email && !yup.string().email().isValidSync(payload.email)) {
+      setSnackbarSeverity("error");
+      setSnackbarMsg(
+        t("adminAddUser.validation.emailInvalid", "Email không hợp lệ")
+      );
+      setSnackbarOpen(true);
+      return;
+    }
+
     try {
-      const payload: Partial<ApiUser> = {
-        username: updated.fullName,
-        email: updated.email,
-        phone: updated.phone,
-        role: updated.role,
-        status: updated.status,
-        type: updated.type,
-      };
-      await apiClient.patch(userPath(updated.id), payload);
+      const res = await apiClient.put<{ data: ApiUser }>(
+        userPath(updated.id),
+        payload
+      );
       setSnackbarSeverity("success");
       setSnackbarMsg(
         t("adminAddUser.snackbar.updateSuccess", "Cập nhật thành công")
@@ -469,15 +509,13 @@ export default function AdminAddUser() {
       setEditOpen(false);
       setEditingUser(null);
 
-      setAllRows((prev) =>
-        prev.map((r) => (r.id === updated.id ? updated : r))
-      );
-    } catch (e: any) {
+      // Hiện theo response: server có thể chuẩn hóa giá trị (SĐT về E.164).
+      const saved = mapApiToRow(res.data.data);
+      setAllRows((prev) => prev.map((r) => (r.id === updated.id ? saved : r)));
+    } catch (e: unknown) {
       console.error(e);
       setSnackbarSeverity("error");
-      setSnackbarMsg(
-        e?.response?.data?.message || e?.message || "Update user failed"
-      );
+      setSnackbarMsg(getApiErrorMessage(e, "Update user failed"));
       setSnackbarOpen(true);
     }
   };
@@ -724,9 +762,8 @@ export default function AdminAddUser() {
                 >
                   <MenuItem value="all">{t("common.all", "Tất cả")}</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="manager">Manager</MenuItem>
-                  <MenuItem value="staff">Staff</MenuItem>
                   <MenuItem value="franchise">Franchise</MenuItem>
+                  <MenuItem value="seller">Seller</MenuItem>
                   <MenuItem value="user">User</MenuItem>
                 </Select>
               </FormControl>
@@ -1207,9 +1244,8 @@ export default function AdminAddUser() {
                         >
                           <MenuItem value="user">User</MenuItem>
                           <MenuItem value="admin">Admin</MenuItem>
-                          <MenuItem value="manager">Manager</MenuItem>
-                          <MenuItem value="staff">Staff</MenuItem>
                           <MenuItem value="franchise">Franchise</MenuItem>
+                          <MenuItem value="seller">Seller</MenuItem>
                         </TextField>
                       )}
                     />
@@ -1277,7 +1313,7 @@ export default function AdminAddUser() {
           setEditOpen(false);
           setEditingUser(null);
         }}
-        onSave={handlePatchUser}
+        onSave={handleUpdateUser}
       />
 
       {/* Delete Confirm */}
@@ -1361,7 +1397,10 @@ export default function AdminAddUser() {
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3500}
-        onClose={() => setSnackbarOpen(false)}
+        onClose={(_, reason) => {
+          // Cú bấm "Lưu" cũng là clickaway: nếu đang có thông báo cũ, nó sẽ đóng luôn thông báo vừa đặt.
+          if (reason !== "clickaway") setSnackbarOpen(false);
+        }}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
@@ -1448,9 +1487,8 @@ function EditUserDialog({
                   }
                 >
                   <MenuItem value="admin">Admin</MenuItem>
-                  <MenuItem value="manager">Manager</MenuItem>
-                  <MenuItem value="staff">Staff</MenuItem>
                   <MenuItem value="franchise">Franchise</MenuItem>
+                  <MenuItem value="seller">Seller</MenuItem>
                   <MenuItem value="user">User</MenuItem>
                 </Select>
               </FormControl>
